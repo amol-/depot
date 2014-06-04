@@ -27,6 +27,6 @@ setup(name='filedepot',
       license='MIT',
       packages=find_packages(exclude=['ez_setup']),
       include_package_data=True,
-      tests_require = ['mock'],
+      tests_require = ['mock', 'pymongo'],
       zip_safe=False,
 )

@@ -9,7 +9,7 @@ else:
 PY2 = sys.version_info[0] == 2
 
 
-if not PY2:
+if not PY2:  # pragma: no cover
     string_type = str
     unicode_text = str
     byte_string = bytes

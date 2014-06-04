@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from filedepot._compat import with_metaclass
-from abc import ABCMeta, abstractmethod, abstractproperty
+from .._compat import with_metaclass
+from abc import ABCMeta, abstractmethod
 from io import RawIOBase
 
 
@@ -26,9 +26,15 @@ class StoredFile(RawIOBase):
         return False
 
     @abstractmethod
-    def readinto(self, b):
+    def read(self, n=-1):  # pragma: no cover
         raise NotImplementedError
 
+    def __repr__(self):
+        return '<%s:%s filename=%s content_type=%s last_modified=%s>' % (self.__class__.__name__,
+                                                                         self.file_id,
+                                                                         self.filename,
+                                                                         self.content_type,
+                                                                         self.last_modified)
 
 class FileStorage(with_metaclass(ABCMeta, object)):
     """Interface for storage providers.
@@ -45,7 +51,7 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         return getattr(file_or_id, 'file_id', file_or_id)
 
     @abstractmethod
-    def get(self, file_or_id):
+    def get(self, file_or_id):  # pragma: no cover
         """Opens the file given by its unique id.
 
         This operation is guaranteed to return
@@ -54,27 +60,27 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         raise NotImplementedError
 
     @abstractmethod
-    def create(self, content, filename, content_type=None):
+    def create(self, content, filename, content_type=None):  # pragma: no cover
         """Saves a new file
 
         """
         raise NotImplementedError
 
     @abstractmethod
-    def replace(self, file_or_id, content, filename, content_type=None):
+    def replace(self, file_or_id, content, filename, content_type=None):  # pragma: no cover
         """Replaces an existing file
 
         """
         raise NotImplementedError
 
     @abstractmethod
-    def delete(self, file_or_id):
+    def delete(self, file_or_id):  # pragma: no cover
         """
         """
         raise NotImplementedError
 
     @abstractmethod
-    def exists(self, file_or_id):
+    def exists(self, file_or_id):  # pragma: no cover
         """
         """
         raise NotImplementedError
