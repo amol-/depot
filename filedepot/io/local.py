@@ -1,0 +1,141 @@
+"""
+Provides FileStorage implementation for local filesystem.
+
+This is usefull for storing files inside a local path.
+
+"""
+import os
+import uuid
+import io
+import shutil
+import mimetypes
+import json
+from contextlib import closing
+from datetime import datetime
+
+from .interfaces import FileStorage, StoredFile
+
+
+class LocalStoredFile(StoredFile):
+    def __init__(self, file_id, local_path):
+        _check_file_id(file_id)
+
+        self.metadata_path = _metadata_path(local_path)
+        self.file_path = _file_path(local_path)
+        self._file = None
+
+        try:
+            metadata = open(self.metadata_path, 'r')
+        except:
+            raise IOError('File %s not existing' % file_id)
+
+        metadata_info = {'filename': 'unknown',
+                         'content_type': 'application/octet-stream',
+                         'last_modified': None}
+        with closing(metadata) as metadatafile:
+            try:
+                metadata_content = metadatafile.read()
+                metadata_info.update(json.loads(metadata_content))
+
+                last_modified = metadata_info['last_modified']
+                if last_modified:
+                    metadata_info['last_modified'] = datetime.strptime(last_modified,
+                                                                       '%Y-%m-%d %H:%M:%S')
+            except:
+                raise ValueError('Invalid file metadata for %s' % file_id)
+
+        super(LocalStoredFile, self).__init__(file_id=file_id, **metadata_info)
+
+    def readinto(self, b):
+        if self._file is None:
+            self._file = open(self.file_path)
+        return self._file.readinto(b)
+
+
+class LocalFileStorage(FileStorage):
+    def __init__(self, storage_path):
+        self.storage_path = storage_path
+
+    def __local_path(self, fileid):
+        return os.path.join(self.storage_path, fileid)
+
+    def get(self, file_or_id):
+        fileid = self.fileid(file_or_id)
+        local_file_path = self.__local_path(fileid)
+        return LocalStoredFile(fileid, local_file_path)
+
+    def __save_file(self, file_id, content, filename, content_type=None):
+        local_file_path = self.__local_path(file_id)
+
+        if content_type is None:
+            guessed_type = mimetypes.guess_type(filename, strict=False)[0]
+            content_type = guessed_type or 'application/octet-stream'
+
+        os.makedirs(local_file_path)
+        metadata = {'filename': filename,
+                    'content_type': content_type,
+                    'last_modified': _file_timestamp()}
+
+        with closing(open(_metadata_path(local_file_path), 'w')) as metadatafile:
+            metadatafile.write(json.dumps(metadata))
+
+        if hasattr(content, 'read'):
+            with closing(open(_file_path(local_file_path), 'w')) as fileobj:
+                shutil.copyfileobj(content, fileobj)
+        else:
+            with closing(open(_file_path(local_file_path), 'w')) as fileobj:
+                fileobj.write(content)
+
+    def create(self, content, filename, content_type=None):
+        new_file_id = str(uuid.uuid1())
+        self.__save_file(new_file_id, content, filename, content_type)
+        return new_file_id
+
+    def replace(self, file_or_id, content, filename=None, content_type=None):
+        fileid = self.fileid(file_or_id)
+
+        # First check file existed and we are not using replace
+        # as a way to force a specific file id on creation.
+        if not self.exists(fileid):
+            raise IOError('File %s not existing' % file_or_id)
+
+        if filename is None:
+            filename = self.get(fileid).filename
+
+        self.delete(fileid)
+        self.__save_file(fileid, content, filename, content_type)
+        return fileid
+
+    def delete(self, file_or_id):
+        fileid = self.fileid(file_or_id)
+        local_file_path = self.__local_path(fileid)
+        try:
+            shutil.rmtree(local_file_path)
+        except:
+            pass
+
+    def exists(self, file_or_id):
+        fileid = self.fileid(file_or_id)
+        local_file_path = self.__local_path(fileid)
+        return os.path.exists(local_file_path)
+
+
+def _check_file_id(file_id):
+    # Check that the given file id is valid, this also
+    # prevents unsafe paths.
+    try:
+        uuid.UUID('{%s}' % file_id)
+    except:
+        raise ValueError('Invalid file id %s' % file_id)
+
+
+def _metadata_path(local_path):
+    return os.path.join(local_path, 'metadata.json')
+
+
+def _file_path(local_path):
+    return os.path.join(local_path, 'file')
+
+
+def _file_timestamp():
+    return datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
