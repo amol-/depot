@@ -146,6 +146,14 @@ class BaseStorageTestFixture(object):
     def test_storing_unicode_is_prevented(self):
         file_id = self.fs.create(FILE_CONTENT.decode('utf-8'), 'file.txt')
 
+    @raises(TypeError)
+    def test_replacing_unicode_is_prevented(self):
+        file_id = self.fs.create(FILE_CONTENT, 'file.txt')
+        f = self.fs.get(file_id)
+
+        self.fs.replace(f, FILE_CONTENT.decode('utf-8'))
+
+
 
 class TestLocalFileStorage(BaseStorageTestFixture):
     def setup(self):

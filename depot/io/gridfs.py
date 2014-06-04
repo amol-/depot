@@ -4,6 +4,8 @@ Provides FileStorage implementation for MongoDB GridFS.
 This is useful for storing files inside a mongodb database.
 
 """
+from __future__ import absolute_import
+
 import mimetypes
 from datetime import datetime
 import gridfs

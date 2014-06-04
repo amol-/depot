@@ -13,6 +13,7 @@ from datetime import datetime
 
 from .interfaces import FileStorage, StoredFile
 from . import utils
+from .._compat import unicode_text
 
 
 class LocalStoredFile(StoredFile):
@@ -82,6 +83,9 @@ class LocalFileStorage(FileStorage):
             with open(_file_path(local_file_path), 'wb') as fileobj:
                 shutil.copyfileobj(content, fileobj)
         else:
+            if isinstance(content, unicode_text):
+                raise TypeError('Only bytes can be stored, not unicode')
+
             with open(_file_path(local_file_path), 'wb') as fileobj:
                 fileobj.write(content)
 

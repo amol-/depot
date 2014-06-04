@@ -1,6 +1,4 @@
 from depot.io.gridfs import GridFSStorage
-import shutil
-import os
 from pymongo import MongoClient
 import gridfs
 
