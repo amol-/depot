@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from .._compat import with_metaclass
 from abc import ABCMeta, abstractmethod
-from io import RawIOBase
+from io import BufferedIOBase
 
 
-class StoredFile(RawIOBase):
+class StoredFile(BufferedIOBase):
     """Interface for already saved files.
 
     Already stored files can only be read back, so they subclass io.RawIOBase and require
@@ -25,8 +25,15 @@ class StoredFile(RawIOBase):
     def writable(self):
         return False
 
+    def seekable(self):
+        return False
+
+    @property
+    def name(self):
+        return self.filename
+
     @abstractmethod
-    def read(self, n=-1):  # pragma: no cover
+    def read(self, n=None):  # pragma: no cover
         raise NotImplementedError
 
     def __repr__(self):
@@ -49,6 +56,29 @@ class FileStorage(with_metaclass(ABCMeta, object)):
     @staticmethod
     def fileid(file_or_id):
         return getattr(file_or_id, 'file_id', file_or_id)
+
+    @staticmethod
+    def fileinfo(fileobj, filename=None, content_type=None):
+        content = fileobj
+        if isinstance(fileobj, cgi.FieldStorage):
+            content = fileobj.file
+
+        if filename is None:
+            if getattr(fileobj, 'filename', None) is not None:
+                filename = fileobj.filename
+            elif getattr(fileobj, 'name', None) is not None:
+                filename = os.path.basename(fileobj.name)
+
+        if content_type is None:
+            if getattr(fileobj, 'content_type', None) is not None:
+                content_type = fileobj.content_type
+            if getattr(fileobj, 'type', None) is not None:
+                content_type = fileobj.type
+
+        if content_type is None:
+            content_type = mimetypes.guess_type(filename, strict=False)[0]
+
+        return (content, filename, content_type)
 
     @abstractmethod
     def get(self, file_or_id):  # pragma: no cover
