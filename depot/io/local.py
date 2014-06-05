@@ -7,7 +7,6 @@ This is usefull for storing files inside a local path.
 import os
 import uuid
 import shutil
-import mimetypes
 import json
 from datetime import datetime
 

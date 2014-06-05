@@ -8,15 +8,13 @@ FILE_CONTENT = b'HELLO WORLD'
 
 class TestGridFSFileStorage(object):
     def setup(self):
-        self.db = MongoClient().gridfs_example
-        self.gridfs = gridfs.GridFS(self.db, collection='testfs')
-        self.fs = GridFSStorage(self.gridfs)
+        self.fs = GridFSStorage('mongodb://localhost/gridfs_example', 'testfs')
 
     def teardown(self):
-        self.db.drop_collection('testfs')
+        self.fs._db.drop_collection('testfs')
 
     def test_fileoutside_depot(self):
-        fileid = self.gridfs.put(FILE_CONTENT)
+        fileid = self.fs._gridfs.put(FILE_CONTENT)
 
         f = self.fs.get(str(fileid))
         assert f.read() == FILE_CONTENT

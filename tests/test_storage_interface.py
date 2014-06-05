@@ -225,9 +225,7 @@ class TestLocalFileStorage(BaseStorageTestFixture):
 
 class TestGridFSFileStorage(BaseStorageTestFixture):
     def setup(self):
-        self.db = MongoClient().gridfs_example
-        fs = gridfs.GridFS(self.db, collection='testfs')
-        self.fs = GridFSStorage(fs)
+        self.fs = GridFSStorage('mongodb://localhost/gridfs_example', 'testfs')
 
     def teardown(self):
-        self.db.drop_collection('testfs')
+        self.fs._db.drop_collection('testfs')

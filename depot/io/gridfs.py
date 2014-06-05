@@ -6,8 +6,8 @@ This is useful for storing files inside a mongodb database.
 """
 from __future__ import absolute_import
 
-import mimetypes
 from datetime import datetime
+from pymongo import MongoClient
 import gridfs
 from bson import ObjectId
 
@@ -51,8 +51,10 @@ class GridFSStoredFile(StoredFile):
 
 
 class GridFSStorage(FileStorage):
-    def __init__(self, gridfs):
-        self._gridfs = gridfs
+    def __init__(self, mongouri, collection='filedepot'):
+        self._cli = MongoClient(mongouri)
+        self._db = self._cli.get_default_database()
+        self._gridfs = gridfs.GridFS(self._db, collection=collection)
 
     def get(self, file_or_id):
         fileid = self.fileid(file_or_id)

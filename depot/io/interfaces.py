@@ -1,4 +1,9 @@
-# -*- coding: utf-8 -*-
+"""General interface provided by all storage backends implemented in DEPOT.
+
+Each storage backend is required to respect those classes and implement
+the abstractmethods.
+
+"""
 from .._compat import with_metaclass
 from abc import ABCMeta, abstractmethod, abstractproperty
 from io import IOBase
@@ -10,8 +15,9 @@ import mimetypes
 class StoredFile(IOBase):
     """Interface for already saved files.
 
-    Already stored files can only be read back, so they subclass io.RawIOBase and require
-    to only provide ``readinto(self, b)`` method so that they can be read back.
+    Already stored files can only be read back, so they are require to only provide
+    ``read(self, n=-1)``, ``close()`` methods and ``closed`` property so that they
+    can be read.
 
     To replace/overwrite a file content do not try to call the ``write`` method,
     instead use the storage backend to replace the file content.
@@ -23,28 +29,63 @@ class StoredFile(IOBase):
         self.last_modified = last_modified
 
     def readable(self):
+        """Returns if the stored file is readable or not
+
+        Usually all stored files are readable
+        """
         return True
 
     def writable(self):
+        """Returns if the stored file is writable or not
+
+        Stored files are not writable, you should rely on the relative
+        :class:`FileStorage` to overwrite their content
+        """
         return False
 
     def seekable(self):
+        """Returns if the stored file is seekable or not
+
+        By default stored files are not seekable
+        """
         return False
 
     @property
     def name(self):
+        """This is the filename of the saved file
+
+        If a filename was not available when the file was created
+        this will return "unkwnown" as filename.
+        """
         return self.filename
 
     @abstractmethod
     def read(self, n=-1):  # pragma: no cover
+        """Reads ``n`` bytes from the file.
+
+        If ``n`` is not specified or is ``-1`` the whole
+        file content is read in memory and returned
+        """
         raise NotImplementedError
 
     @abstractmethod
     def close(self, *args, **kwargs):  # pragma: no cover
+        """Closes the file.
+
+        After closing the file it won't be possible to read
+        from it anymore. Some implementation might not do anything
+        when closing the file, but they still are required to prevent
+        further reads from a closed file.
+        """
         raise NotImplementedError
 
     @abstractproperty
     def closed(self):  # pragma: no cover
+        """Returns if the file has been closed.
+
+        When ``closed`` return ``True`` it won't be possible
+        to read anoymore from this file.
+        """
         raise NotImplementedError
 
     def __repr__(self):
@@ -66,10 +107,20 @@ class FileStorage(with_metaclass(ABCMeta, object)):
 
     @staticmethod
     def fileid(file_or_id):
+        """Gets the ID of a given :class:`StoredFile`
+
+        If the given parameter is already a StoredFile id it will
+        directly return it.
+        """
         return getattr(file_or_id, 'file_id', file_or_id)
 
     @staticmethod
     def fileinfo(fileobj, filename=None, content_type=None):
+        """Tries to extract from the given input the actual file object, filename and content_type
+
+        This is used by the create and replace methods to correctly deduce their parameters
+        from the available informations when possible.
+        """
         content = fileobj
         if isinstance(fileobj, cgi.FieldStorage):
             content = fileobj.file
@@ -98,32 +149,38 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         """Opens the file given by its unique id.
 
         This operation is guaranteed to return
-        a ``StoredFile`` instance.
+        a :class:`StoredFile` instance or should raise ``IOError``
+        if the file is not found.
         """
         raise NotImplementedError
 
     @abstractmethod
     def create(self, content, filename=None, content_type=None):  # pragma: no cover
-        """Saves a new file
+        """Saves a new file and returns the ID of the newly created file.
 
+        ``content`` parameter can either be ``bytes``, another ``file object``
+        or a :class:`cgi.FieldStorage`. When ``filename`` and ``content_type``
+        parameters are not provided they are deducted from the content itself.
         """
         raise NotImplementedError
 
     @abstractmethod
     def replace(self, file_or_id, content, filename=None, content_type=None):  # pragma: no cover
-        """Replaces an existing file
+        """Replaces an existing file, an ``IOError`` is raised if the file didn't already exist.
 
+        Given a :class:`StoredFile` or its ID it will replace the current content
+        with the provided ``content`` value. If ``filename`` and ``content_type`` are
+        provided or can be deducted by the ``content`` itself they will also replace
+        the previous values, otherwise the current values are kept.
         """
         raise NotImplementedError
 
     @abstractmethod
     def delete(self, file_or_id):  # pragma: no cover
-        """
-        """
+        """Deletes a file. If the file didn't exist it will just do nothing."""
         raise NotImplementedError
 
     @abstractmethod
     def exists(self, file_or_id):  # pragma: no cover
-        """
-        """
+        """Returns if a file or its ID still exist."""
         raise NotImplementedError
