@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 from .._compat import with_metaclass
-from abc import ABCMeta, abstractmethod
-from io import BufferedIOBase
+from abc import ABCMeta, abstractmethod, abstractproperty
+from io import IOBase
+import cgi
+import os
+import mimetypes
 
 
-class StoredFile(BufferedIOBase):
+class StoredFile(IOBase):
     """Interface for already saved files.
 
     Already stored files can only be read back, so they subclass io.RawIOBase and require
@@ -33,7 +36,15 @@ class StoredFile(BufferedIOBase):
         return self.filename
 
     @abstractmethod
-    def read(self, n=None):  # pragma: no cover
+    def read(self, n=-1):  # pragma: no cover
+        raise NotImplementedError
+
+    @abstractmethod
+    def close(self, *args, **kwargs):  # pragma: no cover
+        raise NotImplementedError
+
+    @abstractproperty
+    def closed(self):  # pragma: no cover
         raise NotImplementedError
 
     def __repr__(self):
@@ -72,13 +83,15 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         if content_type is None:
             if getattr(fileobj, 'content_type', None) is not None:
                 content_type = fileobj.content_type
-            if getattr(fileobj, 'type', None) is not None:
+            elif getattr(fileobj, 'type', None) is not None:
                 content_type = fileobj.type
 
-        if content_type is None:
-            content_type = mimetypes.guess_type(filename, strict=False)[0]
+        if  content_type is None:
+            if filename is not None:
+                content_type = mimetypes.guess_type(filename, strict=False)[0]
+            content_type = content_type or 'application/octet-stream'
 
-        return (content, filename, content_type)
+        return content, filename, content_type
 
     @abstractmethod
     def get(self, file_or_id):  # pragma: no cover
@@ -90,14 +103,14 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         raise NotImplementedError
 
     @abstractmethod
-    def create(self, content, filename, content_type=None):  # pragma: no cover
+    def create(self, content, filename=None, content_type=None):  # pragma: no cover
         """Saves a new file
 
         """
         raise NotImplementedError
 
     @abstractmethod
-    def replace(self, file_or_id, content, filename, content_type=None):  # pragma: no cover
+    def replace(self, file_or_id, content, filename=None, content_type=None):  # pragma: no cover
         """Replaces an existing file
 
         """

@@ -19,6 +19,7 @@ class GridFSStoredFile(StoredFile):
     def __init__(self, file_id, gridout):
         _check_file_id(file_id)
         self._gridout = gridout
+        self._closed = False
 
         metadata_info = {'filename': gridout.filename,
                          'content_type': gridout.content_type,
@@ -35,7 +36,18 @@ class GridFSStoredFile(StoredFile):
         super(GridFSStoredFile, self).__init__(file_id=file_id, **metadata_info)
 
     def read(self, n=-1):
+        if self._closed:
+            raise ValueError("cannot read from a closed file")
+
         return self._gridout.read(n)
+
+    def close(self):
+        self._closed = True
+        self._gridout.close()
+
+    @property
+    def closed(self):
+        return self._closed
 
 
 class GridFSStorage(FileStorage):
@@ -52,13 +64,10 @@ class GridFSStorage(FileStorage):
 
         return GridFSStoredFile(fileid, gridout)
 
-    def create(self, content, filename, content_type=None):
-        if content_type is None:
-            guessed_type = mimetypes.guess_type(filename, strict=False)[0]
-            content_type = guessed_type or 'application/octet-stream'
-
+    def create(self, content, filename=None, content_type=None):
+        content, filename, content_type = self.fileinfo(content, filename, content_type)
         new_file_id = self._gridfs.put(content,
-                                       filename=filename,
+                                       filename=filename or 'unknown',
                                        content_type=content_type,
                                        last_modified=utils.timestamp())
         return str(new_file_id)
@@ -67,17 +76,15 @@ class GridFSStorage(FileStorage):
         fileid = self.fileid(file_or_id)
         fileid = _check_file_id(fileid)
 
+        content, filename, content_type = self.fileinfo(content, filename, content_type)
         if filename is None:
-            filename = self.get(fileid).filename
+            f = self.get(fileid)
+            filename = f.filename
+            content_type = f.content_type
 
         self._gridfs.delete(fileid)
-
-        if content_type is None:
-            guessed_type = mimetypes.guess_type(filename, strict=False)[0]
-            content_type = guessed_type or 'application/octet-stream'
-
         new_file_id = self._gridfs.put(content, _id=fileid,
-                                       filename=filename,
+                                       filename=filename or 'unknown',
                                        content_type=content_type,
                                        last_modified=utils.timestamp())
         return str(new_file_id)

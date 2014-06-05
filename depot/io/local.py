@@ -51,6 +51,19 @@ class LocalStoredFile(StoredFile):
             self._file = open(self._file_path, 'rb')
         return self._file.read(n)
 
+    def close(self):
+        if self._file is None:
+            # This is to guarantee that closing a file
+            # before even reading it behaves correctly
+            self._file = open(self._file_path, 'rb')
+        self._file.close()
+
+    @property
+    def closed(self):
+        if self._file is None:
+            return False
+        return self._file.closed
+
 
 class LocalFileStorage(FileStorage):
     def __init__(self, storage_path):
@@ -66,13 +79,8 @@ class LocalFileStorage(FileStorage):
 
     def __save_file(self, file_id, content, filename, content_type=None):
         local_file_path = self.__local_path(file_id)
-
-        if content_type is None:
-            guessed_type = mimetypes.guess_type(filename, strict=False)[0]
-            content_type = guessed_type or 'application/octet-stream'
-
         os.makedirs(local_file_path)
-        metadata = {'filename': filename,
+        metadata = {'filename': filename or 'unknown',
                     'content_type': content_type,
                     'last_modified': utils.timestamp()}
 
@@ -89,8 +97,9 @@ class LocalFileStorage(FileStorage):
             with open(_file_path(local_file_path), 'wb') as fileobj:
                 fileobj.write(content)
 
-    def create(self, content, filename, content_type=None):
+    def create(self, content, filename=None, content_type=None):
         new_file_id = str(uuid.uuid1())
+        content, filename, content_type = self.fileinfo(content, filename, content_type)
         self.__save_file(new_file_id, content, filename, content_type)
         return new_file_id
 
@@ -103,8 +112,11 @@ class LocalFileStorage(FileStorage):
         if not self.exists(fileid):
             raise IOError('File %s not existing' % file_or_id)
 
+        content, filename, content_type = self.fileinfo(content, filename, content_type)
         if filename is None:
-            filename = self.get(fileid).filename
+            f = self.get(fileid)
+            filename = f.filename
+            content_type = f.content_type
 
         self.delete(fileid)
         self.__save_file(fileid, content, filename, content_type)

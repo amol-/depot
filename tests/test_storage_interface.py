@@ -5,10 +5,10 @@ import shutil
 import mock
 import datetime
 from io import BytesIO
-from tempfile import TemporaryFile
+from tempfile import TemporaryFile, NamedTemporaryFile
 from pymongo import MongoClient
 import gridfs
-
+from tests.utils import create_cgifs
 
 FILE_CONTENT = b'HELLO WORLD'
 
@@ -48,18 +48,53 @@ class BaseStorageTestFixture(object):
 
         for d in (FILE_CONTENT,
                   BytesIO(FILE_CONTENT),
-                  temp):
+                  temp,
+                  create_cgifs('text/plain', FILE_CONTENT, 'file.txt')):
             fid = self.fs.create(d, 'filename')
             f = self.fs.get(fid)
             assert f.read() == FILE_CONTENT
 
-    def test_content_type(self):
+    def test_content_type_by_name(self):
         for fname, ctype in (('filename', 'application/octet-stream'),
                              ('image.png', 'image/png'),
                              ('file.txt', 'text/plain')):
             file_id = self.fs.create(FILE_CONTENT, fname)
             f = self.fs.get(file_id)
             assert f.content_type == ctype, (fname, ctype)
+
+    def test_cgifieldstorage(self):
+        cgifs = create_cgifs('text/plain', FILE_CONTENT, 'file.txt')
+        file_id = self.fs.create(cgifs)
+
+        f = self.fs.get(file_id)
+        assert f.content_type == 'text/plain'
+        assert f.filename == 'file.txt'
+        assert f.read() == FILE_CONTENT
+
+    def test_filewithname(self):
+        temp = NamedTemporaryFile()
+        temp.write(FILE_CONTENT)
+        temp.seek(0)
+
+        file_id = self.fs.create(temp)
+
+        f = self.fs.get(file_id)
+        assert f.content_type == 'application/octet-stream'
+        assert temp.name.endswith(f.filename)
+        assert f.read() == FILE_CONTENT
+
+    def test_another_storage(self):
+        file_id = self.fs.create(FILE_CONTENT, filename='file.txt', content_type='text/plain')
+        f = self.fs.get(file_id)
+
+        file2_id = self.fs.create(f)
+        assert file2_id != f.file_id
+
+        f2 = self.fs.get(file_id)
+        assert f2.filename == f.filename
+        assert f2.content_type == f.content_type
+        assert f2.filename == 'file.txt'
+        assert f2.content_type == 'text/plain'
 
     def test_repr(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
@@ -141,6 +176,7 @@ class BaseStorageTestFixture(object):
         f = self.fs.get(file_id)
         assert f.readable()
         assert not f.writable()
+        assert not f.seekable()
 
     @raises(TypeError)
     def test_storing_unicode_is_prevented(self):
@@ -153,6 +189,27 @@ class BaseStorageTestFixture(object):
 
         self.fs.replace(f, FILE_CONTENT.decode('utf-8'))
 
+    def test_closing_file(self):
+        file_id = self.fs.create(FILE_CONTENT, 'file.txt')
+        f = self.fs.get(file_id)
+
+        assert f.closed is False
+        with f:
+            f.read()
+        assert f.closed is True
+
+    @raises(ValueError)
+    def test_reading_from_closed_file_is_prevented(self):
+        file_id = self.fs.create(FILE_CONTENT, 'file.txt')
+        f = self.fs.get(file_id)
+        f.close()
+
+        f.read()
+
+    def test_name_is_an_alias_for_filename(self):
+        file_id = self.fs.create(FILE_CONTENT, 'file.txt')
+        f = self.fs.get(file_id)
+        assert f.name == f.filename
 
 
 class TestLocalFileStorage(BaseStorageTestFixture):
