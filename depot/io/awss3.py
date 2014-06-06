@@ -20,12 +20,12 @@ class S3StoredFile(StoredFile):
         _check_file_id(file_id)
         self._key = key
 
-        metadata_info = {'filename': key.get_metadata('X-Depot-Filename'),
-                         'content_type': key.get_metadata('Content-Type'),
-                         'last_modified': key.get_metadata('X-Depot-Modified')}
+        metadata_info = {'filename': key.get_metadata('x-depot-filename'),
+                         'content_type': key.content_type,
+                         'last_modified': None}
 
         try:
-            last_modified = metadata_info.get('last_modified')
+            last_modified = key.get_metadata('x-depot-modified')
             if last_modified:
                 metadata_info['last_modified'] = datetime.strptime(last_modified,
                                                                    '%Y-%m-%d %H:%M:%S')
@@ -35,6 +35,9 @@ class S3StoredFile(StoredFile):
         super(S3StoredFile, self).__init__(file_id=file_id, **metadata_info)
 
     def read(self, n=-1):
+        if self.closed:
+            raise ValueError("cannot read from a closed file")
+
         return self._key.read(n)
 
     def close(self):
@@ -60,16 +63,29 @@ class S3Storage(FileStorage):
         _check_file_id(fileid)
 
         key = self._bucket.get_key(fileid)
+        if key is None:
+            raise IOError('File %s not existing' % fileid)
+
         return S3StoredFile(fileid, key)
 
     def __save_file(self, key, content, filename, content_type=None):
-        key.set_metadata('Content-Type', content_type)
-        key.set_metadata('X-Depot-Filename', filename)
-        key.set_metadata('X-Depot-Modified', utils.timestamp())
+        key.set_metadata('content-type', content_type)
+        key.set_metadata('x-depot-filename', filename)
+        key.set_metadata('x-depot-modified', utils.timestamp())
         key.set_metadata('Content-Disposition', 'inline; filename="%s"' % filename)
 
         if hasattr(content, 'read'):
-            key.set_contents_from_file(content, policy='public-read')
+            can_seek_and_tell = True
+            try:
+                pos = content.tell()
+                content.seek(pos)
+            except:
+                can_seek_and_tell = False
+
+            if can_seek_and_tell:
+                key.set_contents_from_file(content, policy='public-read')
+            else:
+                key.set_contents_from_string(content.read(), policy='public-read')
         else:
             if isinstance(content, unicode_text):
                 raise TypeError('Only bytes can be stored, not unicode')

@@ -244,6 +244,12 @@ class TestS3FileStorage(BaseStorageTestFixture):
                             'filedepot-testfs-%s' % access_key_id.lower())
 
     def teardown(self):
-        pass
+        keys = [key.name for key in self.fs._bucket]
+        if keys:
+            self.fs._bucket.delete_keys(keys)
 
+        try:
+            self.fs._conn.delete_bucket(self.fs._bucket.name)
+        except:
+            pass
 

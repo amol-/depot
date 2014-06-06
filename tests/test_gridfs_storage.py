@@ -1,7 +1,4 @@
 from depot.io.gridfs import GridFSStorage
-from pymongo import MongoClient
-import gridfs
-
 
 FILE_CONTENT = b'HELLO WORLD'
 
