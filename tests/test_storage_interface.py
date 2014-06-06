@@ -1,13 +1,14 @@
 from nose.tools import raises
+from nose import SkipTest
 from depot.io.local import LocalFileStorage
 from depot.io.gridfs import GridFSStorage
+from depot.io.awss3 import S3Storage
 import shutil
 import mock
 import datetime
 from io import BytesIO
 from tempfile import TemporaryFile, NamedTemporaryFile
-from pymongo import MongoClient
-import gridfs
+import os
 from tests.utils import create_cgifs
 
 FILE_CONTENT = b'HELLO WORLD'
@@ -229,3 +230,20 @@ class TestGridFSFileStorage(BaseStorageTestFixture):
 
     def teardown(self):
         self.fs._db.drop_collection('testfs')
+
+
+class TestS3FileStorage(BaseStorageTestFixture):
+    def setup(self):
+        env = os.environ
+        access_key_id = env.get('AWS_ACCESS_KEY_ID')
+        secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
+        if access_key_id is None or secret_access_key is None:
+            raise SkipTest('Amazon S3 credentials not available')
+
+        self.fs = S3Storage(access_key_id, secret_access_key,
+                            'filedepot-testfs-%s' % access_key_id.lower())
+
+    def teardown(self):
+        pass
+
+
