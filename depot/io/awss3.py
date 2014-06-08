@@ -22,6 +22,7 @@ class S3StoredFile(StoredFile):
 
         metadata_info = {'filename': key.get_metadata('x-depot-filename'),
                          'content_type': key.content_type,
+                         'content_length': key.size,
                          'last_modified': None}
 
         try:
@@ -46,6 +47,10 @@ class S3StoredFile(StoredFile):
     @property
     def closed(self):
         return self._key.closed
+
+    @property
+    def public_url(self):
+        return self._key.generate_url(expires_in=0, query_auth=False)
 
 
 class S3Storage(FileStorage):

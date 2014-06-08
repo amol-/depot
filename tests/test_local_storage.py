@@ -10,10 +10,7 @@ class TestLocalFileStorage(object):
         self.fs = LocalFileStorage('./lfs')
 
     def teardown(self):
-        try:
-            shutil.rmtree('./lfs')
-        except:
-            pass
+        shutil.rmtree('./lfs', ignore_errors=True)
 
     def test_creation(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')

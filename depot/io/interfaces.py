@@ -15,6 +15,13 @@ import mimetypes
 class StoredFile(IOBase):
     """Interface for already saved files.
 
+    It provides metadata on the stored file through following properties:
+        - file_id
+        - filename
+        - content_type
+        - last_modified
+        - content_length
+
     Already stored files can only be read back, so they are require to only provide
     ``read(self, n=-1)``, ``close()`` methods and ``closed`` property so that they
     can be read.
@@ -22,11 +29,13 @@ class StoredFile(IOBase):
     To replace/overwrite a file content do not try to call the ``write`` method,
     instead use the storage backend to replace the file content.
     """
-    def __init__(self, file_id, filename=None, content_type=None, last_modified=None):
+    def __init__(self, file_id, filename=None, content_type=None, last_modified=None,
+                 content_length=None):
         self.file_id = file_id
         self.filename = filename
         self.content_type = content_type
         self.last_modified = last_modified
+        self.content_length = content_length
 
     def readable(self):
         """Returns if the stored file is readable or not
@@ -87,6 +96,17 @@ class StoredFile(IOBase):
         to read anoymore from this file.
         """
         raise NotImplementedError
+
+    @property
+    def public_url(self):
+        """The public HTTP url from which file can be accessed.
+
+        When supported by the storage this will provide the
+        public url to which the file content can be accessed.
+        In case this returns ``None`` it means that the file can
+        only be served by the :class:`DepotMiddleware` itself.
+        """
+        return None
 
     def __repr__(self):
         return '<%s:%s filename=%s content_type=%s last_modified=%s>' % (self.__class__.__name__,

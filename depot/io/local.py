@@ -79,12 +79,6 @@ class LocalFileStorage(FileStorage):
     def __save_file(self, file_id, content, filename, content_type=None):
         local_file_path = self.__local_path(file_id)
         os.makedirs(local_file_path)
-        metadata = {'filename': filename or 'unknown',
-                    'content_type': content_type,
-                    'last_modified': utils.timestamp()}
-
-        with open(_metadata_path(local_file_path), 'w') as metadatafile:
-            metadatafile.write(json.dumps(metadata))
 
         if hasattr(content, 'read'):
             with open(_file_path(local_file_path), 'wb') as fileobj:
@@ -95,6 +89,14 @@ class LocalFileStorage(FileStorage):
 
             with open(_file_path(local_file_path), 'wb') as fileobj:
                 fileobj.write(content)
+
+        metadata = {'filename': filename or 'unknown',
+                    'content_type': content_type,
+                    'content_length': os.path.getsize(local_file_path),
+                    'last_modified': utils.timestamp()}
+
+        with open(_metadata_path(local_file_path), 'w') as metadatafile:
+            metadatafile.write(json.dumps(metadata))
 
     def create(self, content, filename=None, content_type=None):
         new_file_id = str(uuid.uuid1())

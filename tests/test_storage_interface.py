@@ -218,10 +218,7 @@ class TestLocalFileStorage(BaseStorageTestFixture):
         self.fs = LocalFileStorage('./lfs')
 
     def teardown(self):
-        try:
-            shutil.rmtree('./lfs')
-        except:
-            pass
+        shutil.rmtree('./lfs', ignore_errors=True)
 
 
 class TestGridFSFileStorage(BaseStorageTestFixture):

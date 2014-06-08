@@ -23,6 +23,7 @@ class GridFSStoredFile(StoredFile):
 
         metadata_info = {'filename': gridout.filename,
                          'content_type': gridout.content_type,
+                         'content_length': gridout.length,
                          'last_modified': None}
 
         try:
