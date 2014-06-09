@@ -1,25 +1,34 @@
 from __future__ import absolute_import
 import sqlalchemy.types as types
+from depot.manager import get_depot
+from .utils import FileInfo
 
 
 class FileField(types.TypeDecorator):
     impl = types.Unicode
 
-    def __init__(self, filters=tuple(), *args, **kw):
+    def __init__(self, filters=tuple(), depot=None, *args, **kw):
         super(FileField, self).__init__(*args, **kw)
         self._filters = filters
+        self._depot = depot
 
     def load_dialect_impl(self, dialect):
         return dialect.type_descriptor(types.VARCHAR(4096))
 
     def process_bind_param(self, value, dialect):
-        pass
+        for filt in self._filters:
+            value = filt.before_save(value)
+
+        data = {}
+        f = get_depot(self._depot)
+        data['file_id'] = f
+        data['path'] = '%s/%s' % (self._depot, f)
+        return FileInfo.marshall(data)
 
     def process_result_value(self, value, dialect):
         if not value:
             return None
-
-        pass
+        return FileInfo(value)
 
 
 try:
