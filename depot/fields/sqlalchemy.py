@@ -47,7 +47,13 @@ class _SQLAMutationTracker(object):
     def _field_set(cls, target, value, oldvalue, initiator):
         if isinstance(value, UploadedFile):
             return value
-        return UploadedFile(value)
+
+        setted_property = inspect(target).mapper.get_property(initiator.key)
+        column_type = setted_property.columns[0].type
+        assert(isinstance(column_type, UploadedFileField))
+        
+        upload_type = column_type._upload_type
+        return upload_type(value)
 
     @classmethod
     def _mapper_configured(cls, mapper, class_):
