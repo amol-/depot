@@ -11,12 +11,14 @@ metadata = DeclarativeBase.metadata
 database_setup=False
 engine = None
 
+
 def setup_database():
     global engine, database_setup
     if not database_setup:
         engine = create_engine('sqlite:///:memory:')
         DBSession.configure(bind=engine)
         database_setup = True
+
 
 def clear_database():
     global engine, database_setup
@@ -27,18 +29,20 @@ def clear_database():
     DeclarativeBase.metadata.drop_all(engine)
     DeclarativeBase.metadata.create_all(engine)
 
+
 class Thing(DeclarativeBase):
     __tablename__ = 'thing'
 
     uid = Column(Integer, autoincrement=True, primary_key=True)
     name = Column(Unicode(16), unique=True)
 
+
 class ThingWithDate(DeclarativeBase):
     __tablename__ = 'thing_with_date'
 
     uid = Column(Integer, autoincrement=True, primary_key=True)
     name = Column(Unicode(16), unique=True)
-    updated_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
     related_thing_id = Column(Integer, ForeignKey('thing.uid'))
     related_thing = relation(Thing)

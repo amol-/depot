@@ -1,43 +1,115 @@
 from __future__ import absolute_import
 import sqlalchemy.types as types
-from depot.manager import get_depot
-from .utils import FileInfo
+from depot.manager import DepotManager
+from .upload import UploadedFile
+from sqlalchemy import event
+from sqlalchemy import orm
+from sqlalchemy.orm import ColumnProperty, Session
+from sqlalchemy.orm.session import object_session
+from sqlalchemy.orm.attributes import get_history
+from sqlalchemy import inspect
 
 
-class FileField(types.TypeDecorator):
+class UploadedFileField(types.TypeDecorator):
     impl = types.Unicode
 
-    def __init__(self, filters=tuple(), depot=None, *args, **kw):
-        super(FileField, self).__init__(*args, **kw)
+    def __init__(self, filters=tuple(), upload_type=UploadedFile, *args, **kw):
+        super(UploadedFileField, self).__init__(*args, **kw)
         self._filters = filters
-        self._depot = depot
+        self._upload_type = upload_type
 
     def load_dialect_impl(self, dialect):
         return dialect.type_descriptor(types.VARCHAR(4096))
 
     def process_bind_param(self, value, dialect):
-        for filt in self._filters:
-            value = filt.before_save(value)
+        if not value:
+            return None
 
-        data = {}
-        f = get_depot(self._depot)
-        data['file_id'] = f
-        data['path'] = '%s/%s' % (self._depot, f)
-        return FileInfo.marshall(data)
+        if not isinstance(value, self._upload_type):
+            raise ValueError('AttachmentField requires %s, '
+                             'got %s instead' % (self._upload_type, type(value)))
+
+        for filt in self._filters:
+            filt.on_save(value)
+
+        return value.encode()
 
     def process_result_value(self, value, dialect):
         if not value:
             return None
-        return FileInfo(value)
+        return self._upload_type.decode(value)
 
+
+class _SQLAMutationTracker(object):
+    mapped_entities = {}
+
+    @classmethod
+    def _field_set(cls, target, value, oldvalue, initiator):
+        if isinstance(value, UploadedFile):
+            return value
+        return UploadedFile(value)
+
+    @classmethod
+    def _mapper_configured(cls, mapper, class_):
+        for mapper_property in mapper.iterate_properties:
+            if isinstance(mapper_property, ColumnProperty):
+                for idx, col in enumerate(mapper_property.columns):
+                    if isinstance(col.type, UploadedFileField):
+                        if idx > 0:
+                            raise TypeError('UploadedFileField currently supports a single column')
+                        cls.mapped_entities.setdefault(class_, []).append(mapper_property.key)
+                        event.listen(mapper_property, 'set', cls._field_set, retval=True)
+
+    @classmethod
+    def _session_rollback(cls, session, previous_transaction):
+        if hasattr(session, '_depot_old'):
+            del session._depot_old
+        if hasattr(session, '_depot_new'):
+            for entry in session._depot_new:
+                depot, fileid = entry.split('/', 1)
+                depot = DepotManager.get(depot)
+                depot.delete(fileid)
+            del session._depot_new
+
+    @classmethod
+    def _session_committed(cls, session):
+        if hasattr(session, '_depot_old'):
+            for entry in session._depot_old:
+                depot, fileid = entry.split('/', 1)
+                depot = DepotManager.get(depot)
+                depot.delete(fileid)
+            del session._depot_old
+        if hasattr(session, '_depot_new'):
+            del session._depot_new
+
+    @classmethod
+    def _session_flush(cls, session, flush_context, instances):
+        for obj in session.new.union(session.dirty):
+            class_ = obj.__class__
+            tracked_columns = cls.mapped_entities.get(class_, tuple())
+            for col in tracked_columns:
+                history = get_history(obj, col)
+                session._depot_new = getattr(session, '_depot_new', set())
+                session._depot_new.update((f.path for f in history.added))
+                session._depot_old = getattr(session, '_depot_old', set())
+                session._depot_old.update((f.path for f in history.deleted))
+
+    @classmethod
+    def setup(cls):
+        event.listen(orm.mapper, 'mapper_configured', cls._mapper_configured)
+        event.listen(Session, 'after_soft_rollback', cls._session_rollback)
+        event.listen(Session, 'after_commit', cls._session_committed)
+        event.listen(Session, 'before_flush', cls._session_flush)
+
+_SQLAMutationTracker.setup()
 
 try:
     from sprox.sa.widgetselector import SAWidgetSelector
     from tw2.forms import FileField as TW2FileField
-    SAWidgetSelector.default_widgets.setdefault(FileField, TW2FileField)
+    SAWidgetSelector.default_widgets.setdefault(UploadedFileField, TW2FileField)
 
     from sprox.sa.validatorselector import SAValidatorSelector
     from tw2.forms import FileValidator
-    SAValidatorSelector.default_validators.setdefault(FileField, FileValidator)
+    SAValidatorSelector.default_validators.setdefault(UploadedFileField, FileValidator)
 except ImportError:
     pass

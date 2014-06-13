@@ -5,11 +5,12 @@ from PIL import Image
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession, Thing
-from depot.fields.sqlalchemy import FileField
-
+from depot.fields.sqlalchemy import UploadedFileField
+from depot.manager import configure
 
 def setup():
     setup_database()
+    configure('default', {'depot.storage_path': './lfs'})
 
 def teardown():
     shutil.rmtree('./lfs', ignore_errors=True)
@@ -20,8 +21,9 @@ class Document(DeclarativeBase):
 
     uid = Column(Integer, autoincrement=True, primary_key=True)
     name = Column(Unicode(16), unique=True)
-    content = Column(FileField)
-    photo = Column(FileField(AttachedImage))
+    content = Column('content_col', UploadedFileField)
+    #photo = Column(FileField(AttachedImage))
+
 
 class TestSQLAAttachments(object):
     def __init__(self):
@@ -42,8 +44,37 @@ class TestSQLAAttachments(object):
 
         d = DBSession.query(Document).filter_by(name=u'Foo').first()
         assert d.content.file.read() == self.file_content
-        assert d.content.filename == os.path.basename(self.fake_file.name)
+        assert d.content.file.filename == os.path.basename(self.fake_file.name)
 
+    def test_edit_existing(self):
+        doc = Document(name=u'Foo2')
+        doc.content = open(self.fake_file.name)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name=u'Foo2').first()
+        d.content = 'HELLO'
+        DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+    def test_edit_existing_rollback(self):
+        doc = Document(name=u'Foo3')
+        doc.content = open(self.fake_file.name)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name=u'Foo3').first()
+        d.content = 'HELLO'
+        DBSession.flush()
+        DBSession.rollback()
+        DBSession.remove()
+
+"""
     def test_create_fromfield(self):
         field = cgi.FieldStorage()
         field.filename = 'test.jpg'
@@ -114,3 +145,4 @@ class TestSQLAImageAttachments(object):
         thumb = Image.open(d.photo.thumb_local_path)
         thumb.verify()
         assert thumb.format.upper() == d.photo.thumbnail_format.upper()
+"""

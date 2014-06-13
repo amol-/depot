@@ -1,12 +1,5 @@
 import importlib
 
-"""
-- METTERE UN DIZIONARIO DI DEPOT {nome: depot}.
-- ALLA CREAZIONE "from_config" VUOLE IL NOME DEL DEPOT.
-- STORARE IN UNA VARIABILE QUALE E` IL DEFAULT_DEPOT (se il dizionario ha sol o1 chiave autodetectarlo)
-COSI POI QUANDO SALVO UN FILE COME ATTACHMENT PUO` SALVARSI IL NOME DEL DEPOT DA CUI E` GESTITO
-QUANDO CHIEDO URL DI UN FILE, SE LO STORAGE NON FORNISCE URL DI PER SE (S3) IL MIDDLEWARE PUO` CHIEDERE AL DEPOT GIUSTO IL FILE
-"""
 
 class DepotManager(object):
     """Takes care of creating the :class:`FileStoreage` in charge of managing application files.
@@ -23,6 +16,12 @@ class DepotManager(object):
         if name not in cls._depots:
             raise RuntimeError('%s depot has not been configured' % (name,))
         cls._default_depot = name
+
+    @classmethod
+    def get_default(cls):
+        if cls._default_depot is None:
+            raise RuntimeError('Not depots have been configured!')
+        return cls._default_depot
 
     @classmethod
     def get(cls, name=None):
@@ -55,8 +54,7 @@ class DepotManager(object):
         if cls._default_depot is None:
             cls._default_depot = name
 
-        full_prefix = '%s.%s' % (prefix, name)
-        cls._depots[name] = cls.from_config(config, full_prefix)
+        cls._depots[name] = cls.from_config(config, prefix)
         return cls._depots[name]
 
     @classmethod
