@@ -75,7 +75,7 @@ class StoredFile(IOBase):
         If ``n`` is not specified or is ``-1`` the whole
         file content is read in memory and returned
         """
-        raise NotImplementedError
+        return
 
     @abstractmethod
     def close(self, *args, **kwargs):  # pragma: no cover
@@ -86,7 +86,7 @@ class StoredFile(IOBase):
         when closing the file, but they still are required to prevent
         further reads from a closed file.
         """
-        raise NotImplementedError
+        return
 
     @abstractproperty
     def closed(self):  # pragma: no cover
@@ -95,7 +95,7 @@ class StoredFile(IOBase):
         When ``closed`` return ``True`` it won't be possible
         to read anoymore from this file.
         """
-        raise NotImplementedError
+        return
 
     @property
     def public_url(self):
@@ -114,6 +114,7 @@ class StoredFile(IOBase):
                                                                          self.filename,
                                                                          self.content_type,
                                                                          self.last_modified)
+
 
 class FileStorage(with_metaclass(ABCMeta, object)):
     """Interface for storage providers.
@@ -172,7 +173,7 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         a :class:`StoredFile` instance or should raise ``IOError``
         if the file is not found.
         """
-        raise NotImplementedError
+        return
 
     @abstractmethod
     def create(self, content, filename=None, content_type=None):  # pragma: no cover
@@ -182,7 +183,7 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         or a :class:`cgi.FieldStorage`. When ``filename`` and ``content_type``
         parameters are not provided they are deducted from the content itself.
         """
-        raise NotImplementedError
+        return
 
     @abstractmethod
     def replace(self, file_or_id, content, filename=None, content_type=None):  # pragma: no cover
@@ -193,14 +194,14 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         provided or can be deducted by the ``content`` itself they will also replace
         the previous values, otherwise the current values are kept.
         """
-        raise NotImplementedError
+        return
 
     @abstractmethod
     def delete(self, file_or_id):  # pragma: no cover
         """Deletes a file. If the file didn't exist it will just do nothing."""
-        raise NotImplementedError
+        return
 
     @abstractmethod
     def exists(self, file_or_id):  # pragma: no cover
         """Returns if a file or its ID still exist."""
-        raise NotImplementedError
+        return

@@ -1,7 +1,7 @@
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz
 from time import gmtime, time
-from .manager import get_depot
+from .manager import DepotManager
 
 _BLOCK_SIZE = 4096 * 64 # 256K
 
@@ -125,6 +125,9 @@ class DepotMiddleware(object):
         self.mountpoint = mountpoint
         self.cache_max_age = cache_max_age
 
+    def url_for(self, path):
+        return '/'.join((self.mountpoint, path))
+
     def _404_response(self, start_response):
         start_response('404 Not Found', [('Content-Type', 'text/html')])
         return ['''\
@@ -163,7 +166,7 @@ class DepotMiddleware(object):
             return self._404_response(start_response)
 
         __, depot, fileid = full_path[:3]
-        depot = get_depot(depot)
+        depot = DepotManager.get(depot)
         if not depot:
             return self._404_response(start_response)
 

@@ -6,14 +6,21 @@ from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession, Thing
 from depot.fields.sqlalchemy import UploadedFileField
-from depot.manager import configure
+from depot.manager import DepotManager, get_file
+from .utils import create_cgifs
+from depot.fields.specialized.image import UploadedImageWithThumb
 
 def setup():
     setup_database()
-    configure('default', {'depot.storage_path': './lfs'})
+
+    DepotManager._clear()
+    DepotManager.configure('default', {'depot.storage_path': './lfs'})
+    DepotManager.make_middleware(None)
+
 
 def teardown():
-    shutil.rmtree('./lfs', ignore_errors=True)
+    #shutil.rmtree('./lfs', ignore_errors=True)
+    pass
 
 
 class Document(DeclarativeBase):
@@ -22,7 +29,7 @@ class Document(DeclarativeBase):
     uid = Column(Integer, autoincrement=True, primary_key=True)
     name = Column(Unicode(16), unique=True)
     content = Column('content_col', UploadedFileField)
-    #photo = Column(FileField(AttachedImage))
+    photo = Column(UploadedFileField(upload_type=UploadedImageWithThumb))
 
 
 class TestSQLAAttachments(object):
@@ -55,10 +62,22 @@ class TestSQLAAttachments(object):
         DBSession.remove()
 
         d = DBSession.query(Document).filter_by(name=u'Foo2').first()
+        old_file =  d.content.path
+
         d.content = 'HELLO'
+        new_file = d.content.path
+
         DBSession.flush()
         DBSession.commit()
         DBSession.remove()
+
+        f = get_file(new_file).read() == 'HELLO'
+
+        try:
+            fold = get_file(old_file)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass
 
     def test_edit_existing_rollback(self):
         doc = Document(name=u'Foo3')
@@ -69,16 +88,25 @@ class TestSQLAAttachments(object):
         DBSession.remove()
 
         d = DBSession.query(Document).filter_by(name=u'Foo3').first()
+        old_file =  d.content.path
+
         d.content = 'HELLO'
+        new_file = d.content.path
+
         DBSession.flush()
         DBSession.rollback()
         DBSession.remove()
 
-"""
+        f = get_file(old_file).read() == self.file_content
+
+        try:
+            fold = get_file(new_file)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass
+
     def test_create_fromfield(self):
-        field = cgi.FieldStorage()
-        field.filename = 'test.jpg'
-        field.file = open(self.fake_file.name)
+        field = create_cgifs('image/jpeg', self.fake_file, 'test.jpg')
 
         doc = Document(name=u'Foo', content=field)
         DBSession.add(doc)
@@ -87,9 +115,19 @@ class TestSQLAAttachments(object):
 
         d = DBSession.query(Document).filter_by(name=u'Foo').first()
         assert d.content.file.read() == self.file_content
-        assert d.content.filename == os.path.basename('test.jpg')
-        assert d.content.url.startswith('/attachments')
-        assert d.content.url.endswith('test.jpg')
+        assert d.content.filename == 'test.jpg'
+        assert d.content.content_type == 'image/jpeg', d.content.content_type
+        assert d.content.url == '/depot/%s' % d.content.path
+
+    def test_create_empty(self):
+        doc = Document(name=u'Foo', content=None)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u'Foo').first()
+        assert d.content is None
+
 
 class TestSQLAImageAttachments(object):
     def __init__(self):
@@ -101,6 +139,7 @@ class TestSQLAImageAttachments(object):
 
     def setup(self):
         clear_database()
+        self.fake_file.seek(0)
 
     def test_create_fromfile(self):
         doc = Document(name=u'Foo')
@@ -126,13 +165,12 @@ class TestSQLAImageAttachments(object):
         d = DBSession.query(Document).filter_by(name=u'Foo').first()
         assert d.photo.file.read() == self.file_content
         assert d.photo.filename == field.filename
-        assert d.photo.url.startswith('/attachments/')
-        assert d.photo.url.endswith(field.filename)
+        assert d.photo.url == '/depot/%s' % d.photo.path
+        assert d.photo.thumb_url == '/depot/%s' % d.photo.thumb_path
+        assert d.photo.url != d.photo.thumb_url
 
     def test_thumbnail(self):
-        field = cgi.FieldStorage()
-        field.filename = 'test.gif'
-        field.file = open(self.fake_file.name)
+        field = create_cgifs('image/gif', self.fake_file, 'test.gif')
 
         doc = Document(name=u'Foo', photo=field)
         DBSession.add(doc)
@@ -140,9 +178,46 @@ class TestSQLAImageAttachments(object):
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u'Foo').first()
-        assert os.path.exists(d.photo.thumb_local_path)
+        assert os.path.exists(d.photo.thumb_file._file_path)
 
-        thumb = Image.open(d.photo.thumb_local_path)
+        thumb = Image.open(d.photo.thumb_file._file_path)
         thumb.verify()
         assert thumb.format.upper() == d.photo.thumbnail_format.upper()
-"""
+
+    def test_public_url(self):
+        doc = Document(name=u'Foo')
+        doc.photo = open(self.fake_file.name)
+        doc.content = open(self.fake_file.name)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u'Foo').first()
+        d.photo['_public_url'] = 'PUBLIC_URL'
+        d.photo['_thumb_public_url'] = 'THUMB_PUBLIC_URL'
+        assert d.photo.url == 'PUBLIC_URL'
+        assert d.photo.thumb_url == 'THUMB_PUBLIC_URL'
+
+    def test_rollback(self):
+        doc = Document(name=u'Foo3')
+        doc.photo = open(self.fake_file.name)
+        DBSession.add(doc)
+        DBSession.flush()
+
+        uploaded_file = doc.photo.path
+        uploaded_thumb = doc.photo.thumb_path
+
+        DBSession.rollback()
+        DBSession.remove()
+
+        try:
+            fold = get_file(uploaded_file)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass
+
+        try:
+            fold = get_file(uploaded_thumb)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass

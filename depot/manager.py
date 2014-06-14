@@ -2,14 +2,23 @@ import importlib
 
 
 class DepotManager(object):
-    """Takes care of creating the :class:`FileStoreage` in charge of managing application files.
+    """Takes care of managing the whole Depot environment for the application.
+
+    DepotManager tracks the created depots, the current default depot,
+    and the WSGI middleware in charge of serving files for local depots.
 
     While this is used to create the default depot used by the application it can
     also create additional depots using the :meth:`new` method.
 
+    In case you need to migrate your application to a different storage while
+    keeping compatibility with previously stored file simply change the default depot
+    through :meth:`set_default` all previously stored file will continue to work
+    on the old depot while new files will be uploaded to the new default one.
+
     """
     _default_depot = None
     _depots = {}
+    _middleware = None
 
     @classmethod
     def set_default(cls, name):
@@ -24,6 +33,18 @@ class DepotManager(object):
         return cls._default_depot
 
     @classmethod
+    def set_middleare(cls, mw):
+        if cls._middleware is not None:
+            raise RuntimeError('There is already a WSGI middleware registered')
+        cls._middleware = mw
+
+    @classmethod
+    def get_middleware(cls):
+        if cls._middleware is None:
+            raise RuntimeError('No WSGI middleware currently registered')
+        return cls._middleware
+
+    @classmethod
     def get(cls, name=None):
         """Gets the application wide depot instance.
 
@@ -34,6 +55,12 @@ class DepotManager(object):
         if name is None:
             name = cls._default_depot
         return cls._depots.get(name)
+
+    @classmethod
+    def get_file(cls, path):
+        depot_name, file_id = path.split('/', 1)
+        depot = cls.get(depot_name)
+        return depot.get(file_id)
 
     @classmethod
     def configure(cls, name, config, prefix='depot.'):
@@ -58,7 +85,21 @@ class DepotManager(object):
         return cls._depots[name]
 
     @classmethod
-    def new(cls, backend, **options):
+    def make_middleware(cls, app, **options):
+        """Creates the application WSGI middleware in charge of serving local files.
+
+        A Depot middleware is required if your application wants to serve files from
+        storages that don't directly provide and HTTP interface like
+        :class:`depot.io.local.LocalFileStorage`_ and :class:`depot.io.gridfs.GridFSStorage`_
+
+        """
+        from depot.middleware import DepotMiddleware
+        mw = DepotMiddleware(app, **options)
+        cls.set_middleare(mw)
+        return mw
+
+    @classmethod
+    def _new(cls, backend, **options):
         module, classname = backend.rsplit('.', 1)
         backend = importlib.import_module(module)
         class_ = getattr(backend, classname)
@@ -80,10 +121,21 @@ class DepotManager(object):
         prefixlen = len(prefix)
         options = dict((k[prefixlen:], config[k]) for k in config.keys() if k.startswith(prefix))
         options.pop(prefix+'backend', None)
+        return cls._new(backend, **options)
 
-        return cls.new(backend, **options)
+    @classmethod
+    def _clear(cls):
+        """This is only for testing pourposes, resets the DepotManager status
 
+        This is to simplify writing test fixtures, resets the DepotManager global
+        status and removes the informations related to the current configured depots
+        and middleware.
+        """
+        cls._default_depot = None
+        cls._depots = {}
+        cls._middleware = None
 
 get_depot = DepotManager.get
+get_file = DepotManager.get_file
 configure = DepotManager.configure
 set_default = DepotManager.set_default

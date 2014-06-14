@@ -1,8 +1,5 @@
 from nose.tools import raises
 from nose import SkipTest
-from depot.io.local import LocalFileStorage
-from depot.io.gridfs import GridFSStorage
-from depot.io.awss3 import S3Storage
 import shutil
 import mock
 import datetime
@@ -215,6 +212,7 @@ class BaseStorageTestFixture(object):
 
 class TestLocalFileStorage(BaseStorageTestFixture):
     def setup(self):
+        from depot.io.local import LocalFileStorage
         self.fs = LocalFileStorage('./lfs')
 
     def teardown(self):
@@ -223,6 +221,11 @@ class TestLocalFileStorage(BaseStorageTestFixture):
 
 class TestGridFSFileStorage(BaseStorageTestFixture):
     def setup(self):
+        try:
+            from depot.io.gridfs import GridFSStorage
+        except ImportError:
+            raise SkipTest('PyMongo not installed')
+
         self.fs = GridFSStorage('mongodb://localhost/gridfs_example', 'testfs')
 
     def teardown(self):
@@ -231,6 +234,11 @@ class TestGridFSFileStorage(BaseStorageTestFixture):
 
 class TestS3FileStorage(BaseStorageTestFixture):
     def setup(self):
+        try:
+            from depot.io.awss3 import S3Storage
+        except ImportError:
+            raise SkipTest('Boto not installed')
+
         env = os.environ
         access_key_id = env.get('AWS_ACCESS_KEY_ID')
         secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')

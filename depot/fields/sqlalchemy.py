@@ -1,16 +1,36 @@
 from __future__ import absolute_import
-import sqlalchemy.types as types
-from depot.manager import DepotManager
-from .upload import UploadedFile
+import itertools
+
+from sqlalchemy import types
 from sqlalchemy import event
 from sqlalchemy import orm
-from sqlalchemy.orm import ColumnProperty, Session
-from sqlalchemy.orm.session import object_session
-from sqlalchemy.orm.attributes import get_history
 from sqlalchemy import inspect
+from sqlalchemy.orm import ColumnProperty
+from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import get_history
+
+from depot.manager import DepotManager
+from .upload import UploadedFile
 
 
 class UploadedFileField(types.TypeDecorator):
+    """Provides support for storing attachments to SQLAlchemy models.
+
+    ``UploadedFileField`` can be used as a Column type to store files
+    into the model. The actuall file itself will be uploaded to the
+    default Depot, and only the :class:`depot.fields.upload.UploadedFile`
+    informations will be stored on the database.
+
+    The ``UploadedFileField`` is transaction aware, so it will delete
+    every uploaded file whenever the transaction is rolled back and will
+    delete any old file whenever the transaction is committed. This is
+    the reason you should never associate the same :class:`depot.fields.upload.UploadedFile`
+    to two different ``UploadedFileField``, otherwise you might delete a file
+    already used by another model. It is usually best to just set the ``file``
+    or ``bytes`` as content of the column and let the ``UploadedFileField``
+    create the :class:`depot.fields.upload.UploadedFile` by itself whenever it's content is set.
+
+    """
     impl = types.Unicode
 
     def __init__(self, filters=tuple(), upload_type=UploadedFile, *args, **kw):
@@ -45,7 +65,7 @@ class _SQLAMutationTracker(object):
 
     @classmethod
     def _field_set(cls, target, value, oldvalue, initiator):
-        if isinstance(value, UploadedFile):
+        if value is None or isinstance(value, UploadedFile):
             return value
 
         set_property = inspect(target).mapper.get_property(initiator.key)
@@ -95,10 +115,15 @@ class _SQLAMutationTracker(object):
             tracked_columns = cls.mapped_entities.get(class_, tuple())
             for col in tracked_columns:
                 history = get_history(obj, col)
+                added_files = itertools.chain(*(f.files for f in history.added
+                                               if f is not None))
+                deleted_files = itertools.chain(*(f.files for f in history.deleted
+                                                 if f is not None))
+
                 session._depot_new = getattr(session, '_depot_new', set())
-                session._depot_new.update((f.path for f in history.added))
+                session._depot_new.update(added_files)
                 session._depot_old = getattr(session, '_depot_old', set())
-                session._depot_old.update((f.path for f in history.deleted))
+                session._depot_old.update(deleted_files)
 
     @classmethod
     def setup(cls):
