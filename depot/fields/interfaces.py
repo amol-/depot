@@ -45,6 +45,14 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
 
     @abstractmethod
     def process_content(self, content):
+        """Process content in the given depot.
+
+        This is implemented by subclasses to provide some kind of behaviour on the
+        content in the related Depot. The default implementation is provided by
+        :class:`depot.fields.upload.UploadedFile` which stores the content into
+        the depot.
+
+        """
         return
 
     def __getitem__(self, key):

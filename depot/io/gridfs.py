@@ -52,6 +52,12 @@ class GridFSStoredFile(StoredFile):
 
 
 class GridFSStorage(FileStorage):
+    """:class:`depot.io.interfaces.FileStorage` implementation that stores files on MongoDB.
+
+    All the files are stored using GridFS to the database pointed by the ``mongouri`` into
+    the collection named ``collection``.
+
+    """
     def __init__(self, mongouri, collection='filedepot'):
         self._cli = MongoClient(mongouri)
         self._db = self._cli.get_default_database()

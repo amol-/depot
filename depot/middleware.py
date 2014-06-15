@@ -120,6 +120,14 @@ class FileServeApp(object):
 
 
 class DepotMiddleware(object):
+    """WSGI Middleware in charge of serving Depot files.
+
+    Usually created using :meth:`depot.manager.DepotManager.make_middleware`,
+    it's a WSGI middleware that serves files stored inside depots that do not
+    provide a public HTTP url. For depot that provide a public url the
+    request is redirected to the public url.
+
+    """
     def __init__(self, app, mountpoint='/depot', cache_max_age=3600*24*7):
         self.app = app
         self.mountpoint = mountpoint
@@ -142,6 +150,7 @@ class DepotMiddleware(object):
         </html>''']
 
     def _301_response(self, start_response, location):
+        # Should also set Cache-Control to keep around the 301
         start_response('301 Moved Permanently', [('Content-Type', 'text/html'),
                                                  ('Location', location)])
         return ['''\

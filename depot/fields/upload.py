@@ -4,7 +4,7 @@ import json
 
 
 class UploadedFile(DepotFileInfo):
-    """Simple :class:`DepotFileInfo` implementation that stores plain files.
+    """Simple :class:`depot.fields.interfaces.DepotFileInfo` implementation that stores files.
 
     Takes a file as content and uploads it to the depot while saving around
     most file informations. Pay attention that if the file gets replaced

@@ -5,7 +5,33 @@ API
 
 This part of the documentation covers all the public classes in Depot.
 
-Interfaces
+Application Support
+-----------------------
+
+.. autoclass:: depot.manager.DepotManager
+    :members:
+
+.. autoclass:: depot.middleware.DepotMiddleware
+    :members:
+
+
+Database Support
+----------------------
+
+.. module:: depot.fields
+
+.. autoclass:: depot.fields.sqlalchemy.UploadedFileField
+    :members:
+
+.. autoclass:: depot.fields.interfaces.DepotFileInfo
+    :members:
+
+.. autoclass:: depot.fields.upload.UploadedFile
+    :members:
+    :inherited-members:
+
+
+Storing Files
 ------------------------
 
 .. module:: depot.io.interfaces
@@ -18,3 +44,11 @@ Interfaces
    :members:
    :inherited-members:
 
+.. autoclass:: depot.io.local.LocalFileStorage
+    :members:
+
+.. autoclass:: depot.io.gridfs.GridFSStorage
+    :members:
+
+.. autoclass:: depot.io.awss3.S3Storage
+    :members:

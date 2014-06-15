@@ -14,7 +14,6 @@ and easily relate them to your application models (**SQLAlchemy**, **Ming**)
 like you would for plain data.
 
 
-
 User Guide
 =================
 

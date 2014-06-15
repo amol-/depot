@@ -54,6 +54,13 @@ class S3StoredFile(StoredFile):
 
 
 class S3Storage(FileStorage):
+    """:class:`depot.io.interfaces.FileStorage` implementation that stores files on S3.
+
+    All the files are stored inside a bucket named ``bucket`` to which Depot connects
+    to using ``access_key_id`` and ``secret_access_key``.
+
+    """
+
     def __init__(self, access_key_id, secret_access_key, bucket=None):
         if bucket is None:
             bucket = 'filedepot-%s' % (access_key_id.lower(),)

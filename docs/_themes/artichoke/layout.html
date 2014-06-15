@@ -2,10 +2,9 @@
     agogo/layout.html
     ~~~~~~~~~~~~~~~~~
 
-    Sphinx layout template for the agogo theme, originally written
-    by Andi Albrecht.
+    Sphinx layout template for Depot, based on the agogo theme,
+    originally written by Andi Albrecht.
 
-    :copyright: Copyright 2007-2010 by the Sphinx team, see AUTHORS.
     :license: BSD, see LICENSE for details.
 #}
 {% extends "basic/layout.html" %}
@@ -39,7 +38,6 @@
         </div>
         <div class="sidebar">
           {%- block sidebartoc %}
-          <h3>{{ _('Table Of Contents') }}</h3>
           {{ toctree() }}
           {%- endblock %}
           {%- block sidebarsearch %}
