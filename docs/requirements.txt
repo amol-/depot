@@ -1,1 +1,4 @@
+sqlalchemy
+boto
+pymongo
 -e git://github.com/amol-/depot.git@master#egg=filedepot
