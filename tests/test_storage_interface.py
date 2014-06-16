@@ -257,4 +257,3 @@ class TestS3FileStorage(BaseStorageTestFixture):
             self.fs._conn.delete_bucket(self.fs._bucket.name)
         except:
             pass
-

@@ -50,6 +50,14 @@ class TestS3FileStorage(object):
             fs = S3Storage(*self.cred)
             assert fs._bucket == 'YES'
 
+    def test_public_url(self):
+        fid = str(uuid.uuid1())
+        key = self.fs._bucket.new_key(fid)
+        key.set_contents_from_string(FILE_CONTENT)
+
+        f = self.fs.get(fid)
+        assert f.public_url.endswith('.s3.amazonaws.com/%s' % fid)
+
     def teardown(self):
         keys = [key.name for key in self.fs._bucket]
         if keys:
