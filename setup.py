@@ -27,7 +27,7 @@ setup(name='filedepot',
       license='MIT',
       packages=find_packages(exclude=['ez_setup']),
       include_package_data=True,
-      tests_require = ['mock', 'pymongo >= 2.7', 'boto'],
+      tests_require = ['mock', 'pymongo >= 2.7', 'boto', 'sqlalchemy'],
       test_suite='nose.collector',
       zip_safe=False,
 )
