@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-import os
+import os, sys
 
 version = '0.0.1'
 
@@ -8,6 +8,13 @@ try:
     README = open(os.path.join(here, 'README.rst')).read()
 except IOError:
     README = ''
+
+TEST_DEPENDENCIES = ['mock', 'pymongo >= 2.7', 'sqlalchemy']
+
+py_version = sys.version_info[:2]
+if py_version[0] == 2:
+    TEST_DEPENDENCIES += ['boto']
+
 
 setup(name='filedepot',
       version=version,
@@ -27,7 +34,7 @@ setup(name='filedepot',
       license='MIT',
       packages=find_packages(exclude=['ez_setup']),
       include_package_data=True,
-      tests_require = ['mock', 'pymongo >= 2.7', 'boto', 'sqlalchemy'],
+      tests_require=TEST_DEPENDENCIES,
       test_suite='nose.collector',
       zip_safe=False,
 )
