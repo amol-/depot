@@ -1,7 +1,6 @@
 import os
 from nose import SkipTest
 import uuid
-from boto.s3.connection import S3Connection
 import mock
 from depot.io.awss3 import S3Storage
 
@@ -16,10 +15,11 @@ class TestS3FileStorage(object):
         if access_key_id is None or secret_access_key is None:
             raise SkipTest('Amazon S3 credentials not available')
 
-        self.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(),)
+        PID = os.getpid()  # Travis runs multiple tests concurrently
+        self.default_bucket_name = 'filedepot-%s-%s' % (access_key_id.lower(), PID)
         self.cred = (access_key_id, secret_access_key)
         self.fs = S3Storage(access_key_id, secret_access_key,
-                            'filedepot-testfs-%s' % access_key_id.lower())
+                            'filedepot-testfs-%s-%s' % (access_key_id.lower(), PID))
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())

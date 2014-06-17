@@ -245,8 +245,9 @@ class TestS3FileStorage(BaseStorageTestFixture):
         if access_key_id is None or secret_access_key is None:
             raise SkipTest('Amazon S3 credentials not available')
 
+        PID = os.getpid()
         self.fs = S3Storage(access_key_id, secret_access_key,
-                            'filedepot-testfs-%s' % access_key_id.lower())
+                            'filedepot-testfs-%s-%s' % (access_key_id.lower(), PID))
 
     def teardown(self):
         keys = [key.name for key in self.fs._bucket]
