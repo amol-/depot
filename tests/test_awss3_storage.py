@@ -2,13 +2,20 @@ import os
 from nose import SkipTest
 import uuid
 import mock
-from depot.io.awss3 import S3Storage
 
+
+S3Storage = None
 FILE_CONTENT = b'HELLO WORLD'
 
 
 class TestS3FileStorage(object):
     def setup(self):
+        try:
+            global S3Storage
+            from depot.io.awss3 import S3Storage
+        except ImportError:
+            raise SkipTest('Boto not installed')
+
         env = os.environ
         access_key_id = env.get('AWS_ACCESS_KEY_ID')
         secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
