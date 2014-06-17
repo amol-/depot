@@ -10,6 +10,15 @@ Getting a Depot
 Saving and Retrieving Files
 ------------------------------
 
+Replacing and Deleting Files
+------------------------------
+
+Files Metadata
+------------------------------
+
+Serving Files on HTTP
+------------------------------
+
 Using Multiple Depots
 ------------------------------
 
@@ -20,6 +29,9 @@ Depot with SQLAlchemy
 =============================
 
 Attaching to Models
+------------------------------
+
+Uploaded Files Informations
 ------------------------------
 
 Session Awareness

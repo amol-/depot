@@ -13,7 +13,7 @@ a storage backend at your choice (**Local**, **S3**, **GridFS**)
 and easily relate them to your application models (**SQLAlchemy**, **Ming**)
 like you would for plain data.
 
-Depot is a swiss army knife for storing files that provides:
+Depot is a swiss army knife for files that provides:
 
     - Multiple backends: Store your data on GridFS or S3 with a *single API*
     - Meant for *Evolution*: Change backend when you want, old data will continue to work
