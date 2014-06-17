@@ -1,5 +1,5 @@
 import os
-from unittest import SkipTest
+from nose import SkipTest
 import uuid
 from boto.s3.connection import S3Connection
 import mock
