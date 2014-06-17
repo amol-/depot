@@ -18,12 +18,12 @@ Depot is a swiss army knife for files that provides:
     - Multiple backends: Store your data on GridFS or S3 with a *single API*
     - Meant for *Evolution*: Change backend when you want, old data will continue to work
     - Integrates with your *ORM*: When using SQLAlchemy attachments are handled like a
-        plain model attribute. It's also *session ready* rollback causes the files to be deleted.
+      plain model attribute. It's also *session ready* rollback causes the files to be deleted.
     - Smart *File Serving*: When the backend already provides a public HTTP endpoint (like S3)
-        the WSGI :class:`depot.middleware.DepotMiddleware` will serve it instead of loading the files.
+      the WSGI :class:`depot.middleware.DepotMiddleware` will serve it instead of loading the files.
     - Flexible: The :class:`depot.manager.DepotManager` will handle configuration,
-        middleware creation and files for your application, but if you want you can manually
-        create multiple depots or middlewares without using the manager.
+      middleware creation and files for your application, but if you want you can manually
+      create multiple depots or middlewares without using the manager.
 
 Depot can be used :ref:`Standalone <depot_standalone>` or
 :ref:`With your ORM <depot_with_your_orm>`.
