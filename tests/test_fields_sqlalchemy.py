@@ -4,11 +4,12 @@ import tempfile, os, shutil, cgi, base64
 from PIL import Image
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
-from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession, Thing
+from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
 from depot.fields.sqlalchemy import UploadedFileField
 from depot.manager import DepotManager, get_file
 from .utils import create_cgifs
 from depot.fields.specialized.image import UploadedImageWithThumb
+
 
 def setup():
     setup_database()

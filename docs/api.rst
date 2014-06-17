@@ -1,7 +1,7 @@
 .. _api:
 
-API
-===
+API Reference
+===============
 
 This part of the documentation covers all the public classes in Depot.
 
