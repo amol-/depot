@@ -110,6 +110,15 @@ class _SQLAMutationTracker(object):
 
     @classmethod
     def _session_flush(cls, session, flush_context, instances):
+        for obj in session.deleted:
+            class_ = obj.__class__
+            tracked_columns = cls.mapped_entities.get(class_, tuple())
+            for col in tracked_columns:
+                value = getattr(obj, col)
+                if value is not None:
+                    session._depot_old = getattr(session, '_depot_old', set())
+                    session._depot_old.update(value.files)
+
         for obj in session.new.union(session.dirty):
             class_ = obj.__class__
             tracked_columns = cls.mapped_entities.get(class_, tuple())

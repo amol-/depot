@@ -71,7 +71,7 @@ class TestSQLAAttachments(object):
         DBSession.commit()
         DBSession.remove()
 
-        f = get_file(new_file).read() == 'HELLO'
+        assert get_file(new_file).read() == 'HELLO'
 
         try:
             fold = get_file(old_file)
@@ -97,7 +97,7 @@ class TestSQLAAttachments(object):
         DBSession.rollback()
         DBSession.remove()
 
-        f = get_file(old_file).read() == self.file_content
+        assert get_file(old_file).read() == self.file_content
 
         try:
             fold = get_file(new_file)
@@ -127,6 +127,46 @@ class TestSQLAAttachments(object):
 
         d = DBSession.query(Document).filter_by(name=u'Foo').first()
         assert d.content is None
+
+    def test_delete_existing(self):
+        doc = Document(name=u'Foo2')
+        doc.content = open(self.fake_file.name)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name=u'Foo2').first()
+        old_file = d.content.path
+        DBSession.delete(d)
+
+        DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        try:
+            fold = get_file(old_file)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass
+
+    def test_delete_existing_rollback(self):
+        doc = Document(name=u'Foo3')
+        doc.content = open(self.fake_file.name)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name=u'Foo3').first()
+        old_file = d.content.path
+        DBSession.delete(d)
+
+        DBSession.flush()
+        DBSession.rollback()
+        DBSession.remove()
+
+        assert get_file(old_file).read() == self.file_content
 
 
 class TestSQLAImageAttachments(object):
