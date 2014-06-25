@@ -130,14 +130,14 @@ class TestSQLAAttachments(object):
         assert d.content is None
 
     def test_delete_existing(self):
-        doc = Document(name=u'Foo2')
+        doc = Document(name=u_('Foo2'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Document).filter_by(name=u'Foo2').first()
+        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
         old_file = d.content.path
         DBSession.delete(d)
 
@@ -152,14 +152,14 @@ class TestSQLAAttachments(object):
             pass
 
     def test_delete_existing_rollback(self):
-        doc = Document(name=u'Foo3')
+        doc = Document(name=u_('Foo3'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Document).filter_by(name=u'Foo3').first()
+        d = DBSession.query(Document).filter_by(name=u_('Foo3')).first()
         old_file = d.content.path
         DBSession.delete(d)
 
