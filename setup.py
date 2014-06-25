@@ -15,6 +15,9 @@ py_version = sys.version_info[:2]
 if py_version[0] == 2:
     TEST_DEPENDENCIES += ['boto']
 
+INSTALL_DEPENDENCIES = []
+if py_version == (2, 6):
+    INSTALL_DEPENDENCIES += ['importlib']
 
 setup(name='filedepot',
       version=version,
@@ -34,6 +37,7 @@ setup(name='filedepot',
       license='MIT',
       packages=find_packages(exclude=['ez_setup']),
       include_package_data=True,
+      install_requires=INSTALL_DEPENDENCIES,
       tests_require=TEST_DEPENDENCIES,
       test_suite='nose.collector',
       zip_safe=False,

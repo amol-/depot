@@ -9,7 +9,7 @@
 body {
   font-family: {{ theme_bodyfont }};
   line-height: 1.4em;
-  font-size: 17px;
+  font-size: 19px;
   color: #3E4349;
   border-top: solid 3px {{ theme_linkcolor }};
   background: url("bg.png") repeat scroll 0 0 #EBEBEB;
@@ -121,7 +121,6 @@ dt:target, .highlighted {
 
 div.header {
   padding-top: 10px;
-  padding-bottom: 10px;
 }
 
 div.header h1 {
@@ -150,6 +149,8 @@ div.header div.rel a {
 
 p.logo {
     float: right;
+    margin-bottom: 10px;
+    margin-top: 20px;
 }
 
 img.logo {
@@ -160,7 +161,7 @@ img.logo {
 
 /* Content */
 div.content-wrapper {
-  padding-top: 20px;
+  padding-top: 10px;
   padding-bottom: 20px;
 }
 
@@ -196,12 +197,14 @@ div.document .section:first-child {
 }
 
 div.document div.highlight {
-  padding: 3px;
+  padding: 20px;
   background-color: #eeeeec;
   border-top: 2px solid #dddddd;
   border-bottom: 2px solid #dddddd;
   margin-top: .8em;
   margin-bottom: .8em;
+  font-size: 90%;
+  line-height: 1.2em;
 }
 
 div.document h2 {

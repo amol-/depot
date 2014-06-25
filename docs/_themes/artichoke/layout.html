@@ -16,6 +16,7 @@
           <p class="logo"><a href="{{ pathto(master_doc) }}">
             <img class="logo" src="{{ pathto('_static/' + logo, 1) }}" alt="Logo"/>
           </a></p>
+          <br/>
         {%- endif %}
         <div class="rel">
           {%- for rellink in rellinks|reverse %}
@@ -40,6 +41,7 @@
           {%- block sidebartoc %}
           {{ toctree() }}
           {%- endblock %}
+
           {%- block sidebarsearch %}
           <h3 style="margin-top: 1.5em;">{{ _('Search') }}</h3>
           <form class="search" action="{{ pathto('search') }}" method="get">
