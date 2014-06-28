@@ -3,14 +3,17 @@ import shutil
 
 import tempfile, os, cgi, base64
 from PIL import Image
-from sqlalchemy.schema import Column
-from sqlalchemy.types import Unicode, Integer
-from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
-from depot.fields.sqlalchemy import UploadedFileField
+from depot.fields.ming import UploadedFileProperty
 from depot.manager import DepotManager, get_file
+from .base_ming import setup_database, clear_database, DBSession
+from ming.odm.declarative import MappedClass
+from ming.odm import FieldProperty
+from ming import schema as s, Field
 from .utils import create_cgifs
 from depot.fields.specialized.image import UploadedImageWithThumb
-from depot._compat import u_, bytes_
+from depot._compat import u_
+from nose import SkipTest
+
 
 def setup():
     setup_database()
@@ -24,16 +27,17 @@ def teardown():
     shutil.rmtree('./lfs', ignore_errors=True)
 
 
-class Document(DeclarativeBase):
-    __tablename__ = 'docu'
+class Document(MappedClass):
+    class __mongometa__:
+        session = DBSession
 
-    uid = Column(Integer, autoincrement=True, primary_key=True)
-    name = Column(Unicode(16), unique=True)
-    content = Column('content_col', UploadedFileField)
-    photo = Column(UploadedFileField(upload_type=UploadedImageWithThumb))
+    _id = FieldProperty(s.ObjectId)
+    name = FieldProperty(str)
+    content = UploadedFileProperty()
+    photo = UploadedFileProperty(upload_type=UploadedImageWithThumb)
 
 
-class TestSQLAAttachments(object):
+class TestMingAttachments(object):
     def __init__(self):
         self.file_content = b'this is the file content'
         self.fake_file = tempfile.NamedTemporaryFile()
@@ -44,33 +48,29 @@ class TestSQLAAttachments(object):
         clear_database()
 
     def test_create_fromfile(self):
-        doc = Document(name=u_('Foo'))
-        doc.content = open(self.fake_file.name, 'rb')
-        DBSession.add(doc)
+        doc = Document(name='Foo', content = open(self.fake_file.name, 'rb'))
         DBSession.flush()
-        DBSession.commit()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = Document.query.find(dict(name='Foo')).first()
         assert d.content.file.read() == self.file_content
         assert d.content.file.filename == os.path.basename(self.fake_file.name)
 
     def test_edit_existing(self):
         doc = Document(name=u_('Foo2'))
         doc.content = open(self.fake_file.name, 'rb')
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
-        DBSession.remove()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
-        old_file =  d.content.path
+        d = Document.query.find(dict(name='Foo2')).first()
+        old_file = d.content.path
 
         d.content = b'HELLO'
         new_file = d.content.path
 
         DBSession.flush()
-        DBSession.commit()
-        DBSession.remove()
+        DBSession.clear()
+
 
         assert get_file(new_file).read() == b'HELLO'
 
@@ -83,23 +83,20 @@ class TestSQLAAttachments(object):
     def test_edit_existing_rollback(self):
         doc = Document(name=u_('Foo3'))
         doc.content = open(self.fake_file.name, 'rb')
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
-        DBSession.remove()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo3')).first()
+
+        d = Document.query.find(dict(name='Foo3')).first()
         old_file = d.content.path
 
         d.content = b'HELLO'
         new_file = d.content.path
 
-        DBSession.flush()
-        DBSession.rollback()
-        DBSession.remove()
-
+        DBSession.clear()
         assert get_file(old_file).read() == self.file_content
 
+        raise SkipTest("Currently Ming Doesn't provide a way to handle discarded documents")
         try:
             fold = get_file(new_file)
             assert False, 'Should have raised IOError here'
@@ -110,11 +107,10 @@ class TestSQLAAttachments(object):
         field = create_cgifs('image/jpeg', self.fake_file, 'test.jpg')
 
         doc = Document(name=u_('Foo'), content=field)
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = Document.query.find(dict(name='Foo')).first()
         assert d.content.file.read() == self.file_content
         assert d.content.filename == 'test.jpg'
         assert d.content.content_type == 'image/jpeg', d.content.content_type
@@ -122,28 +118,25 @@ class TestSQLAAttachments(object):
 
     def test_create_empty(self):
         doc = Document(name=u_('Foo'), content=None)
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = Document.query.find(dict(name='Foo')).first()
         assert d.content is None
 
     def test_delete_existing(self):
         doc = Document(name=u_('Foo2'))
         doc.content = open(self.fake_file.name, 'rb')
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
-        DBSession.remove()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
+
+        d = Document.query.find(dict(name='Foo2')).first()
         old_file = d.content.path
-        DBSession.delete(d)
+        d.query.delete()
 
         DBSession.flush()
-        DBSession.commit()
-        DBSession.remove()
+        DBSession.clear()
 
         try:
             fold = get_file(old_file)
@@ -154,23 +147,19 @@ class TestSQLAAttachments(object):
     def test_delete_existing_rollback(self):
         doc = Document(name=u_('Foo3'))
         doc.content = open(self.fake_file.name, 'rb')
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
-        DBSession.remove()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo3')).first()
+
+        d = Document.query.find(dict(name='Foo3')).first()
         old_file = d.content.path
-        DBSession.delete(d)
-
-        DBSession.flush()
-        DBSession.rollback()
-        DBSession.remove()
+        d.delete()
+        DBSession.clear()
 
         assert get_file(old_file).read() == self.file_content
 
 
-class TestSQLAImageAttachments(object):
+class TestMingImageAttachments(object):
     def __init__(self):
         self.file_content = b'''R0lGODlhEQAUAPcAAC4uLjAwMDIyMjMzMjQ0NDU1NDY2Njk2Mzg4ODo6Oj49Ozw8PD4+PkE+OEA/PkhAN0tCNk5JPFFGNV1KMFhNNVFHOFJJPVVLPVhOPXZfKXVcK2ZQNGZXNGtZMnNcNHZeNnldMHJfOn1hKXVjOH9oO0BAQEJCQkREREVFREZGRklGQ05KQ0hISEpKSkxMTE5OTlZRSlFQT19XSFBQUFJSUlRUVGFUQmFVQ2ZZQGtdQnNiQqJ/HI1uIYBnLIllKoZrK4FqLoVqL4luLIpsLpt7J515JJ50KZhzLYFnMIFlM4ZlMIFkNI1uNoJoOoVrPIlvO49yMolwPpB2O5p4Op98PaB3IKN4JqN8J6h7I6J5LaZ+LLF+ILGGG7+JG72OGLKEI7aHIrOEJL2JI7mMN76YNcGJG8SOG8WLHMONH86eEs+aFsGSG8eQHMySG9uVFduXFdeeE9eaFdScF96YE9yaFOKcEuOdEtWgFNiiEduhE96pEuqlD+qmD+KpD+yoDu6rDuysDvCuDfCvDeuwD/SzC/a2CvGwDfKxDPi5Cfi5Cvq8CeCjEuehEOagEeijEOKoEOStFMOOK8+TLM6YNNChItGgLtylKt6gMNqgON6jPOChLfi/JOSrNeGvN9KhRtykRNWkSOCnQOCpSOawQue1T+a6Su67SOGsUO/AVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAARABQAAAj+AAEIHEiwoMAACBMqXIhQgMOHDwdAfEigYsUCT6KQScNjxwGLBAyINPBhCilUmxIV6uMlw0gEMJeMGWWqFCU8hA4JEgETQYIEDcRw6qRlwgMIGvJwkfAzwYIFXQBB8qHg6VMKFawuYNBBjaIqDhhI+cGgrNmyJXooGrShBJBKcIpwiFCibl0TehDdsWBCiBxLZuIwolMGiwcTJ4gUenThBAokSVRgGFJnzhYQJ1KsyRkkhWfPK87McWPEM4sRhgItCsGitQ5PmtxYUdK6BY4rf/zwYRNmUihRpyQdaUHchQsoX/Y4amTnUqZPoG7YMO7ihfUcYNC0eRMJExMqMKweW59BfkYMEk2ykHAio3x5GvDjy58Pv4b9+/jz2w8IADs='''
         self.file_content = base64.b64decode(self.file_content)
@@ -185,11 +174,10 @@ class TestSQLAImageAttachments(object):
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))
         doc.photo = open(self.fake_file.name, 'rb')
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = Document.query.find(dict(name='Foo')).first()
         assert d.photo.file.read() == self.file_content
         assert d.photo.filename == os.path.basename(self.fake_file.name)
 
@@ -199,11 +187,10 @@ class TestSQLAImageAttachments(object):
         field.file = open(self.fake_file.name, 'rb')
 
         doc = Document(name=u_('Foo'), photo=field)
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = Document.query.find(dict(name='Foo')).first()
         assert d.photo.file.read() == self.file_content
         assert d.photo.filename == field.filename
         assert d.photo.url == '/depot/%s' % d.photo.path
@@ -214,11 +201,10 @@ class TestSQLAImageAttachments(object):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
 
         doc = Document(name=u_('Foo'), photo=field)
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = Document.query.find(dict(name='Foo')).first()
         assert os.path.exists(d.photo.thumb_file._file_path)
 
         thumb = Image.open(d.photo.thumb_file._file_path)
@@ -229,27 +215,30 @@ class TestSQLAImageAttachments(object):
         doc = Document(name=u_('Foo'))
         doc.photo = open(self.fake_file.name, 'rb')
         doc.content = open(self.fake_file.name, 'rb')
-        DBSession.add(doc)
         DBSession.flush()
-        DBSession.commit()
+        DBSession.clear()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
-        d.photo['_public_url'] = 'PUBLIC_URL'
-        d.photo['_thumb_public_url'] = 'THUMB_PUBLIC_URL'
+        d = Document.query.find(dict(name='Foo')).first()
+
+        # This is to edit the saved data bypassing UploadedFileProperty
+        photo = FieldProperty(Field('photo', s.Anything)).__get__(d, Document)
+        photo['_public_url'] = 'PUBLIC_URL'
+        photo['_thumb_public_url'] = 'THUMB_PUBLIC_URL'
+
+        # Now check that depot does the right thing when public urls are available
         assert d.photo.url == 'PUBLIC_URL'
         assert d.photo.thumb_url == 'THUMB_PUBLIC_URL'
 
     def test_rollback(self):
+        raise SkipTest("Currently Ming Doesn't provide a way to handle discarded documents")
+
         doc = Document(name=u_('Foo3'))
         doc.photo = open(self.fake_file.name, 'rb')
-        DBSession.add(doc)
-        DBSession.flush()
 
         uploaded_file = doc.photo.path
         uploaded_thumb = doc.photo.thumb_path
 
-        DBSession.rollback()
-        DBSession.remove()
+        DBSession.clear()
 
         try:
             fold = get_file(uploaded_file)
