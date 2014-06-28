@@ -9,7 +9,7 @@ try:
 except IOError:
     README = ''
 
-TEST_DEPENDENCIES = ['mock', 'pymongo >= 2.7', 'sqlalchemy', 'pillow']
+TEST_DEPENDENCIES = ['mock', 'pymongo >= 2.7', 'sqlalchemy', 'pillow', 'ming']
 
 py_version = sys.version_info[:2]
 if py_version[0] == 2:
