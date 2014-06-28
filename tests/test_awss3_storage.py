@@ -22,11 +22,12 @@ class TestS3FileStorage(object):
         if access_key_id is None or secret_access_key is None:
             raise SkipTest('Amazon S3 credentials not available')
 
-        PID = os.getpid()  # Travis runs multiple tests concurrently
+        PID = os.getpid()
+        NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]  # Travis runs multiple tests concurrently
         self.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(), )
         self.cred = (access_key_id, secret_access_key)
         self.fs = S3Storage(access_key_id, secret_access_key,
-                            'filedepot-testfs-%s-%s' % (access_key_id.lower(), PID))
+                            'filedepot-testfs-%s-%s-%s' % (access_key_id.lower(), NODE, PID))
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())

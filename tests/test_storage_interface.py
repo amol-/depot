@@ -1,3 +1,4 @@
+import uuid
 from nose.tools import raises
 from nose import SkipTest
 import shutil
@@ -246,8 +247,9 @@ class TestS3FileStorage(BaseStorageTestFixture):
             raise SkipTest('Amazon S3 credentials not available')
 
         PID = os.getpid()
+        NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]
         self.fs = S3Storage(access_key_id, secret_access_key,
-                            'filedepot-testfs-%s-%s' % (access_key_id.lower(), PID))
+                            'filedepot-testfs-%s-%s-%s' % (access_key_id.lower(), NODE, PID))
 
     def teardown(self):
         keys = [key.name for key in self.fs._bucket]
