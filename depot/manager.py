@@ -22,12 +22,14 @@ class DepotManager(object):
 
     @classmethod
     def set_default(cls, name):
+        """Replaces the current application default depot"""
         if name not in cls._depots:
             raise RuntimeError('%s depot has not been configured' % (name,))
         cls._default_depot = name
 
     @classmethod
     def get_default(cls):
+        """Retrieves the current application default depot"""
         if cls._default_depot is None:
             raise RuntimeError('Not depots have been configured!')
         return cls._default_depot
@@ -58,13 +60,17 @@ class DepotManager(object):
 
     @classmethod
     def get_file(cls, path):
+        """Retrieves a file by storage name and fileid in the form of a path
+
+        Path is expected to be ``storage_name/fileid``.
+        """
         depot_name, file_id = path.split('/', 1)
         depot = cls.get(depot_name)
         return depot.get(file_id)
 
     @classmethod
     def configure(cls, name, config, prefix='depot.'):
-        """Configures the application depot.
+        """Configures an application depot.
 
         This configures the application wide depot from a settings dictionary.
         The settings dictionary is usually loaded from an application configuration

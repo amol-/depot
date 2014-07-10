@@ -1,4 +1,3 @@
-
 DEPOT - File Storage made Easy
 =========================================
 
@@ -116,6 +115,7 @@ User Guide
    :maxdepth: 2
 
    userguide
+   database
 
 
 API Reference
