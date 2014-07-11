@@ -2,7 +2,12 @@ DEPOT - File Storage made Easy
 =========================================
 
 Welcome to DEPOT Documentation, DEPOT is an framework
-for easily storing and serving files in web applications.
+for easily storing and serving files in web applications on
+Python2.6+ and Python3.2+
+
+Depot can be used :ref:`Standalone <depot_standalone>` or
+:ref:`With your ORM <depot_with_your_orm>` to quickly provide
+attachments support to your models.
 
 Modern web applications need to rely on a huge amount of
 stored images, generated files and other data which is usually
@@ -24,8 +29,6 @@ Depot is a swiss army knife for files that provides:
       middleware creation and files for your application, but if you want you can manually
       create multiple depots or middlewares without using the manager.
 
-Depot can be used :ref:`Standalone <depot_standalone>` or
-:ref:`With your ORM <depot_with_your_orm>`.
 
 .. _depot_standalone:
 
