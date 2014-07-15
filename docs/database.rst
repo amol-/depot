@@ -8,7 +8,7 @@ to a model field.
 Attaching to Models
 ------------------------------
 
-Attaching files to models is as simple as declaring a field of the model itself,
+Attaching files to models is as simple as declaring a field on the model itself,
 support is currently provided for **SQLAlchemy** through the
 :class:`depot.fields.sqlalchemy.UploadedFileField` and for **Ming (MongoDB)** through
 the :class:`depot.fields.ming.UploadedFileProperty`::
@@ -48,7 +48,7 @@ This is the same object you will get back when reloading the models from databas
 apart from the file itself which is accessible through the ``.file`` property, it provides
 additional attributes described into the :class:`.UploadedFile` documentation itself.
 
-Most important property is probably ``.url`` property which provides an URL where the
+Most important property is probably the ``.url`` property which provides an URL where the
 file can be accessed in case the storage supports HTTP or the :class:`.DepotMiddleware` is
 available in your WSGI application.
 

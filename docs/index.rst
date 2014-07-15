@@ -1,13 +1,13 @@
-DEPOT - File Storage made Easy
-=========================================
+DEPOT - File Storage Made Easy
+==============================
 
-Welcome to DEPOT Documentation, DEPOT is an framework
-for easily storing and serving files in web applications on
-Python2.6+ and Python3.2+
+Welcome to the DEPOT Documentation.
+DEPOT is a framework for easily storing and serving files in
+web applications on Python2.6+ and Python3.2+.
 
 Depot can be used :ref:`Standalone <depot_standalone>` or
-:ref:`With your ORM <depot_with_your_orm>` to quickly provide
-attachments support to your models.
+:ref:`with your ORM <depot_with_your_orm>` to quickly provide
+attachment support to your model.
 
 Modern web applications need to rely on a huge amount of
 stored images, generated files and other data which is usually
@@ -20,11 +20,12 @@ like you would for plain data.
 Depot is a swiss army knife for files that provides:
 
     - Multiple backends: Store your data on GridFS or S3 with a *single API*
-    - Meant for *Evolution*: Change backend when you want, old data will continue to work
-    - Integrates with your *ORM*: When using SQLAlchemy attachments are handled like a
-      plain model attribute. It's also *session ready* rollback causes the files to be deleted.
+    - Meant for *Evolution*: Change the backend anytime you want, old data will continue to work
+    - Integrates with your *ORM*: When using SQLAlchemy, attachments are handled like a
+      plain model attribute. It's also *session ready*: Rollback causes the files to be deleted.
     - Smart *File Serving*: When the backend already provides a public HTTP endpoint (like S3)
-      the WSGI :class:`depot.middleware.DepotMiddleware` will serve it instead of loading the files.
+      the WSGI :class:`depot.middleware.DepotMiddleware` will redirect to the public address
+      instead of loading and serving the files by itself.
     - Flexible: The :class:`depot.manager.DepotManager` will handle configuration,
       middleware creation and files for your application, but if you want you can manually
       create multiple depots or middlewares without using the manager.
@@ -35,11 +36,11 @@ Depot is a swiss army knife for files that provides:
 Depot Standalone
 -------------------------
 
-Depot can easily be used to save and retrieve files in any python script,
+Depot can easily be used to save and retrieve files in any Python script,
 Just get a depot using the :class:`depot.manager.DepotManager` and store the files.
-With each file, additional data commonly used in HTTP is stored like *last_modified*,
-*content_type* and so on. This data is available inside the :class:`depot.io.interfaces.StoredFile`
-which is returned when getting the file back:
+With each file, additional data commonly used in HTTP like *last_modified*,
+*content_type* and so on is stored. This data is available inside the
+:class:`depot.io.interfaces.StoredFile` which is returned when getting the file back:
 
 .. code-block:: python
 
@@ -67,8 +68,9 @@ which is returned when getting the file back:
 Attaching Files to Models
 --------------------------
 
-Depot also provides simple integration with SQLAlchemy for storing files attached
-to your ORM document. Just declare them inside your models and assign the files:
+Depot also features simple integration with SQLAlchemy by providing customized
+model field types for storing files attached to your ORM document.
+Just declare columns with these types inside your models and assign the files:
 
 .. code-block:: python
 

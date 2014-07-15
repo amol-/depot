@@ -22,7 +22,7 @@ class StoredFile(IOBase):
         - last_modified
         - content_length
 
-    Already stored files can only be read back, so they are require to only provide
+    Already stored files can only be read back, so they are required to only provide
     ``read(self, n=-1)``, ``close()`` methods and ``closed`` property so that they
     can be read.
 
@@ -64,7 +64,7 @@ class StoredFile(IOBase):
         """This is the filename of the saved file
 
         If a filename was not available when the file was created
-        this will return "unkwnown" as filename.
+        this will return "unknown" as filename.
         """
         return self.filename
 
