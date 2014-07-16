@@ -4,7 +4,7 @@ from depot.manager import DepotManager
 
 
 class FileFilter(with_metaclass(ABCMeta, object)):
-    """Interaface that must be implemented by file filters.
+    """Interface that must be implemented by file filters.
 
     File filters get executed whenever a file is stored on the database
     using one of the supported fields. Can be used to add additional data
@@ -14,6 +14,7 @@ class FileFilter(with_metaclass(ABCMeta, object)):
     """
     @abstractmethod
     def on_save(self, uploaded_file):
+        """Filters are required to provide their own implementation"""
         return
 
 
@@ -22,7 +23,7 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
 
     By itself the DepotFileInfo does nothing, it is required to implement
     a :meth:`process_content` method that actually saves inside the
-    file info the informations related to the content. The only information
+    file info the information related to the content. The only information
     which is saved by default is the depot name itself.
 
     It is a specialized dictionary that provides also attribute style access,
@@ -34,8 +35,10 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
         super(DepotFileInfo, self).__init__()
 
         if isinstance(content, dict):
+            object.__setattr__(self, 'original_content', None)
             self.update(content)
         else:
+            object.__setattr__(self, 'original_content', content)
             if depot_name is None:
                 depot_name = DepotManager.get_default()
 

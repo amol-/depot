@@ -23,7 +23,13 @@ Database Support
 .. autoclass:: depot.fields.sqlalchemy.UploadedFileField
     :members:
 
+.. autoclass:: depot.fields.ming.UploadedFileProperty
+    :members:
+
 .. autoclass:: depot.fields.interfaces.DepotFileInfo
+    :members:
+
+.. autoclass:: depot.fields.interfaces.FileFilter
     :members:
 
 .. autoclass:: depot.fields.upload.UploadedFile

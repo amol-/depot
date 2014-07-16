@@ -21,7 +21,7 @@ class UploadedFileProperty(FieldProperty):
                 upload_type = self._upload_type
                 value = upload_type(value)
 
-            if isinstance(value, UploadedFile):
+            if isinstance(value, UploadedFile) and value.original_content is not None:
                 for filt in self._filters:
                     filt.on_save(value)
 

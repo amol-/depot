@@ -49,9 +49,6 @@ class UploadedFileField(types.TypeDecorator):
             raise ValueError('AttachmentField requires %s, '
                              'got %s instead' % (self._upload_type, type(value)))
 
-        for filt in self._filters:
-            filt.on_save(value)
-
         return value.encode()
 
     def process_result_value(self, value, dialect):
@@ -73,7 +70,13 @@ class _SQLAMutationTracker(object):
         assert(isinstance(column_type, UploadedFileField))
 
         upload_type = column_type._upload_type
-        return upload_type(value)
+        value = upload_type(value)
+
+        if value.original_content is not None:
+            for filt in column_type._filters:
+                filt.on_save(value)
+
+        return value
 
     @classmethod
     def _mapper_configured(cls, mapper, class_):

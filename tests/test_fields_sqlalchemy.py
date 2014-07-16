@@ -10,6 +10,7 @@ from depot.fields.sqlalchemy import UploadedFileField
 from depot.manager import DepotManager, get_file
 from .utils import create_cgifs
 from depot.fields.specialized.image import UploadedImageWithThumb
+from depot.fields.filters.thumbnails import WithThumbnailFilter
 from depot._compat import u_, bytes_
 
 def setup():
@@ -24,6 +25,8 @@ def teardown():
     shutil.rmtree('./lfs', ignore_errors=True)
 
 
+
+
 class Document(DeclarativeBase):
     __tablename__ = 'docu'
 
@@ -31,6 +34,7 @@ class Document(DeclarativeBase):
     name = Column(Unicode(16), unique=True)
     content = Column('content_col', UploadedFileField)
     photo = Column(UploadedFileField(upload_type=UploadedImageWithThumb))
+    second_photo = Column(UploadedFileField(filters=(WithThumbnailFilter((12, 12), 'PNG'),)))
 
 
 class TestSQLAAttachments(object):
@@ -251,6 +255,103 @@ class TestSQLAImageAttachments(object):
         DBSession.rollback()
         DBSession.remove()
 
+        try:
+            fold = get_file(uploaded_file)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass
+
+        try:
+            fold = get_file(uploaded_thumb)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass
+
+
+class TestSQLAThumbnailFilter(object):
+    def __init__(self):
+        self.file_content = b'''R0lGODlhEQAUAPcAAC4uLjAwMDIyMjMzMjQ0NDU1NDY2Njk2Mzg4ODo6Oj49Ozw8PD4+PkE+OEA/PkhAN0tCNk5JPFFGNV1KMFhNNVFHOFJJPVVLPVhOPXZfKXVcK2ZQNGZXNGtZMnNcNHZeNnldMHJfOn1hKXVjOH9oO0BAQEJCQkREREVFREZGRklGQ05KQ0hISEpKSkxMTE5OTlZRSlFQT19XSFBQUFJSUlRUVGFUQmFVQ2ZZQGtdQnNiQqJ/HI1uIYBnLIllKoZrK4FqLoVqL4luLIpsLpt7J515JJ50KZhzLYFnMIFlM4ZlMIFkNI1uNoJoOoVrPIlvO49yMolwPpB2O5p4Op98PaB3IKN4JqN8J6h7I6J5LaZ+LLF+ILGGG7+JG72OGLKEI7aHIrOEJL2JI7mMN76YNcGJG8SOG8WLHMONH86eEs+aFsGSG8eQHMySG9uVFduXFdeeE9eaFdScF96YE9yaFOKcEuOdEtWgFNiiEduhE96pEuqlD+qmD+KpD+yoDu6rDuysDvCuDfCvDeuwD/SzC/a2CvGwDfKxDPi5Cfi5Cvq8CeCjEuehEOagEeijEOKoEOStFMOOK8+TLM6YNNChItGgLtylKt6gMNqgON6jPOChLfi/JOSrNeGvN9KhRtykRNWkSOCnQOCpSOawQue1T+a6Su67SOGsUO/AVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAARABQAAAj+AAEIHEiwoMAACBMqXIhQgMOHDwdAfEigYsUCT6KQScNjxwGLBAyINPBhCilUmxIV6uMlw0gEMJeMGWWqFCU8hA4JEgETQYIEDcRw6qRlwgMIGvJwkfAzwYIFXQBB8qHg6VMKFawuYNBBjaIqDhhI+cGgrNmyJXooGrShBJBKcIpwiFCibl0TehDdsWBCiBxLZuIwolMGiwcTJ4gUenThBAokSVRgGFJnzhYQJ1KsyRkkhWfPK87McWPEM4sRhgItCsGitQ5PmtxYUdK6BY4rf/zwYRNmUihRpyQdaUHchQsoX/Y4amTnUqZPoG7YMO7ihfUcYNC0eRMJExMqMKweW59BfkYMEk2ykHAio3x5GvDjy58Pv4b9+/jz2w8IADs='''
+        self.file_content = base64.b64decode(self.file_content)
+        self.fake_file = tempfile.NamedTemporaryFile()
+        self.fake_file.write(self.file_content)
+        self.fake_file.flush()
+
+    def setup(self):
+        clear_database()
+        self.fake_file.seek(0)
+
+    def test_create_fromfile(self):
+        doc = Document(name=u_('Foo'))
+        doc.second_photo = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        assert d.second_photo.file.read() == self.file_content
+        assert d.second_photo.filename == os.path.basename(self.fake_file.name)
+
+    def test_create_fromfield(self):
+        field = cgi.FieldStorage()
+        field.filename = u_('àèìòù.gif')
+        field.file = open(self.fake_file.name, 'rb')
+
+        doc = Document(name=u_('Foo'), second_photo=field)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        assert d.second_photo.file.read() == self.file_content
+        assert d.second_photo.filename == field.filename
+        assert d.second_photo.url == '/depot/%s' % d.second_photo.path
+        assert d.second_photo.thumb_url == '/depot/%s' % d.second_photo.thumb_path
+        assert d.second_photo.url != d.second_photo.thumb_url
+
+    def test_thumbnail(self):
+        field = create_cgifs('image/gif', self.fake_file, 'test.gif')
+
+        doc = Document(name=u_('Foo'), second_photo=field)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+
+        thumbnail_local_path = DepotManager.get_file(d.second_photo.thumb_path)._file_path
+        assert os.path.exists(thumbnail_local_path)
+
+        thumb = Image.open(thumbnail_local_path)
+        thumb.verify()
+        assert thumb.format.upper() == 'PNG'
+        assert max(thumb.size) == 12
+
+    def test_public_url(self):
+        doc = Document(name=u_('Foo'))
+        doc.second_photo = open(self.fake_file.name, 'rb')
+        doc.content = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d.second_photo['_public_url'] = 'PUBLIC_URL'
+        assert d.second_photo.url == 'PUBLIC_URL'
+        assert d.second_photo.thumb_url.startswith('/depot/default/')
+
+    def test_rollback(self):
+        doc = Document(name=u_('Foo3'))
+        doc.second_photo = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        DBSession.flush()
+
+        uploaded_file = doc.second_photo.path
+        uploaded_thumb = doc.second_photo.thumb_path
+
+        DBSession.rollback()
+        DBSession.remove()
+
+        print uploaded_thumb
         try:
             fold = get_file(uploaded_file)
             assert False, 'Should have raised IOError here'
