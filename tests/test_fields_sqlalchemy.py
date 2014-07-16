@@ -351,7 +351,6 @@ class TestSQLAThumbnailFilter(object):
         DBSession.rollback()
         DBSession.remove()
 
-        print uploaded_thumb
         try:
             fold = get_file(uploaded_file)
             assert False, 'Should have raised IOError here'
