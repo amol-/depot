@@ -15,10 +15,10 @@ env:
     - secure: "Ub7LbB1M9Uh1qBXZTyOyP65bgZrn62ZFqmc9mdlJmeQHksWqQoNApRw9SHYiu/zx9fiAQZl8HLFc2cbACC+45N7d/lN4kwFRf2fFzu8hNCzHBvYo9y7ciHiVfOQX9z+33HR4LvzbU3s3T3P57zu78m91xgWeHwIWh7mSqiAIxM0="
 
 install:
-  - "pip install coverage"
-  - "pip install nose"
-  - "pip install coveralls"
-  - "pip install -e ."
+  - "travis_retry pip install coverage"
+  - "travis_retry pip install nose"
+  - "travis_retry pip install coveralls"
+  - "travis_retry pip install -e .[testing]"
 
 script: "python setup.py nosetests --with-coverage --cover-package=depot --cover-erase"
 
