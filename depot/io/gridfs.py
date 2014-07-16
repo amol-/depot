@@ -54,7 +54,7 @@ class GridFSStoredFile(StoredFile):
 class GridFSStorage(FileStorage):
     """:class:`depot.io.interfaces.FileStorage` implementation that stores files on MongoDB.
 
-    All the files are stored using GridFS to the database pointed by the ``mongouri`` into
+    All the files are stored using GridFS to the database pointed by the ``mongouri`` parameter into
     the collection named ``collection``.
 
     """

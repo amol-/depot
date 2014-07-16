@@ -24,7 +24,7 @@ storages through the ``.backend`` option. To store data on GridFS you would use:
         'depot.mongouri': 'mongodb://localhost/db'
     })
 
-every other option apart the ``.backend`` one will be passed to the storage as
+Every other option apart the ``.backend`` one will be passed to the storage as
 a constructor argument. You can even use your own storage by setting the full python
 path of the class you want to use.
 
@@ -53,7 +53,7 @@ Saving and Retrieving Files
 ------------------------------
 
 Once you have a working storage, saving files is as easy as calling the :meth:`.FileStorage.create`
-method passing the file (or the ``bytes``) you want to store::
+method passing the file (or the ``bytes`` object) you want to store::
 
     depot = DepotManager.get()
     fileid = depot.create(open('/tmp/file.png'))
@@ -71,8 +71,9 @@ Getting the file back can be done using :meth:`.FileStorage.get` from the storag
 
     stored_file = depot.get(fileid)
 
-Getting back the file will only retrieve the file metadata and will return an :class:`.StoredFile`
-object, if you actually want to read the file content you should then call the ``read`` method::
+Getting back the file will only retrieve the file metadata and will return a :class:`.StoredFile`
+object. This object can be used like a normal Python ``file`` object,
+so if you actually want to read the file content you should then call the ``read`` method::
 
     stored_file.content_type  # This will be 'image/png'
     image = stored_file.read()
@@ -106,20 +107,20 @@ available.
 Depot for the Web
 =============================
 
-Files Metadata
+File Metadata
 ------------------------------
 
 As Depot has been explicitly designed for web applications development, it will provide
-all the file metadata which is required for HTTP Headers when serving files or which is common
+all the file metadata which is required for HTTP headers when serving files or which are common
 in the web world.
 
 This is provided by the :class:`.StoredFile` you retrieve from the file storage and includes:
 
-    * filename -> Original name of the file, if you need to serve it to the user for download.
-    * content_type -> File content type, for the response content type when serving file back
+    * ``filename`` -> Original name of the file, if you need to serve it to the user for download.
+    * ``content_type`` -> File content type, for the response content type when serving file back
       the file to the browser.
-    * last_modified -> Can be used to implement caching and last modified header in HTTP.
-    * content_length -> Size of the file, is usually the content length of the HTTP response when
+    * ``last_modified`` -> Can be used to implement caching and last modified header in HTTP.
+    * ``content_length`` -> Size of the file, is usually the content length of the HTTP response when
       serving the file back.
 
 Serving Files on HTTP
@@ -131,7 +132,7 @@ provided by :class:`.StoredFile.public_url`. In case the ``public_url`` is ``Non
 that the storage doesn't provide HTTP access directly.
 
 In such case files can be served using a :class:`.DepotMiddleware` WSGI middleware. The
-DepotMiddlware supports serving files from any backend, support ETag caching and in case of
+DepotMiddlware supports serving files from any backend, supports ETag caching and in case of
 storages directly supporting HTTP it will just redirect the user to the storage itself.
 
 Unless you need to achieve maximum performances it is usually a good approach to just use
@@ -140,12 +141,12 @@ the WSGI Middleware and let it serve all your files for you::
     app = DepotManager.make_middleware(app)
 
 By default the Depot middleware will serve the files at the ``/depot`` URL using their path
-(same passed to the :meth:`.DepotManager.get_file` method). So in case you need to retrieve
+(the same as passed to the :meth:`.DepotManager.get_file` method). So in case you need to retrieve
 a file with id **3774a1a0-0879-11e4-b658-0800277ee230** stored into **my_gridfs** depot the
 URL will be ``/depot/my_gridfs/3774a1a0-0879-11e4-b658-0800277ee230``.
 
-Changing base URL and caching can be done through the :meth:`.DepotManager.make_middleware`
-options, any option passed to ``make_middlware`` will be forwarded to :class:`.DepotMiddleware`.
+Changing the base URL and caching can be done through the :meth:`.DepotManager.make_middleware`
+options, any option passed to ``make_middleware`` will be forwarded to :class:`.DepotMiddleware`.
 
 
 Handling Multiple Storages

@@ -67,7 +67,7 @@ class LocalStoredFile(StoredFile):
 class LocalFileStorage(FileStorage):
     """:class:`depot.io.interfaces.FileStorage` implementation that stores files locally.
 
-    All the files are stored inside a directory specified by ``storage_path`` parameter.
+    All the files are stored inside a directory specified by the ``storage_path`` parameter.
 
     """
     def __init__(self, storage_path):

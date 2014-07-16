@@ -1,8 +1,9 @@
 
 .. image:: https://raw.github.com/amol-/depot/master/docs/_static/logo.png
 
-depot
-=====
+DEPOT - File Storage Made Easy
+==============================
 
-DEPOT is a toolkit for storing files and attachments in web applications
+DEPOT is a framework for easily storing and serving files in
+web applications on Python2.6+ and Python3.2+.
 
