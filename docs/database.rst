@@ -139,7 +139,7 @@ the database, all the *thumb_id*, *thumb_path* and *thumb_url* values will be av
 when loading back the document::
 
     >>> d = DBSession.query(Document).filter_by(name='Foo').first()
-    >>> print d.thumb_url
+    >>> print d.photo.thumb_url
     /depot/default/5b1a489e-0d33-11e4-8e2a-0800277ee230
 
 
