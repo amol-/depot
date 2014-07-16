@@ -42,7 +42,7 @@ setup(name='filedepot',
       extras_require={
          # Used by Travis and Coverage due to setup.py nosetests
          # causing a coredump when used with coverage
-         'testing':test_requirements,
+         'testing':TEST_DEPENDENCIES,
       },
       test_suite='nose.collector',
       zip_safe=False,
