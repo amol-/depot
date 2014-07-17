@@ -23,7 +23,7 @@ class UploadedImageWithThumb(UploadedFile):
     thumbnail_format = 'PNG'
     thumbnail_size = (128, 128)
 
-    def process_content(self, content):
+    def process_content(self, content, filename=None, content_type=None):
         orig_content = content
         content = utils.file_from_content(content)
         __, filename, content_type = FileStorage.fileinfo(orig_content)

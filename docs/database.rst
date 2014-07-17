@@ -180,7 +180,7 @@ a maximum resolution::
     class UploadedImageWithMaxSize(UploadedFile):
         max_size = 1024
 
-        def process_content(self, content):
+        def process_content(self, content, filename=None, content_type=None):
             # As we are replacing the main file, we need to explicitly pass
             # the filanem and content_type, so get them from the old content.
             __, filename, content_type = FileStorage.fileinfo(content)
