@@ -183,7 +183,7 @@ class TestSQLAImageAttachments(object):
         self.fake_file.flush()
 
         self.bigimage = tempfile.NamedTemporaryFile()
-        blackimage = Image.frombytes('L', (1280, 1280), "\x00" * 1280 * 1280)
+        blackimage = Image.frombytes('L', (1280, 1280), b"\x00" * 1280 * 1280)
         blackimage.save(self.bigimage, 'PNG')
         self.bigimage.flush()
 
