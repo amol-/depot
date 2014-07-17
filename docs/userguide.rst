@@ -97,7 +97,8 @@ not lead to errors.
 The storage can also be used to replace existing files, replacing the content of a file will
 actually also replace the file metadata::
 
-    depot.replace(fileid, open('/tmp/another_image.jpg'), 'thumbnail.jpg', 'image/png')
+    depot.replace(fileid, open('/tmp/another_image.jpg'),
+                  'thumbnail.jpg', 'image/png')
 
 This has the same behavior of deleting the old file and storing a new one, but instead of
 generating a new id it will reuse the existing one. As for the ``create`` call the filename

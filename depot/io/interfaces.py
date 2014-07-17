@@ -158,7 +158,7 @@ class FileStorage(with_metaclass(ABCMeta, object)):
             elif getattr(fileobj, 'type', None) is not None:
                 content_type = fileobj.type
 
-        if  content_type is None:
+        if content_type is None:
             if filename is not None:
                 content_type = mimetypes.guess_type(filename, strict=False)[0]
             content_type = content_type or 'application/octet-stream'

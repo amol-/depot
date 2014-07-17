@@ -182,6 +182,11 @@ class TestSQLAImageAttachments(object):
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
 
+        self.bigimage = tempfile.NamedTemporaryFile()
+        blackimage = Image.frombytes('L', (1280, 1280), "\x00" * 1280 * 1280)
+        blackimage.save(self.bigimage, 'PNG')
+        self.bigimage.flush()
+
     def setup(self):
         clear_database()
         self.fake_file.seek(0)
@@ -228,6 +233,23 @@ class TestSQLAImageAttachments(object):
         thumb = Image.open(d.photo.thumb_file._file_path)
         thumb.verify()
         assert thumb.format.upper() == d.photo.thumbnail_format.upper()
+
+    def test_maximum_size(self):
+        field = create_cgifs('image/png', self.bigimage, 'test.png')
+
+        doc = Document(name=u_('Foo'), photo=field)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+
+        img = Image.open(d.photo.file._file_path)
+        img.verify()
+        assert img.format.upper() == 'PNG'
+        assert max(img.size) == 1024
+        assert d.photo.filename == field.filename
+        assert d.photo.content_type == 'image/png'
 
     def test_public_url(self):
         doc = Document(name=u_('Foo'))

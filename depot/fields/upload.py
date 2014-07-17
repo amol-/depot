@@ -23,8 +23,18 @@ class UploadedFile(DepotFileInfo):
         - url          - Public url of the uploaded file
         - file         - The :class:`depot.io.interfaces.StoredFile` instance of the stored file
     """
-    def process_content(self, content):
-        file_path, file_id = self.store_content(content)
+    def process_content(self, content, filename=None, content_type=None):
+        """Standard implementation of :meth:`.DepotFileInfo.process_content`
+
+        This is the standard depot implementation of files upload, it will
+        store the file on the default depot and will provide the standard
+        attributes.
+
+        Subclasses will need to call this method to ensure the standard
+        set of attributes is provided.
+        """
+
+        file_path, file_id = self.store_content(content, filename, content_type)
         self['file_id'] = file_id
         self['path'] = file_path
 
@@ -34,8 +44,8 @@ class UploadedFile(DepotFileInfo):
         self['uploaded_at'] = saved_file.last_modified.strftime('%Y-%m-%d %H:%M:%S')
         self['_public_url'] = saved_file.public_url
 
-    def store_content(self, content, filename=None):
-        file_id = self.depot.create(content, filename)
+    def store_content(self, content, filename=None, content_type=None):
+        file_id = self.depot.create(content, filename, content_type)
         file_path = '%s/%s' % (self.depot_name, file_id)
         self.files.append(file_path)
         return file_path, file_id

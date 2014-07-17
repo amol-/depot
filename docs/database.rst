@@ -53,7 +53,7 @@ file can be accessed in case the storage supports HTTP or the :class:`.DepotMidd
 available in your WSGI application.
 
 Session Awareness
-------------------------------
+-----------------
 
 Whenever an object is *deleted* or a *rollback* is performed the files uploaded
 during the unit of work or attached to the deleted objects are automatically deleted.
@@ -65,8 +65,8 @@ to be registered as a session extension for Ming.
     Ming doesn't currently provide an entry point for session clear, so files
     uploaded without a session flush won't be deleted when the session is removed.
 
-Custom Attachment Types
-========================
+Custom Behaviour in Attachments
+===============================
 
 Often attaching a file to the model is not enough, if a video is uploaded you probably
 want to convert it to a supported format. Or if a big image is uploaded you might want
@@ -79,7 +79,7 @@ editing the content before it gets uploaded can be achieved subclassing
 :class:`.UploadedFile` and passing it as column ``upload_type``.
 
 Attachment Filters
-------------------------------
+------------------
 
 File filters are created by subclassing :class:`.FileFilter` class, the only required
 method to implement is :meth:`.FileFilter.on_save` which you are required implement with
@@ -119,10 +119,17 @@ A filter that creates a thumbnail for an image would look like::
             output.seek(0)
 
             thumb_file_name = 'thumb.%s' % self.thumbnail_format.lower()
-            thumb_path, thumb_id = uploaded_file.store_content(output, thumb_file_name)
+
+            # If you upload additional files do it with store_content
+            # to ensure they are correctly tracked by unit of work and
+            # removed on model deletion.
+            thumb_path, thumb_id = uploaded_file.store_content(output,
+                                                               thumb_file_name)
+            thumb_url = DepotManager.get_middleware().url_for(thumb_path)
+
             uploaded_file['thumb_id'] = thumb_id
             uploaded_file['thumb_path'] = thumb_path
-            uploaded_file['thumb_url'] = DepotManager.get_middleware().url_for(thumb_path)
+            uploaded_file['thumb_url'] = thumb_url
 
 To use it, just provide the ``filters`` parameter in your :class:`.UploadedFileField`
 or :class:`.UploadedFileProperty`::
@@ -132,7 +139,8 @@ or :class:`.UploadedFileProperty`::
 
         uid = Column(Integer, autoincrement=True, primary_key=True)
         name = Column(Unicode(16), unique=True)
-        photo = Column(UploadedFileField(filters=(WithThumbnailFilter((12, 12), 'PNG'),)))
+
+        photo = Column(UploadedFileField(filters=[WithThumbnailFilter()]))
 
 As :class:`.UploadedFile` remembers every value/attribute stored before saving it on
 the database, all the *thumb_id*, *thumb_path* and *thumb_url* values will be available
@@ -143,7 +151,50 @@ when loading back the document::
     /depot/default/5b1a489e-0d33-11e4-8e2a-0800277ee230
 
 
-Special Attachments
-------------------------------
+Custom Attachments
+------------------
+
+Filters are convenient and can be mixed together to enable multiple behaviours when
+a file is uploaded, but they have a limit: They cannot modify the uploaded file or
+the features provided when the file is retrieved from the database.
+
+To avoid this limit users can specify their own upload type by subclassing
+:class:`.UploadedFile`. By specializing the :meth:`.UploadedFile.process_content` method
+it is possible to change the content before it's stored and provide additional attributes.
+
+Whenever the stored document is retrieved from the database, the file will be recovered
+with the same type specified as the ``upload_type``, so any property or method provided
+by the specialized type will be available also when the file is loaded back.
+
+A possible use case for custom attachments is ensure an image is uploaded at
+a maximum resolution::
+
+    from depot.io import utils
+    from depot.fields.upload import UploadedFile
+    from depot.io.interfaces import FileStorage
+    from PIL import Image
+    from depot.io.utils import INMEMORY_FILESIZE
+    from tempfile import SpooledTemporaryFile
+
+
+    class UploadedImageWithMaxSize(UploadedFile):
+        max_size = 1024
+
+        def process_content(self, content):
+            # As we are replacing the main file, we need to explicitly pass
+            # the filanem and content_type, so get them from the old content.
+            __, filename, content_type = FileStorage.fileinfo(content)
+
+            # Get a file object even if content was bytes
+            content = utils.file_from_content(content)
+
+            uploaded_image = Image.open(content)
+            if max(uploaded_image.size) >= self.max_size:
+                uploaded_image.thumbnail((self.max_size, self.max_size), Image.BILINEAR)
+                content = SpooledTemporaryFile(INMEMORY_FILESIZE)
+                uploaded_image.save(content, uploaded_image.format)
+
+            content.seek(0)
+            super(UploadedImageWithThumb, self).process_content(content, filename, content_type)
 
 

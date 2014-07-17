@@ -58,3 +58,11 @@ Storing Files
 
 .. autoclass:: depot.io.awss3.S3Storage
     :members:
+
+
+Utilities
+---------
+
+.. autofunction::: depot.io.utils.file_from_content
+
+..

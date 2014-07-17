@@ -47,7 +47,7 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
             self.process_content(content)
 
     @abstractmethod
-    def process_content(self, content):
+    def process_content(self, content, filename=None, content_type=None):
         """Process content in the given depot.
 
         This is implemented by subclasses to provide some kind of behaviour on the
