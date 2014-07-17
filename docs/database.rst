@@ -190,11 +190,26 @@ a maximum resolution::
 
             uploaded_image = Image.open(content)
             if max(uploaded_image.size) >= self.max_size:
-                uploaded_image.thumbnail((self.max_size, self.max_size), Image.BILINEAR)
+                uploaded_image.thumbnail((self.max_size, self.max_size),
+                                         Image.BILINEAR)
                 content = SpooledTemporaryFile(INMEMORY_FILESIZE)
                 uploaded_image.save(content, uploaded_image.format)
 
             content.seek(0)
-            super(UploadedImageWithThumb, self).process_content(content, filename, content_type)
+            super(UploadedImageWithMaxSize, self).process_content(content,
+                                                                  filename,
+                                                                  content_type)
 
+Using it to ensure every uploaded image has a maximum resolution of 1024x1024 is
+as simple as passing it to the column::
 
+    class Document(DeclarativeBase):
+        __tablename__ = 'docu'
+
+        uid = Column(Integer, autoincrement=True, primary_key=True)
+        name = Column(Unicode(16), unique=True)
+
+        photo = Column(UploadedFileField(upload_type=UploadedImageWithMaxSize))
+
+When saved the image will be automatically resized to 1024 when bigger than the
+maximum allowed size.
