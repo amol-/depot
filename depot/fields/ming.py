@@ -21,9 +21,8 @@ class UploadedFileProperty(FieldProperty):
                 upload_type = self._upload_type
                 value = upload_type(value)
 
-            if isinstance(value, UploadedFile) and value.original_content is not None:
-                for filt in self._filters:
-                    filt.on_save(value)
+            if isinstance(value, UploadedFile):
+                value._apply_filters(self._filters)
 
             old_value = self.__get__(instance, instance.__class__)
             DepotExtension.get_depot_history(instance).swap(old_value, value)

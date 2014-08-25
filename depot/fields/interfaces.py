@@ -13,7 +13,7 @@ class FileFilter(with_metaclass(ABCMeta, object)):
 
     """
     @abstractmethod
-    def on_save(self, uploaded_file):
+    def on_save(self, uploaded_file):  # pragma: no cover
         """Filters are required to provide their own implementation"""
         return
 
@@ -33,6 +33,7 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
     """
     def __init__(self, content, depot_name=None):
         super(DepotFileInfo, self).__init__()
+        self._thaw()
 
         if isinstance(content, dict):
             object.__setattr__(self, 'original_content', None)
@@ -46,8 +47,10 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
             self['files'] = []
             self.process_content(content)
 
+        self._freeze()
+
     @abstractmethod
-    def process_content(self, content, filename=None, content_type=None):
+    def process_content(self, content, filename=None, content_type=None):  # pragma: no cover
         """Process content in the given depot.
 
         This is implemented by subclasses to provide some kind of behaviour on the
@@ -59,7 +62,7 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
         return
 
     def __getitem__(self, key):
-        return  dict.__getitem__(self, key)
+        return dict.__getitem__(self, key)
 
     def __getattr__(self, name):
         try:
@@ -67,10 +70,36 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
         except KeyError:
             raise AttributeError(name)
 
-    __setattr__ = dict.__setitem__
+    def __setitem__(self, key, value):
+        if object.__getattribute__(self, '_frozen'):
+            raise TypeError('Already saved files are immutable')
+        return dict.__setitem__(self, key, value)
+
+    __setattr__ = __setitem__
 
     def __delattr__(self, name):
+        if object.__getattribute__(self, '_frozen'):
+            raise TypeError('Already saved files are immutable')
+
         try:
             del self[name]
         except KeyError:
             raise AttributeError(name)
+
+    def __delitem__(self, key):
+        if object.__getattribute__(self, '_frozen'):
+            raise TypeError('Already saved files are immutable')
+        dict.__delitem__(self, key)
+
+    def _apply_filters(self, filters):
+        if self.original_content is not None:
+            self._thaw()
+            for filt in filters:
+                filt.on_save(self)
+            self._freeze()
+
+    def _freeze(self):
+        object.__setattr__(self, '_frozen', True)
+
+    def _thaw(self):
+        object.__setattr__(self, '_frozen', False)

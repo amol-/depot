@@ -71,10 +71,7 @@ class _SQLAMutationTracker(object):
 
         upload_type = column_type._upload_type
         value = upload_type(value)
-
-        if value.original_content is not None:
-            for filt in column_type._filters:
-                filt.on_save(value)
+        value._apply_filters(column_type._filters)
 
         return value
 

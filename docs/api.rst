@@ -34,7 +34,6 @@ Database Support
 
 .. autoclass:: depot.fields.upload.UploadedFile
     :members:
-    :inherited-members:
 
 
 Storing Files

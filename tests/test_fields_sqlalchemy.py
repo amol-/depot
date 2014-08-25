@@ -260,8 +260,13 @@ class TestSQLAImageAttachments(object):
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+
+        # Hack to force object to have a public url
+        d.photo._thaw()
         d.photo['_public_url'] = 'PUBLIC_URL'
         d.photo['_thumb_public_url'] = 'THUMB_PUBLIC_URL'
+        d.photo._freeze()
+
         assert d.photo.url == 'PUBLIC_URL'
         assert d.photo.thumb_url == 'THUMB_PUBLIC_URL'
 
@@ -357,7 +362,12 @@ class TestSQLAThumbnailFilter(object):
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+
+        # Hack to force object to have a public url
+        d.second_photo._thaw()
         d.second_photo['_public_url'] = 'PUBLIC_URL'
+        d.second_photo._freeze()
+
         assert d.second_photo.url == 'PUBLIC_URL'
         assert d.second_photo.thumb_url.startswith('/depot/default/')
 
