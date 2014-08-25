@@ -234,7 +234,8 @@ class TestGridFSFileStorage(BaseStorageTestFixture):
 
 
 class TestS3FileStorage(BaseStorageTestFixture):
-    def setup(self):
+    @classmethod
+    def setup_class(cls):
         try:
             from depot.io.awss3 import S3Storage
         except ImportError:
@@ -248,15 +249,17 @@ class TestS3FileStorage(BaseStorageTestFixture):
 
         PID = os.getpid()
         NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]
-        self.fs = S3Storage(access_key_id, secret_access_key,
-                            'filedepot-testfs-%s-%s-%s' % (access_key_id.lower(), NODE, PID))
+        BUCKET_NAME = 'fdtest-%s-%s-%s' % (access_key_id.lower(), NODE, PID)
+        cls.fs = S3Storage(access_key_id, secret_access_key, BUCKET_NAME)
 
     def teardown(self):
         keys = [key.name for key in self.fs._bucket]
         if keys:
             self.fs._bucket.delete_keys(keys)
 
+    @classmethod
+    def teardown_class(cls):
         try:
-            self.fs._conn.delete_bucket(self.fs._bucket.name)
+            cls.fs._conn.delete_bucket(cls.fs._bucket.name)
         except:
             pass
