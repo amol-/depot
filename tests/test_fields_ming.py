@@ -31,6 +31,7 @@ def teardown():
 class Document(MappedClass):
     class __mongometa__:
         session = DBSession
+        name = 'depot_test_document'
 
     _id = FieldProperty(s.ObjectId)
     name = FieldProperty(str)
@@ -52,6 +53,15 @@ class TestMingAttachments(object):
     def test_create_fromfile(self):
         doc = Document(name='Foo', content = open(self.fake_file.name, 'rb'))
         DBSession.flush()
+        DBSession.clear()
+
+        d = Document.query.find(dict(name='Foo')).first()
+        assert d.content.file.read() == self.file_content
+        assert d.content.file.filename == os.path.basename(self.fake_file.name)
+
+    def test_create_fromfile_flush_single_document(self):
+        doc = Document(name='Foo', content = open(self.fake_file.name, 'rb'))
+        DBSession.flush(doc)
         DBSession.clear()
 
         d = Document.query.find(dict(name='Foo')).first()

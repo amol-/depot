@@ -39,11 +39,13 @@ class UploadedFileProperty(FieldProperty):
 
             return self._upload_type(value)
 
+        """
+        # Looks like this should do nothing on ming.
         def __delete__(self, instance, owner=None):
             old_value = self.__get__(instance, instance.__class__)
             DepotExtension.get_depot_history(instance).delete(old_value)
-            return FieldProperty.__delete__(instance, owner)
-
+            return FieldProperty.__delete__(self, instance, owner)
+        """
 
 class DepotExtension(SessionExtension):
     @classmethod
