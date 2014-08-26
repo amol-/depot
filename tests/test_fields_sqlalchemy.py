@@ -3,10 +3,13 @@ import shutil
 
 import tempfile, os, cgi, base64
 from PIL import Image
+from nose.tools import raises
+from sqlalchemy.exc import StatementError
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
 from depot.fields.sqlalchemy import UploadedFileField
+from depot.fields.upload import UploadedFile
 from depot.manager import DepotManager, get_file
 from .utils import create_cgifs
 from depot.fields.specialized.image import UploadedImageWithThumb
@@ -202,6 +205,19 @@ class TestSQLAImageAttachments(object):
         assert d.photo.file.read() == self.file_content
         assert d.photo.filename == os.path.basename(self.fake_file.name)
 
+    def test_check_assigned_type(self):
+        doc = Document(name=u_('Foo'))
+        doc.photo = UploadedFile(open(self.fake_file.name, 'rb'))
+        DBSession.add(doc)
+
+        try:
+            DBSession.flush()
+        except StatementError as e:
+            assert 'ValueError' in str(e)
+            return
+
+        assert False, 'FLUSH did not raise exception'
+
     def test_create_fromfield(self):
         field = cgi.FieldStorage()
         field.filename = u_('àèìòù.gif')
@@ -317,6 +333,17 @@ class TestSQLAThumbnailFilter(object):
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
         assert d.second_photo.file.read() == self.file_content
         assert d.second_photo.filename == os.path.basename(self.fake_file.name)
+
+    def test_create_from_bytes(self):
+        doc = Document(name=u_('Foo'))
+        doc.second_photo = self.file_content
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        assert d.second_photo.file.read() == self.file_content
+        assert d.second_photo.filename == 'unknown'
 
     def test_create_fromfield(self):
         field = cgi.FieldStorage()

@@ -82,6 +82,10 @@ class _SQLAMutationTracker(object):
                 for idx, col in enumerate(mapper_property.columns):
                     if isinstance(col.type, UploadedFileField):
                         if idx > 0:
+                            # Not clear when this might happen, but ColumnProperty can have
+                            # multiple columns assigned. We should probably take the first one
+                            # as is done by ColumnProperty.expression but there is no guarantee
+                            # that it would be the right thing to do.
                             raise TypeError('UploadedFileField currently supports a single column')
                         cls.mapped_entities.setdefault(class_, []).append(mapper_property.key)
                         event.listen(mapper_property, 'set', cls._field_set, retval=True)
@@ -143,7 +147,7 @@ class _SQLAMutationTracker(object):
 
 _SQLAMutationTracker.setup()
 
-try:
+try:  # pragma: no cover
     from sprox.sa.widgetselector import SAWidgetSelector
     from tw2.forms import FileField as TW2FileField
     SAWidgetSelector.default_widgets.setdefault(UploadedFileField, TW2FileField)
@@ -151,5 +155,5 @@ try:
     from sprox.sa.validatorselector import SAValidatorSelector
     from tw2.forms import FileValidator
     SAValidatorSelector.default_validators.setdefault(UploadedFileField, FileValidator)
-except ImportError:
+except ImportError:  # pragma: no cover
     pass
