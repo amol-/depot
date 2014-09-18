@@ -105,18 +105,18 @@ class FileServeApp(object):
 
 
         if not has_been_modified:
-            file.close()
+            self.file.close()
             start_response('304 Not Modified', headers)
             return []
 
         headers.extend((
             ('Expires', self.make_date(time() + timeout)),
-            ('Content-Type', self.content_type),
+            ('Content-Type', str(self.content_type)),
             ('Content-Length', str(self.content_length)),
             ('Last-Modified', self.make_date(self.last_modified))
             ))
         start_response('200 OK', headers)
-        return environ.get('wsgi.file_wrapper', _FileIter)(file, _BLOCK_SIZE)
+        return environ.get('wsgi.file_wrapper', _FileIter)(self.file, _BLOCK_SIZE)
 
 
 class DepotMiddleware(object):
@@ -171,16 +171,19 @@ class DepotMiddleware(object):
             return self.app(environ, start_response)
 
         path = full_path.split('/')
+        if len(path) and not path[0]:
+            path = path[1:]
+
         if len(path) < 3:
             return self._404_response(start_response)
 
-        __, depot, fileid = full_path[:3]
+        __, depot, fileid = path[:3]
         depot = DepotManager.get(depot)
         if not depot:
             return self._404_response(start_response)
 
         try:
-            f = depot.get(file)
+            f = depot.get(fileid)
         except IOError:
             return self._404_response(start_response)
 
