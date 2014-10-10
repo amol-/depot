@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>UPLOADED FILES</title>
+</head>
+<body>
+    <form action="" method="post" enctype="multipart/form-data">
+        <input type="file" name="file"><br/>
+        <input type="submit" value="Upload">
+    </form>
+
+    <ul>
+    {% for file in files %}
+      <li><a href="/depot/default/{{ file.file_id }}">{{ file.filename }}</a></li>
+    {% endfor %}
+    </ul>
+</body>
+</html>
