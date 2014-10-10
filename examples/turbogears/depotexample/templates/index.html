@@ -1,0 +1,68 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+
+  <xi:include href="master.html" />
+
+<head>
+  <title>Welcome to TurboGears 2.3, standing on the shoulders of giants, since 2007</title>
+</head>
+
+<body>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="jumbotron">
+        <h1>Welcome to DEPOT Example</h1>
+        <p>This is plain example that permits to upload images throught the TurboGears Admin</p>
+        <p>
+          <a class="btn btn-primary btn-lg" href="/admin/uploadedimages">
+            ${h.icon('book')} Upload Images!
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+        <h1>Steps to setup DEPOT on TurboGears</h1>
+        <ol>
+            <li>
+                <h2>Setup a <strong>Storage</strong> where files can be saved</h2>
+                <p>
+                    Inside <code>config/app_cfg.py</code> use <code>DepotManager</code> to
+                    configure a storage to save files, the following example configures a local
+                    files storage named <em>default</em> that saves files on <em>/tmp</em>
+                    <pre>
+from depot.manager import DepotManager
+DepotManager.configure('default', {'depot.storage_path': '/tmp/'})
+                    </pre>
+                </p>
+            </li>
+            <li>
+                <h2>Register a DEPOT middleware to serve files</h2>
+                <p>
+                    Inside <code>config/middleware.py</code> use <code>DepotManager</code> to
+                    wrap your turbogears application with the depot middleware which will
+                    serve the saved files on <code>/depot</code> url.
+                    <pre>
+from depot.manager import DepotManager
+app = DepotManager.make_middleware(app)
+                    </pre>
+                </p>
+            </li>
+            <li>
+                <h2>Start uploading your files!</h2>
+                <p>
+                    Files you upload using <code>DepotManager.get().create(file)</code>
+                    can be retrieved back on <code>/depot/default/FILEID</code> url where
+                    <code>fileid</code> is returned by the <code>create()</code> method.
+                </p>
+            </li>
+        </ol>
+    </div>
+  </div>
+
+  <em class="pull-right small"> Thank you for choosing DEPOT</em>
+</body>
+</html>
