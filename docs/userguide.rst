@@ -105,6 +105,8 @@ generating a new id it will reuse the existing one. As for the ``create`` call t
 and content type arguments can be omitted and will be detected from the file itself when
 available.
 
+.. _depot_for_web:
+
 Depot for the Web
 =============================
 

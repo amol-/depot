@@ -75,11 +75,17 @@ With each file, additional data commonly used in HTTP like *last_modified*,
     print stored_file.filename
     print stored_file.content_type
 
+Depot with your WebFramework
+----------------------------
+
+To start using DEPOT with your favourite Web Framework you can have a look at
+the `web framework examples <https://github.com/amol-/depot/tree/master/examples>`_
+and read the :ref:`DEPOT for Web <depot_for_web>` guide.
 
 .. _depot_with_your_orm:
 
 Attaching Files to Models
---------------------------
+-------------------------
 
 Depot also features simple integration with SQLAlchemy by providing customized
 model field types for storing files attached to your ORM document.
