@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 import shutil
-
-import tempfile, os, cgi, base64
-from nose.tools import raises
 from depot.manager import DepotManager
-
 from tg import expose, TGController, AppConfig
 from webtest import TestApp
 
@@ -93,6 +89,6 @@ class TestWSGIMiddleware(object):
         app = self.make_app()
         new_file = app.post('/create_file').json
 
-        file_path = ('/depot/default/%(last)s' % new_file).encode('ascii')
+        file_path = '/depot/default/%(last)s' % new_file
         uploaded_file = app.post(file_path, status=404)
         assert 'Not Found' in uploaded_file.status, uploaded_file
