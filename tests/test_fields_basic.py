@@ -17,7 +17,6 @@ def setup():
 
     DepotManager._clear()
     DepotManager.configure('default', {'depot.storage_path': './lfs'})
-    DepotManager.make_middleware(None)
 
 
 def teardown():

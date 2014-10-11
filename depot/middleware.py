@@ -43,7 +43,7 @@ class FileServeApp(object):
 
     def parse_date(self, value):
         try:
-            return mktime_tz(parsedate_tz(value))
+            return datetime.utcfromtimestamp(mktime_tz(parsedate_tz(value)))
         except (TypeError, OverflowError):
             raise RuntimeError("Received an ill-formed timestamp")
 
@@ -61,11 +61,7 @@ class FileServeApp(object):
              'Oct', 'Nov', 'Dec')[d.tm_mon - 1],
             ' ', str(d.tm_year), d.tm_hour, d.tm_min, d.tm_sec)
 
-
     def has_been_modified(self, environ, etag, last_modified):
-        if environ['REQUEST_METHOD'] not in ('GET', 'HEAD'):
-            return False
-
         unmodified = False
 
         modified_since = environ.get('HTTP_IF_MODIFIED_SINCE')
@@ -84,7 +80,7 @@ class FileServeApp(object):
         headers = []
         timeout = self.cache_expires
         etag = self.generate_etag()
-        headers += [('Etag', '%s' % etag),
+        headers += [('ETag', '%s' % etag),
             ('Cache-Control', 'max-age=%d, public' % timeout)]
 
         try:
@@ -98,7 +94,7 @@ class FileServeApp(object):
  </head>
  <body>
   <h1>400 Bad Request</h1>
-  ETag was malformed in request
+  ETag or If-Modified-Since headers were malformed in request
  </body>
 </html>''']
 
@@ -114,7 +110,7 @@ class FileServeApp(object):
             ('Content-Type', str(self.content_type)),
             ('Content-Length', str(self.content_length)),
             ('Last-Modified', self.make_date(self.last_modified))
-            ))
+        ))
         start_response('200 OK', headers)
         return environ.get('wsgi.file_wrapper', _FileIter)(self.file, _BLOCK_SIZE)
 
@@ -165,9 +161,10 @@ class DepotMiddleware(object):
         </html>''' % (location, location)]
 
     def __call__(self, environ, start_response):
+        req_method = environ['REQUEST_METHOD']
         full_path = environ['PATH_INFO']
 
-        if not full_path.startswith(self.mountpoint):
+        if req_method not in ('GET', 'HEAD') or not full_path.startswith(self.mountpoint):
             return self.app(environ, start_response)
 
         path = full_path.split('/')
