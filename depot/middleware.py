@@ -85,7 +85,7 @@ class FileServeApp(object):
 
         try:
             has_been_modified = self.has_been_modified(environ, etag, self.last_modified)
-        except:
+        except RuntimeError:
             start_response('400 Bad Request', [('Content-Type', 'text/html')])
             return ['''\
 <html>
@@ -96,7 +96,7 @@ class FileServeApp(object):
   <h1>400 Bad Request</h1>
   ETag or If-Modified-Since headers were malformed in request
  </body>
-</html>''']
+</html>'''.encode('ascii')]
 
 
 
@@ -143,13 +143,13 @@ class DepotMiddleware(object):
           <h1>404 Not Found</h1>
           File Not Found
          </body>
-        </html>''']
+        </html>'''.encode('ascii')]
 
     def _301_response(self, start_response, location):
         # Should also set Cache-Control to keep around the 301
         start_response('301 Moved Permanently', [('Content-Type', 'text/html'),
                                                  ('Location', location)])
-        return ['''\
+        return [('''\
         <html>
          <head>
           <title>301 Moved Permanently</title>
@@ -158,7 +158,7 @@ class DepotMiddleware(object):
           <h1>301 Moved Permanently</h1>
           File you are looking for is available at <a href="%s">%s</a>
          </body>
-        </html>''' % (location, location)]
+        </html>''' % (location, location)).encode('ascii')]
 
     def __call__(self, environ, start_response):
         req_method = environ['REQUEST_METHOD']
@@ -181,7 +181,7 @@ class DepotMiddleware(object):
 
         try:
             f = depot.get(fileid)
-        except IOError:
+        except (IOError, ValueError):
             return self._404_response(start_response)
 
         public_url = f.public_url

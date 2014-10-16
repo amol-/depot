@@ -69,6 +69,15 @@ class DepotManager(object):
         return depot.get(file_id)
 
     @classmethod
+    def url_for(cls, path):
+        """Given path of a file uploaded on depot returns the url that serves it
+
+        Path is expected to be ``storage_name/fileid``.
+        """
+        mw = cls.get_middleware()
+        return mw.url_for(path)
+
+    @classmethod
     def configure(cls, name, config, prefix='depot.'):
         """Configures an application depot.
 
@@ -126,7 +135,9 @@ class DepotManager(object):
         # Get all options
         prefixlen = len(prefix)
         options = dict((k[prefixlen:], config[k]) for k in config.keys() if k.startswith(prefix))
-        options.pop(prefix+'backend', None)
+
+        # Backend is already passed as a positional argument
+        options.pop('backend', None)
         return cls._new(backend, **options)
 
     @classmethod
