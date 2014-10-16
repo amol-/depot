@@ -35,7 +35,7 @@ class DepotManager(object):
         return cls._default_depot
 
     @classmethod
-    def set_middleare(cls, mw):
+    def set_middleware(cls, mw):
         if cls._middleware is not None:
             raise RuntimeError('There is already a WSGI middleware registered')
         cls._middleware = mw
@@ -110,7 +110,7 @@ class DepotManager(object):
         """
         from depot.middleware import DepotMiddleware
         mw = DepotMiddleware(app, **options)
-        cls.set_middleare(mw)
+        cls.set_middleware(mw)
         return mw
 
     @classmethod
