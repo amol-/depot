@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import shutil
-from unittest import SkipTest
+from nose import SkipTest
 import uuid
 from depot.manager import DepotManager
 from tg import expose, TGController, AppConfig
