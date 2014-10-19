@@ -15,9 +15,17 @@ body {
   background: url("bg.png") repeat scroll 0 0 #EBEBEB;
 }
 
+/* GitHub Flag */
+#github-flag {
+    float: right;
+    display: block;
+}
+
+#github-flag > img {
+    display: block;
+}
 
 /* Page layout */
-
 div.header, div.content, div.footer {
   width: {{ theme_pagewidth }};
   margin-left: auto;
