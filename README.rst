@@ -31,6 +31,8 @@ Getting Started
 
 To start using Depot refer to `Documentation <http://depot.readthedocs.org/en/latest/>`_
 
+DEPOT was `presented at PyConUK and PyConFR <http://www.slideshare.net/__amol__/pyconuk-2014-depot-story-of-a-filewrite-gone-wrong>`_ in 2014
+
 Here is a simple example of using depot standalone to store files on MongoDB::
 
     from depot.manager import DepotManager
