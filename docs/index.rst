@@ -30,6 +30,13 @@ Depot is a swiss army knife for files that provides:
       middleware creation and files for your application, but if you want you can manually
       create multiple depots or middlewares without using the manager.
 
+DEPOT was presented at PyConUK 2014 and PyConFR 2014, for a short presentation
+you can have a look at the PyConFR slides:
+
+.. raw:: html
+
+    <iframe src="//www.slideshare.net/slideshow/embed_code/40711828" width="510" height="420" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe>
+
 .. _installing_depot:
 
 Installing Depot
