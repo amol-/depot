@@ -12,13 +12,14 @@ except IOError:
 TEST_DEPENDENCIES = ['mock',
                      'pymongo >= 2.7',
                      'sqlalchemy',
-                     'boto',
                      'pillow',
                      'ming',
                      'TurboGears2',
                      'WebTest']
 
 py_version = sys.version_info[:2]
+if py_version != (3, 2):
+    TEST_DEPENDENCIES += ['boto']
 
 INSTALL_DEPENDENCIES = []
 if py_version == (2, 6):
