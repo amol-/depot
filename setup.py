@@ -18,7 +18,7 @@ TEST_DEPENDENCIES = ['mock',
                      'WebTest']
 
 py_version = sys.version_info[:2]
-if py_version[0] == 2:
+if py_version != (3, 2):
     TEST_DEPENDENCIES += ['boto']
 
 INSTALL_DEPENDENCIES = []
