@@ -64,7 +64,8 @@ class TestS3FileStorage(object):
         key.set_contents_from_string(FILE_CONTENT)
 
         f = self.fs.get(fid)
-        assert f.public_url.endswith('.s3.amazonaws.com/%s' % fid)
+        assert '.s3.amazonaws.com' in f.public_url, f.public_url
+        assert f.public_url.endswith('/%s' % fid), f.public_url
 
     def teardown(self):
         keys = [key.name for key in self.fs._bucket]

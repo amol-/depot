@@ -5,7 +5,7 @@ import shutil
 import mock
 import datetime
 from io import BytesIO
-from tempfile import TemporaryFile, NamedTemporaryFile
+from tempfile import NamedTemporaryFile
 import os
 from tests.utils import create_cgifs
 
@@ -41,7 +41,7 @@ class BaseStorageTestFixture(object):
         f = self.fs.get('NOTANID')
 
     def test_creation_inputs(self):
-        temp = TemporaryFile()
+        temp = NamedTemporaryFile()
         temp.write(FILE_CONTENT)
         temp.seek(0)
 

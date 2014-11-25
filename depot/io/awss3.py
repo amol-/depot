@@ -140,7 +140,6 @@ class S3Storage(FileStorage):
         return k is not None
 
 
-
 def _check_file_id(file_id):
     # Check that the given file id is valid, this also
     # prevents unsafe paths.
