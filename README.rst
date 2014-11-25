@@ -53,4 +53,10 @@ Here is a simple example of using depot standalone to store files on MongoDB::
     print stored_file.filename
     print stored_file.content_type
 
+ChangeLog
+---------
 
+0.0.2
+~~~~~
+
+- Official Support for AWS S3 on Python3
