@@ -30,13 +30,14 @@ class FileServeApp(object):
     """
     Serves a static filelike object.
     """
-    def __init__(self, storedfile, cache_max_age):
+    def __init__(self, storedfile, cache_max_age, replace_wsgi_filewrapper=False):
         self.file = storedfile
 
         self.last_modified = self.file.last_modified
         self.content_length = self.file.content_length
         self.content_type = self.file.content_type
         self.cache_expires = cache_max_age
+        self.replace_wsgi_filewrapper = replace_wsgi_filewrapper
 
     def generate_etag(self):
         return '"%s-%s"' % (self.last_modified, self.content_length)
@@ -112,6 +113,10 @@ class FileServeApp(object):
             ('Last-Modified', self.make_date(self.last_modified))
         ))
         start_response('200 OK', headers)
+
+        if self.replace_wsgi_filewrapper is True:
+            environ['wsgi.file_wrapper'] = _FileIter
+
         return environ.get('wsgi.file_wrapper', _FileIter)(self.file, _BLOCK_SIZE)
 
 
@@ -123,11 +128,17 @@ class DepotMiddleware(object):
     provide a public HTTP url. For depot that provide a public url the
     request is redirected to the public url.
 
+    In case you have issues serving files with your WSGI server your can try
+    to set ``replace_wsgi_filewrapper=True`` which forces DEPOT to use its own
+    internal FileWrapper instead of the one provided by your WSGI server.
+
     """
-    def __init__(self, app, mountpoint='/depot', cache_max_age=3600*24*7):
+    def __init__(self, app, mountpoint='/depot', cache_max_age=3600*24*7,
+                 replace_wsgi_filewrapper=False):
         self.app = app
         self.mountpoint = mountpoint
         self.cache_max_age = cache_max_age
+        self.replace_wsgi_filewrapper = replace_wsgi_filewrapper
 
     def url_for(self, path):
         return '/'.join((self.mountpoint, path))
@@ -188,4 +199,5 @@ class DepotMiddleware(object):
         if public_url is not None:
             self._301_response(start_response, public_url)
 
-        return FileServeApp(f, self.cache_max_age)(environ, start_response)
+        fileapp = FileServeApp(f, self.cache_max_age, self.replace_wsgi_filewrapper)
+        return fileapp(environ, start_response)

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import shutil
+from depot.middleware import _FileIter
 from nose import SkipTest
 import uuid
 from depot.manager import DepotManager
@@ -155,3 +156,11 @@ class TestWSGIMiddleware(object):
         file_path = DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file)
         uploaded_file = app.get(file_path)
         assert uploaded_file.body == FILE_CONTENT, uploaded_file
+
+    def test_serving_files_with_wsgifilewrapper(self):
+        app = self.make_app(replace_wsgi_filewrapper=True)
+        new_file = app.post('/create_file').json
+
+        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
+        assert uploaded_file.body == FILE_CONTENT
+        assert uploaded_file.request.environ['wsgi.file_wrapper'] is _FileIter
