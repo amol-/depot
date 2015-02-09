@@ -56,6 +56,11 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.0.3
+~~~~~
+
+- Work-Around for issue with `wsgi.file_wrapper` provided by Waitress WSGI Server
+
 0.0.2
 ~~~~~
 
