@@ -32,7 +32,6 @@ class FileServeApp(object):
     """
     def __init__(self, storedfile, cache_max_age, replace_wsgi_filewrapper=False):
         self.file = storedfile
-
         self.last_modified = self.file.last_modified
         self.content_length = self.file.content_length
         self.content_type = self.file.content_type
@@ -110,7 +109,8 @@ class FileServeApp(object):
             ('Expires', self.make_date(time() + timeout)),
             ('Content-Type', str(self.content_type)),
             ('Content-Length', str(self.content_length)),
-            ('Last-Modified', self.make_date(self.last_modified))
+            ('Last-Modified', self.make_date(self.last_modified)),
+            ("Content-Disposition", "attachment; filename=%s" % self.file.filename),
         ))
         start_response('200 OK', headers)
 
