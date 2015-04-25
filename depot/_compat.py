@@ -1,5 +1,6 @@
 import platform, sys
 
+
 if platform.system() == 'Windows':  # pragma: no cover
     WIN = True
 else:
@@ -10,6 +11,8 @@ PY2 = sys.version_info[0] == 2
 
 
 if not PY2:  # pragma: no cover
+    from urllib.parse import quote, unquote
+
     string_type = str
     unicode_text = str
     byte_string = bytes
@@ -20,7 +23,12 @@ if not PY2:  # pragma: no cover
     def bytes_(s):
         return str(s).encode('ascii', 'strict')
 
+    def percent_encode(string, safe, encoding):
+        return quote(string, safe, encoding, errors='strict')
+
 else:  # pragma: no cover
+    from urllib import quote, unquote
+
     string_type = basestring
     unicode_text = unicode
     byte_string = str
@@ -30,6 +38,10 @@ else:  # pragma: no cover
 
     def bytes_(s):
         return str(s)
+
+    def percent_encode(string, **kwargs):
+        encoding = kwargs.pop('encoding')
+        return quote(string.encode(encoding), **kwargs)
 
 
 def with_metaclass(meta, base=object):

@@ -1,7 +1,9 @@
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz
 from time import gmtime, time
+from unidecode import unidecode
 from .manager import DepotManager
+from ._compat import percent_encode
 
 _BLOCK_SIZE = 4096 * 64 # 256K
 
@@ -33,6 +35,7 @@ class FileServeApp(object):
     def __init__(self, storedfile, cache_max_age, replace_wsgi_filewrapper=False):
         self.file = storedfile
 
+        self.filename = self.file.filename
         self.last_modified = self.file.last_modified
         self.content_length = self.file.content_length
         self.content_type = self.file.content_type
@@ -61,6 +64,12 @@ class FileServeApp(object):
             ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
              'Oct', 'Nov', 'Dec')[d.tm_mon - 1],
             ' ', str(d.tm_year), d.tm_hour, d.tm_min, d.tm_sec)
+
+    @classmethod
+    def make_content_disposition(cls, disposition, fname):
+        rfc6266_part = "filename*=utf-8''%s" % (percent_encode(fname, safe='!#$&+-.^_`|~', encoding='utf-8'), )
+        ascii_part = "filename=%s" % (unidecode(fname), )
+        return ';'.join((disposition, ascii_part, rfc6266_part))
 
     def has_been_modified(self, environ, etag, last_modified):
         unmodified = False
@@ -99,8 +108,6 @@ class FileServeApp(object):
  </body>
 </html>'''.encode('ascii')]
 
-
-
         if not has_been_modified:
             self.file.close()
             start_response('304 Not Modified', headers)
@@ -110,7 +117,8 @@ class FileServeApp(object):
             ('Expires', self.make_date(time() + timeout)),
             ('Content-Type', str(self.content_type)),
             ('Content-Length', str(self.content_length)),
-            ('Last-Modified', self.make_date(self.last_modified))
+            ('Last-Modified', self.make_date(self.last_modified)),
+            ('Content-Disposition', self.make_content_disposition('inline', self.filename))
         ))
         start_response('200 OK', headers)
 

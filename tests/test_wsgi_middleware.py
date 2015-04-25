@@ -7,6 +7,8 @@ import uuid
 from depot.manager import DepotManager
 from tg import expose, TGController, AppConfig
 from webtest import TestApp
+from depot._compat import u_, unquote
+
 
 FILE_CONTENT = b'HELLO WORLD'
 
@@ -24,9 +26,13 @@ class RootController(TGController):
         return dict(files=self.UPLOADED_FILES)
 
     @expose('json')
-    def create_file(self):
+    def create_file(self, lang='en'):
+        fname = {'en': 'hello.txt',
+                 'ru': u_('Крупный'),
+                 'it': u_('àèìòù')}.get(lang, 'unknown')
+
         self.UPLOADED_FILES += [DepotManager.get().create(FILE_CONTENT,
-                                                          filename='hello.txt')]
+                                                          filename=fname)]
         return dict(files=self.UPLOADED_FILES,
                     uploaded_to=DepotManager.get_default(),
                     last=self.UPLOADED_FILES[-1])
@@ -164,3 +170,18 @@ class TestWSGIMiddleware(object):
         uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
         assert uploaded_file.body == FILE_CONTENT
         assert uploaded_file.request.environ['wsgi.file_wrapper'] is _FileIter
+
+    def test_serving_files_content_disposition(self):
+        app = self.make_app()
+        new_file = app.post('/create_file', params={'lang': 'ru'}).json
+
+        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
+        content_disposition = uploaded_file.headers['Content-Disposition']
+        assert content_disposition == "inline;filename=Krupnyi;filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
+
+        new_file = app.post('/create_file', params={'lang': 'it'}).json
+        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
+        content_disposition = uploaded_file.headers['Content-Disposition']
+        _, asciiname, uniname = content_disposition.split(';')
+        assert asciiname == 'filename=aeiou', asciiname
+        assert u_(unquote(uniname[17:])) == u_('àèìòù'), unquote(uniname[17:])

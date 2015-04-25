@@ -21,7 +21,7 @@ py_version = sys.version_info[:2]
 if py_version != (3, 2):
     TEST_DEPENDENCIES += ['boto']
 
-INSTALL_DEPENDENCIES = []
+INSTALL_DEPENDENCIES = ['unidecode']
 if py_version == (2, 6):
     INSTALL_DEPENDENCIES += ['importlib']
 
