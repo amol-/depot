@@ -56,6 +56,11 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.0.4
+~~~~~
+
+- Added Content-Disposition header with original filename in WSGI middleware
+
 0.0.3
 ~~~~~
 
