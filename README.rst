@@ -56,6 +56,11 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.0.5
+~~~~~
+
+- Added `FileIntent` to explicitly provide `content_type` and `filename` to uploaded content.
+
 0.0.4
 ~~~~~
 

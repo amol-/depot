@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os, sys
 
-version = '0.0.4'
+version = '0.0.5'
 
 here = os.path.abspath(os.path.dirname(__file__))
 try:
@@ -48,7 +48,7 @@ setup(name='filedepot',
       extras_require={
          # Used by Travis and Coverage due to setup.py nosetests
          # causing a coredump when used with coverage
-         'testing':TEST_DEPENDENCIES,
+         'testing': TEST_DEPENDENCIES,
       },
       test_suite='nose.collector',
       zip_safe=False,
