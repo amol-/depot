@@ -7,6 +7,7 @@ import datetime
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 import os
+from depot.io.utils import FileIntent
 from tests.utils import create_cgifs
 
 FILE_CONTENT = b'HELLO WORLD'
@@ -48,7 +49,8 @@ class BaseStorageTestFixture(object):
         for d in (FILE_CONTENT,
                   BytesIO(FILE_CONTENT),
                   temp,
-                  create_cgifs('text/plain', FILE_CONTENT, 'file.txt')):
+                  create_cgifs('text/plain', FILE_CONTENT, 'file.txt'),
+                  FileIntent(FILE_CONTENT, 'file.txt', 'text/plain')):
             fid = self.fs.create(d, 'filename')
             f = self.fs.get(fid)
             assert f.read() == FILE_CONTENT
@@ -68,6 +70,14 @@ class BaseStorageTestFixture(object):
         f = self.fs.get(file_id)
         assert f.content_type == 'text/plain'
         assert f.filename == 'file.txt'
+        assert f.read() == FILE_CONTENT
+
+    def test_fileintent(self):
+        file_id = self.fs.create(FileIntent(FILE_CONTENT, 'file.txt', 'text/plain'))
+
+        f = self.fs.get(file_id)
+        assert f.content_type == 'text/plain', f.content_type
+        assert f.filename == 'file.txt', f.filename
         assert f.read() == FILE_CONTENT
 
     def test_filewithname(self):

@@ -10,6 +10,7 @@ from sqlalchemy.types import Unicode, Integer
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
 from depot.fields.sqlalchemy import UploadedFileField
 from depot.fields.upload import UploadedFile
+from depot.io.utils import FileIntent
 from depot.manager import DepotManager, get_file
 from .utils import create_cgifs
 from depot.fields.specialized.image import UploadedImageWithThumb
@@ -361,6 +362,22 @@ class TestSQLAThumbnailFilter(object):
         assert d.second_photo.url == '/depot/%s' % d.second_photo.path
         assert d.second_photo.thumb_url == '/depot/%s' % d.second_photo.thumb_path
         assert d.second_photo.url != d.second_photo.thumb_url
+
+    def test_create_fileintent(self):
+        field = FileIntent(open(self.fake_file.name, 'rb'), u_('àèìòù.gif'), 'image/gif')
+
+        doc = Document(name=u_('Foo'), second_photo=field)
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        assert d.second_photo.file.read() == self.file_content
+        assert d.second_photo.filename == field._filename
+        assert d.second_photo.url == '/depot/%s' % d.second_photo.path
+        assert d.second_photo.thumb_url == '/depot/%s' % d.second_photo.thumb_path
+        assert d.second_photo.url != d.second_photo.thumb_url
+        assert d.second_photo.content_type == field._content_type
 
     def test_thumbnail(self):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
