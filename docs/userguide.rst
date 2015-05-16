@@ -117,6 +117,12 @@ In such case :class:`depot.io.utils.FileIntent` can be provided to DEPOT instead
 content_type to use to store the file. Also non files can be provided to FileIntent to store raw
 data::
 
+    # Works with file objects
+    file_id = self.fs.create(
+        FileIntent(open('/tmp/file', 'rb'), 'file.txt', 'text/plain')
+    )
+
+    # Works also with bytes
     file_id = self.fs.create(
         FileIntent(b'HELLO WORLD', 'file.txt', 'text/plain')
     )
