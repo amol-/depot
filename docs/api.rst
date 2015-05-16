@@ -62,6 +62,6 @@ Storing Files
 Utilities
 ---------
 
-.. autofunction::: depot.io.utils.file_from_content
+.. autofunction:: depot.io.utils.file_from_content
 
-..
+.. autoclass:: depot.io.utils.FileIntent

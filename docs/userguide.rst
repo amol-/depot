@@ -105,6 +105,27 @@ generating a new id it will reuse the existing one. As for the ``create`` call t
 and content type arguments can be omitted and will be detected from the file itself when
 available.
 
+Storing data as files
+---------------------
+
+Whenever you do not have a real file (often the case with web uploaded content), you might
+not be able to retrieve the name and the content type from the file itself, of those values
+might be wrong.
+
+In such case :class:`depot.io.utils.FileIntent` can be provided to DEPOT instead of the actual file,
+:class:`depot.io.utils.FileIntent` can be used to explicitly tell DEPOT which filename and
+content_type to use to store the file. Also non files can be provided to FileIntent to store raw
+data::
+
+    file_id = self.fs.create(
+        FileIntent(b'HELLO WORLD', 'file.txt', 'text/plain')
+    )
+
+    f = self.fs.get(file_id)
+    assert f.content_type == 'text/plain'
+    assert f.filename == 'file.txt'
+    assert f.read() == b'HELLO WORLD'
+
 .. _depot_for_web:
 
 Depot for the Web

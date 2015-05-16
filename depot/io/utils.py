@@ -12,6 +12,11 @@ def timestamp():
 
 
 def file_from_content(content):
+    """Provides a real file object from file content
+
+    Converts ``FileStorage``, ``FileIntent`` and
+    ``bytes`` to an actual file.
+    """
     f = content
     if isinstance(content, cgi.FieldStorage):
         f = content.file
