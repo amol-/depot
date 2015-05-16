@@ -20,3 +20,21 @@ def file_from_content(content):
         f.write(content)
     f.seek(0)
     return f
+
+
+class FileIntent(object):
+    """Represents the intention to upload a file
+
+    Whenever a file can be stored by depot, a FileIntent
+    can be passed instead of the file itself. This permits
+    to easily upload objects that are not files or to add
+    missing information to the uploaded files.
+    """
+    def __init__(self, fileobj, filename, content_type):
+        self._fileobj = fileobj
+        self._filename = filename
+        self._content_type = content_type
+
+    @property
+    def fileinfo(self):
+        return self._fileobj, self._filename, self._content_type

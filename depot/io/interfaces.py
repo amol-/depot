@@ -10,6 +10,7 @@ from io import IOBase
 import cgi
 import os
 import mimetypes
+from depot.io.utils import FileIntent
 
 
 class StoredFile(IOBase):
@@ -140,8 +141,11 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         """Tries to extract from the given input the actual file object, filename and content_type
 
         This is used by the create and replace methods to correctly deduce their parameters
-        from the available informations when possible.
+        from the available information when possible.
         """
+        if isinstance(fileobj, FileIntent):
+            return fileobj.fileinfo
+
         content = fileobj
         if isinstance(fileobj, cgi.FieldStorage):
             content = fileobj.file

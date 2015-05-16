@@ -153,7 +153,7 @@ try:  # pragma: no cover
     SAWidgetSelector.default_widgets.setdefault(UploadedFileField, TW2FileField)
 
     from sprox.sa.validatorselector import SAValidatorSelector
-    from tw2.forms import FileValidator
-    SAValidatorSelector.default_validators.setdefault(UploadedFileField, FileValidator)
+    from ..validators import TW2FileIntentValidator
+    SAValidatorSelector.default_validators.setdefault(UploadedFileField, TW2FileIntentValidator)
 except ImportError:  # pragma: no cover
     pass
