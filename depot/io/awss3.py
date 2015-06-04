@@ -61,11 +61,15 @@ class S3Storage(FileStorage):
 
     """
 
-    def __init__(self, access_key_id, secret_access_key, bucket=None):
+    def __init__(self, access_key_id, secret_access_key, bucket=None,
+                 host=None):
         if bucket is None:
             bucket = 'filedepot-%s' % (access_key_id.lower(),)
 
-        self._conn = S3Connection(access_key_id, secret_access_key)
+        kw = {}
+        if host is not None:
+            kw['host'] = host
+        self._conn = S3Connection(access_key_id, secret_access_key, **kw)
         self._bucket = self._conn.lookup(bucket)
         if self._bucket is None:
             self._bucket = self._conn.create_bucket(bucket)
