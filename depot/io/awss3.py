@@ -56,8 +56,9 @@ class S3StoredFile(StoredFile):
 class S3Storage(FileStorage):
     """:class:`depot.io.interfaces.FileStorage` implementation that stores files on S3.
 
-    All the files are stored inside a bucket named ``bucket`` to which Depot connects
-    to using ``access_key_id`` and ``secret_access_key``.
+    All the files are stored inside a bucket named ``bucket`` on ``host`` which Depot
+    connects to using ``access_key_id`` and ``secret_access_key``. If ``host`` is
+    omitted the Amazon AWS S3 storage is used.
 
     """
 
