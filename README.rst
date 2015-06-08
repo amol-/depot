@@ -56,6 +56,11 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.0.6
+~~~~~
+
+- Added `host` option to `S3Storage` to allow using providers different from *AWS*.
+
 0.0.5
 ~~~~~
 
