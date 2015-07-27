@@ -45,5 +45,24 @@ class TestDepotManager(object):
         else:
             assert False, 'Should have raised RunetimeError here'
 
+    def test_aliases(self):
+        DepotManager.configure('first', {'depot.storage_path': './lfs'})
+        DepotManager.configure('second', {'depot.storage_path': './lfs2'})
 
+        DepotManager.alias('used_storage', 'first')
+        storage = DepotManager.get('used_storage')
+        assert storage.storage_path == './lfs', storage
+
+        DepotManager.alias('used_storage', 'second')
+        storage = DepotManager.get('used_storage')
+        assert storage.storage_path == './lfs2', storage
+
+    @raises(ValueError)
+    def test_aliases_not_existing(self):
+        DepotManager.alias('used_storage', 'first')
+
+    @raises(ValueError)
+    def test_alias_on_existing_storage(self):
+        DepotManager.configure('mystorage', {'depot.storage_path': './lfs2'})
+        DepotManager.alias('mystorage', 'mystorage')
 

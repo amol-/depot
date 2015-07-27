@@ -19,6 +19,7 @@ class DepotManager(object):
     _default_depot = None
     _depots = {}
     _middleware = None
+    _aliases = {}
 
     @classmethod
     def set_default(cls, name):
@@ -56,6 +57,8 @@ class DepotManager(object):
         """
         if name is None:
             name = cls._default_depot
+
+        name = cls._aliases.get(name, name)  # resolve alias
         return cls._depots.get(name)
 
     @classmethod
@@ -98,6 +101,16 @@ class DepotManager(object):
 
         cls._depots[name] = cls.from_config(config, prefix)
         return cls._depots[name]
+
+    @classmethod
+    def alias(cls, alias, name):
+        if name not in cls._depots:
+            raise ValueError('You can only alias an existing storage, %s not found' % (name, ))
+
+        if alias in cls._depots:
+            raise ValueError('Cannot use an existing storage name as an alias, will break existing files.')
+
+        cls._aliases[alias] = name
 
     @classmethod
     def make_middleware(cls, app, **options):
@@ -151,6 +164,7 @@ class DepotManager(object):
         cls._default_depot = None
         cls._depots = {}
         cls._middleware = None
+        cls._aliases = {}
 
 get_depot = DepotManager.get
 get_file = DepotManager.get_file
