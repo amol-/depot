@@ -7,6 +7,7 @@ from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
 from depot.fields.sqlalchemy import UploadedFileField
+from depot.fields.upload import UploadedFile
 from depot.manager import DepotManager
 from depot.fields.interfaces import FileFilter
 
@@ -114,3 +115,12 @@ class TestFieldsInterface(object):
 
         d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
         del d.content.hello
+
+    @raises(ValueError)
+    def test_storage_does_not_exists(self):
+        doc = SimpleDocument(name=u_('Foo'))
+        doc.content = UploadedFile(open(self.fake_file.name, 'rb'),
+                                   'missing_storage')
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()

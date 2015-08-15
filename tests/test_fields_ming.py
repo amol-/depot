@@ -21,6 +21,8 @@ def setup():
 
     DepotManager._clear()
     DepotManager.configure('default', {'depot.storage_path': './lfs'})
+    DepotManager.configure('another', {'depot.storage_path': './lfs'})
+    DepotManager.alias('another_alias', 'another')
     DepotManager.make_middleware(None)
 
 
@@ -38,6 +40,7 @@ class Document(MappedClass):
     content = UploadedFileProperty()
     photo = UploadedFileProperty(upload_type=UploadedImageWithThumb)
     second_photo = UploadedFileProperty(filters=(WithThumbnailFilter((12, 12), 'PNG'),))
+    targeted_content = UploadedFileProperty(upload_storage='another_alias')
 
 
 class TestMingAttachments(object):
@@ -82,7 +85,6 @@ class TestMingAttachments(object):
 
         DBSession.flush()
         DBSession.clear()
-
 
         assert get_file(new_file).read() == b'HELLO'
 
@@ -169,6 +171,16 @@ class TestMingAttachments(object):
         DBSession.clear()
 
         assert get_file(old_file).read() == self.file_content
+
+    def test_create_with_alias(self):
+        doc = Document(name='Foo', targeted_content=open(self.fake_file.name, 'rb'))
+        DBSession.flush()
+        DBSession.clear()
+
+        d = Document.query.find(dict(name='Foo')).first()
+        assert d.targeted_content.file.read() == self.file_content
+        assert d.targeted_content.file.filename == os.path.basename(self.fake_file.name)
+        assert d.targeted_content.depot_name == 'another'
 
 
 class TestMingImageAttachments(object):

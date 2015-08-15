@@ -19,7 +19,7 @@ class FileFilter(with_metaclass(ABCMeta, object)):
 
 
 class DepotFileInfo(with_metaclass(ABCMeta, dict)):
-    """Keeps informations on a content related to a specific depot.
+    """Keeps information on a content related to a specific depot.
 
     By itself the DepotFileInfo does nothing, it is required to implement
     a :meth:`process_content` method that actually saves inside the
@@ -42,6 +42,10 @@ class DepotFileInfo(with_metaclass(ABCMeta, dict)):
             object.__setattr__(self, 'original_content', content)
             if depot_name is None:
                 depot_name = DepotManager.get_default()
+
+            depot_name = DepotManager.resolve_alias(depot_name)
+            if not depot_name:
+                raise ValueError('Storage has not been found in DEPOT')
 
             self['depot_name'] = depot_name
             self['files'] = []

@@ -7,8 +7,8 @@ class UploadedFile(DepotFileInfo):
     """Simple :class:`depot.fields.interfaces.DepotFileInfo` implementation that stores files.
 
     Takes a file as content and uploads it to the depot while saving around
-    most file informations. Pay attention that if the file gets replaced
-    through the depot the ``UploadedFile`` will continue to have the old data.
+    most file information. Pay attention that if the file gets replaced
+    through depot manually the ``UploadedFile`` will continue to have the old data.
 
     Also provides support for encoding/decoding using JSON for storage inside
     databases as a plain string.

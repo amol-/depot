@@ -58,7 +58,7 @@ class DepotManager(object):
         if name is None:
             name = cls._default_depot
 
-        name = cls._aliases.get(name, name)  # resolve alias
+        name = cls.resolve_alias(name)  # resolve alias
         return cls._depots.get(name)
 
     @classmethod
@@ -111,6 +111,12 @@ class DepotManager(object):
             raise ValueError('Cannot use an existing storage name as an alias, will break existing files.')
 
         cls._aliases[alias] = name
+
+    @classmethod
+    def resolve_alias(cls, name):
+        while name and name not in cls._depots:
+            name = cls._aliases.get(name)
+        return name
 
     @classmethod
     def make_middleware(cls, app, **options):

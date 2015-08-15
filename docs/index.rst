@@ -68,8 +68,7 @@ With each file, additional data commonly used in HTTP like *last_modified*,
 
     # Configure a *default* depot to store files on MongoDB GridFS
     DepotManager.configure('default', {
-        'depot.backend': 'depot.io.gridfs.GridFSStorage',
-        'depot.mongouri': 'mongodb://localhost/db'
+       a
     })
 
     depot = DepotManager.get()

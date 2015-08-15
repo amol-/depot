@@ -185,11 +185,11 @@ Handling Multiple Storages
 Using Multiple Storages
 -----------------------
 
-Multiple storages can be used inside the same application, most common operations require
-the storage itself or the full file path, so you can use multiple storages without risk
+Multiple storage can be used inside the same application, most common operations require
+the storage itself or the full file path, so you can use multiple storage without risk
 of collisions.
 
-To start using multiple storages just call the :meth:`.DepotManager.configure` multiple times
+To start using multiple storage just call the :meth:`.DepotManager.configure` multiple times
 and give each storage a unique name. You will be able to retrieve the correct storage by name.
 
 Switching Default Storage
@@ -200,7 +200,7 @@ storage to the same name. Doing that will probably break all the previously uplo
 and will cause confusion.
 
 If you want to switch to a different storage for saving your files just configure two
-storages giving the new storage an unique name and switch the default storage using
+storage giving the new storage an unique name and switch the default storage using
 the :meth:`.DepotManager.set_default` function.
 
 Replacing a Storage through Aliases
@@ -214,9 +214,7 @@ which permits to assign alternative names for a storage.
 
 If you only rely on the alternative name and never use the real storage name, you will
 be able to switch the alias to whatever new storage you want while the files previously
-uploaded to the old storage keep working.
-
-For example if you are storing all your user avatars locally you might have
+uploaded to the old storage keep wFor example if you are storing all your user avatars locally you might have
 a configuration like::
 
         DepotManager.configure('local_avatars', {'depot.storage_path': '/var/www/lfs'})

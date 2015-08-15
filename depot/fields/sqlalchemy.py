@@ -33,10 +33,11 @@ class UploadedFileField(types.TypeDecorator):
     """
     impl = types.Unicode
 
-    def __init__(self, filters=tuple(), upload_type=UploadedFile, *args, **kw):
+    def __init__(self, filters=tuple(), upload_type=UploadedFile, upload_storage=None, *args, **kw):
         super(UploadedFileField, self).__init__(*args, **kw)
         self._filters = filters
         self._upload_type = upload_type
+        self._upload_storage = upload_storage
 
     def load_dialect_impl(self, dialect):
         return dialect.type_descriptor(types.VARCHAR(4096))
@@ -70,7 +71,7 @@ class _SQLAMutationTracker(object):
         assert(isinstance(column_type, UploadedFileField))
 
         upload_type = column_type._upload_type
-        value = upload_type(value)
+        value = upload_type(value, column_type._upload_storage)
         value._apply_filters(column_type._filters)
 
         return value

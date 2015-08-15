@@ -11,15 +11,16 @@ from .upload import UploadedFile
 
 
 class UploadedFileProperty(FieldProperty):
-        def __init__(self,  filters=tuple(), upload_type=UploadedFile):
+        def __init__(self,  filters=tuple(), upload_type=UploadedFile, upload_storage=None):
             FieldProperty.__init__(self, Anything())
             self._filters = filters
             self._upload_type = upload_type
+            self._upload_storage = upload_storage
 
         def __set__(self, instance, value):
             if value is not None and not isinstance(value, UploadedFile):
                 upload_type = self._upload_type
-                value = upload_type(value)
+                value = upload_type(value, self._upload_storage)
 
             if isinstance(value, UploadedFile):
                 value._apply_filters(self._filters)

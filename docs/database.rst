@@ -52,6 +52,28 @@ Most important property is probably the ``.url`` property which provides an URL 
 file can be accessed in case the storage supports HTTP or the :class:`.DepotMiddleware` is
 available in your WSGI application.
 
+Uploading on a Specific Storage
+-------------------------------
+
+By default all the files are uploaded on the ``default`` storage (the one
+returned by :meth:`.DepotManager.get_default`. This can be changed by
+passing a ``upload_storage`` argument explicitly to the database field declaration::
+
+    from depot.fields.sqlalchemy import UploadedFileField
+
+    class Document(Base):
+        __tablename__ = 'document'
+
+        uid = Column(Integer, autoincrement=True, primary_key=True)
+        name = Column(Unicode(16), unique=True)
+
+        content = Column(UploadedFileField(upload_storage='another_storage'))
+
+If the specified ``upload_storage`` is an *alias* to another storage, the
+file will actually keep track of the real storage, so that when the alias
+is switched to another storage, previously uploaded files continue to get
+served from the old storage.
+
 Session Awareness
 -----------------
 

@@ -22,6 +22,8 @@ def setup():
 
     DepotManager._clear()
     DepotManager.configure('default', {'depot.storage_path': './lfs'})
+    DepotManager.configure('another', {'depot.storage_path': './lfs'})
+    DepotManager.alias('another_alias', 'another')
     DepotManager.make_middleware(None)
 
 
@@ -39,7 +41,7 @@ class Document(DeclarativeBase):
     content = Column('content_col', UploadedFileField)
     photo = Column(UploadedFileField(upload_type=UploadedImageWithThumb))
     second_photo = Column(UploadedFileField(filters=(WithThumbnailFilter((12, 12), 'PNG'),)))
-
+    targeted_content = Column(UploadedFileField(upload_storage='another_alias'))
 
 class TestSQLAAttachments(object):
     def __init__(self):
@@ -176,6 +178,18 @@ class TestSQLAAttachments(object):
         DBSession.remove()
 
         assert get_file(old_file).read() == self.file_content
+
+    def test_create_with_alias(self):
+        doc = Document(name=u_('Foo'))
+        doc.targeted_content = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        assert d.targeted_content.file.read() == self.file_content
+        assert d.targeted_content.file.filename == os.path.basename(self.fake_file.name)
+        assert d.targeted_content.depot_name == 'another'
 
 
 class TestSQLAImageAttachments(object):
