@@ -14,6 +14,9 @@ from depot._compat import unicode_text
 from .interfaces import FileStorage, StoredFile
 from . import utils
 
+CANNED_ACL_PUBLIC_READ = 'public-read'
+CANNED_ACL_PRIVATE = 'private'
+
 
 class S3StoredFile(StoredFile):
     def __init__(self, file_id, key):
@@ -58,12 +61,20 @@ class S3Storage(FileStorage):
 
     All the files are stored inside a bucket named ``bucket`` on ``host`` which Depot
     connects to using ``access_key_id`` and ``secret_access_key``. If ``host`` is
-    omitted the Amazon AWS S3 storage is used.
-
+    omitted the Amazon AWS S3 storage is used. Additionally, a canned ACL policy of
+    either ``private`` or ``public-read`` can be specified with the ``policy`` parameter.
+    Finally, the ``encrypt_key`` parameter can be specified to use the server side
+    encryption feature.
     """
 
-    def __init__(self, access_key_id, secret_access_key, bucket=None,
-                 host=None):
+    def __init__(self, access_key_id, secret_access_key, bucket=None, host=None,
+                 policy=None, encrypt_key=False):
+        policy = policy or CANNED_ACL_PUBLIC_READ
+        assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
+            "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
+        self._policy = policy or CANNED_ACL_PUBLIC_READ
+        self._encrypt_key = encrypt_key
+
         if bucket is None:
             bucket = 'filedepot-%s' % (access_key_id.lower(),)
 
@@ -100,13 +111,16 @@ class S3Storage(FileStorage):
                 can_seek_and_tell = False
 
             if can_seek_and_tell:
-                key.set_contents_from_file(content, policy='public-read')
+                key.set_contents_from_file(content, policy=self._policy,
+                                           encrypt_key=self._encrypt_key)
             else:
-                key.set_contents_from_string(content.read(), policy='public-read')
+                key.set_contents_from_string(content.read(), policy=self._policy,
+                                             encrypt_key=self._encrypt_key)
         else:
             if isinstance(content, unicode_text):
                 raise TypeError('Only bytes can be stored, not unicode')
-            key.set_contents_from_string(content, policy='public-read')
+            key.set_contents_from_string(content, policy=self._policy,
+                                         encrypt_key=self._encrypt_key)
 
     def create(self, content, filename=None, content_type=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
