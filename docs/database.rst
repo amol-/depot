@@ -69,7 +69,7 @@ passing a ``upload_storage`` argument explicitly to the database field declarati
 
         content = Column(UploadedFileField(upload_storage='another_storage'))
 
-If the specified ``upload_storage`` is an *alias* to another storage, the
+If the specified ``upload_storage`` is an *alias* to another storage, the
 file will actually keep track of the real storage, so that when the alias
 is switched to another storage, previously uploaded files continue to get
 served from the old storage.
