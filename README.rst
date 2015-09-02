@@ -56,6 +56,14 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.1.0
+~~~~~
+
+- Added ``DepotManager.alias`` to configure aliases to storage.
+  This allows easy migration from one storage to another by switching where the alias points.
+- Now ``UploadedFileField`` permits to specify ``upload_storage`` to link a Model Column to a specific storage.
+- Added ``policy`` and ``encrypt_key`` options to `S3Storage` to upload private and encrypted files.
+
 0.0.6
 ~~~~~
 
