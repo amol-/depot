@@ -53,6 +53,11 @@ class TestMingAttachments(object):
     def setup(self):
         clear_database()
 
+    def test_accessing_class_property(self):
+        # This is to check for regression in a bug in property descriptor
+        prop = Document.content
+        assert isinstance(prop, FieldProperty), prop
+
     def test_create_fromfile(self):
         doc = Document(name='Foo', content = open(self.fake_file.name, 'rb'))
         DBSession.flush()

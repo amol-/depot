@@ -10,9 +10,13 @@ from depot.manager import DepotManager
 from .upload import UploadedFile
 
 
+class _UploadedFileSchema(Anything):
+    pass
+
+
 class UploadedFileProperty(FieldProperty):
         def __init__(self,  filters=tuple(), upload_type=UploadedFile, upload_storage=None):
-            FieldProperty.__init__(self, Anything())
+            FieldProperty.__init__(self, _UploadedFileSchema())
             self._filters = filters
             self._upload_type = upload_type
             self._upload_storage = upload_storage
@@ -38,7 +42,11 @@ class UploadedFileProperty(FieldProperty):
             if not value:
                 return None
 
+            if instance is None:
+                return value
+
             return self._upload_type(value)
+
 
         """
         # Looks like this should do nothing on ming.
@@ -47,6 +55,7 @@ class UploadedFileProperty(FieldProperty):
             DepotExtension.get_depot_history(instance).delete(old_value)
             return FieldProperty.__delete__(self, instance, owner)
         """
+
 
 class DepotExtension(SessionExtension):
     @classmethod
@@ -118,3 +127,15 @@ class _DepotHistory(object):
     def clear(self):
         self.deleted = set()
         self.new = set()
+
+
+try:  # pragma: no cover
+    from sprox.mg.widgetselector import MingWidgetSelector
+    from tw2.forms import FileField as TW2FileField
+    MingWidgetSelector.default_widgets.setdefault(_UploadedFileSchema, TW2FileField)
+
+    from sprox.mg.validatorselector import MingValidatorSelector
+    from ..validators import TW2FileIntentValidator
+    MingValidatorSelector.default_validators.setdefault(_UploadedFileSchema, TW2FileIntentValidator)
+except ImportError:  # pragma: no cover
+    pass
