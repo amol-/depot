@@ -56,6 +56,12 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.1.1
+~~~~~
+
+- Fixed a bug with Ming support when acessing ``UploadedFileProperty`` as a class property
+- Improved support for DEPOT inside TurboGears admin when using MongoDB
+
 0.1.0
 ~~~~~
 
