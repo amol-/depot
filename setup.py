@@ -19,7 +19,10 @@ TEST_DEPENDENCIES = ['mock',
 
 py_version = sys.version_info[:2]
 if py_version != (3, 2):
-    TEST_DEPENDENCIES += ['boto']
+    TEST_DEPENDENCIES += ['boto', 'coverage']
+else:
+    TEST_DEPENDENCIES += ['coverage < 4.0']
+
 
 INSTALL_DEPENDENCIES = ['unidecode']
 if py_version == (2, 6):
