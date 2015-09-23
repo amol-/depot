@@ -15,6 +15,30 @@ class _UploadedFileSchema(Anything):
 
 
 class UploadedFileProperty(FieldProperty):
+    """Provides support for storing attachments to Ming MongoDB models.
+
+    ``UploadedFileProperty`` can be used as a field type to store files
+    into the model. The actual file itself will be uploaded to the
+    default Storage, and only the :class:`depot.fields.upload.UploadedFile`
+    information will be stored on the database.
+
+    The ``UploadedFileProperty`` is UnitOfWork aware, so it will delete
+    every uploaded file whenever unit of work is flushed and deletes a Document
+    that stored files or changes the field of a document storing files. This is
+    the reason you should never associate the same :class:`depot.fields.upload.UploadedFile`
+    to two different ``UploadedFileProperty``, otherwise you might delete a file
+    already used by another document. It is usually best to just set the ``file``
+    or ``bytes`` as content of the column and let the ``UploadedFileProperty``
+    create the :class:`depot.fields.upload.UploadedFile` by itself whenever it's content is set.
+
+    .. warning::
+
+        As the Ming UnitOfWork does not notify any event in case it gets cleared instead
+        of being flushed all the files uploaded before clearing the unit of work will be
+        already uploaded but won't have a document referencing them anymore, so DEPOT will
+        be unable to delete them for you.
+
+    """
     def __init__(self,  filters=tuple(), upload_type=UploadedFile, upload_storage=None):
         FieldProperty.__init__(self, _UploadedFileSchema())
         self._filters = filters
