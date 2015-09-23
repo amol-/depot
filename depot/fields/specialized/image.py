@@ -17,6 +17,10 @@ class UploadedImageWithThumb(UploadedFile):
     The Thumbnail file is accessible as ``.thumb_file`` while the
     thumbnail url is ``.thumb_url``.
 
+    .. warning::
+
+        Requires Pillow library
+
     """
 
     max_size = 1024

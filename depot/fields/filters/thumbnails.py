@@ -6,6 +6,26 @@ from io import BytesIO
 
 
 class WithThumbnailFilter(FileFilter):
+    """Uploads a thumbnail together with the file.
+
+    Takes for granted that the file is an image.
+    The resulting uploaded file will provide three additional
+    properties named:
+
+        - ``thumb_X_id`` -> The depot file id
+        - ``thumb_X_path`` -> Where the file is available in depot
+        - ``thumb_X_url`` -> Where the file is served.
+
+    Where ``X`` is the resolution specified as ``size`` in the
+    filter initialization. By default this is ``(128, 128)``?so
+    you will get ``thumb_128x128_id``, ``thumb_128x128_url`` and
+    so on.
+
+    .. warning::
+
+        Requires Pillow library
+
+    """
     def __init__(self, size=(128,128), format='PNG'):
         self.thumbnail_size = size
         self.thumbnail_format = format
@@ -22,10 +42,10 @@ class WithThumbnailFilter(FileFilter):
         thumbnail.save(output, self.thumbnail_format)
         output.seek(0)
 
-        thumb_file_name = 'thumb.%s' % self.thumbnail_format.lower()
+        thumb_name = 'thumb_%sx%s' % self.thumbnail_size
+        thumb_file_name = '%s.%s' % (thumb_name, self.thumbnail_format.lower())
         thumb_path, thumb_id = uploaded_file.store_content(output, thumb_file_name)
-        uploaded_file['thumb_id'] = thumb_id
-        uploaded_file['thumb_path'] = thumb_path
-        uploaded_file['thumb_url'] = DepotManager.get_middleware().url_for(thumb_path)
-
+        uploaded_file[thumb_name + '_id'] = thumb_id
+        uploaded_file[thumb_name + '_path'] = thumb_path
+        uploaded_file[thumb_name + '_url'] = DepotManager.get_middleware().url_for(thumb_path)
 

@@ -317,8 +317,8 @@ class TestMingThumbnailFilter(object):
         assert d.second_photo.file.read() == self.file_content
         assert d.second_photo.filename == field.filename
         assert d.second_photo.url == '/depot/%s' % d.second_photo.path
-        assert d.second_photo.thumb_url == '/depot/%s' % d.second_photo.thumb_path
-        assert d.second_photo.url != d.second_photo.thumb_url
+        assert d.second_photo.thumb_12x12_url == '/depot/%s' % d.second_photo.thumb_12x12_path
+        assert d.second_photo.url != d.second_photo.thumb_12x12_url
 
     def test_thumbnail(self):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
@@ -328,7 +328,7 @@ class TestMingThumbnailFilter(object):
         DBSession.clear()
 
         d = Document.query.find(dict(name='Foo')).first()
-        thumbnail_local_path = DepotManager.get_file(d.second_photo.thumb_path)._file_path
+        thumbnail_local_path = DepotManager.get_file(d.second_photo.thumb_12x12_path)._file_path
 
         assert os.path.exists(thumbnail_local_path)
 
@@ -352,7 +352,7 @@ class TestMingThumbnailFilter(object):
 
         # Now check that depot does the right thing when public urls are available
         assert d.second_photo.url == 'PUBLIC_URL'
-        assert d.second_photo.thumb_url.startswith('/depot/default/')
+        assert d.second_photo.thumb_12x12_url.startswith('/depot/default/')
 
     def test_rollback(self):
         raise SkipTest("Currently Ming Doesn't provide a way to handle discarded documents")
@@ -361,7 +361,7 @@ class TestMingThumbnailFilter(object):
         doc.second_photo = open(self.fake_file.name, 'rb')
 
         uploaded_file = doc.second_photo.path
-        uploaded_thumb = doc.second_photo.thumb_path
+        uploaded_thumb = doc.second_photo.thumb_12x12_path
 
         DBSession.clear()
 

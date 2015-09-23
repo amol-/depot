@@ -374,8 +374,8 @@ class TestSQLAThumbnailFilter(object):
         assert d.second_photo.file.read() == self.file_content
         assert d.second_photo.filename == field.filename
         assert d.second_photo.url == '/depot/%s' % d.second_photo.path
-        assert d.second_photo.thumb_url == '/depot/%s' % d.second_photo.thumb_path
-        assert d.second_photo.url != d.second_photo.thumb_url
+        assert d.second_photo.thumb_12x12_url == '/depot/%s' % d.second_photo.thumb_12x12_path
+        assert d.second_photo.url != d.second_photo.thumb_12x12_url
 
     def test_create_fileintent(self):
         field = FileIntent(open(self.fake_file.name, 'rb'), u_('àèìòù.gif'), 'image/gif')
@@ -389,8 +389,8 @@ class TestSQLAThumbnailFilter(object):
         assert d.second_photo.file.read() == self.file_content
         assert d.second_photo.filename == field._filename
         assert d.second_photo.url == '/depot/%s' % d.second_photo.path
-        assert d.second_photo.thumb_url == '/depot/%s' % d.second_photo.thumb_path
-        assert d.second_photo.url != d.second_photo.thumb_url
+        assert d.second_photo.thumb_12x12_url == '/depot/%s' % d.second_photo.thumb_12x12_path
+        assert d.second_photo.url != d.second_photo.thumb_12x12_url
         assert d.second_photo.content_type == field._content_type
 
     def test_thumbnail(self):
@@ -403,7 +403,7 @@ class TestSQLAThumbnailFilter(object):
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
 
-        thumbnail_local_path = DepotManager.get_file(d.second_photo.thumb_path)._file_path
+        thumbnail_local_path = DepotManager.get_file(d.second_photo.thumb_12x12_path)._file_path
         assert os.path.exists(thumbnail_local_path)
 
         thumb = Image.open(thumbnail_local_path)
@@ -427,7 +427,7 @@ class TestSQLAThumbnailFilter(object):
         d.second_photo._freeze()
 
         assert d.second_photo.url == 'PUBLIC_URL'
-        assert d.second_photo.thumb_url.startswith('/depot/default/')
+        assert d.second_photo.thumb_12x12_url.startswith('/depot/default/')
 
     def test_rollback(self):
         doc = Document(name=u_('Foo3'))
@@ -436,7 +436,7 @@ class TestSQLAThumbnailFilter(object):
         DBSession.flush()
 
         uploaded_file = doc.second_photo.path
-        uploaded_thumb = doc.second_photo.thumb_path
+        uploaded_thumb = doc.second_photo.thumb_12x12_path
 
         DBSession.rollback()
         DBSession.remove()

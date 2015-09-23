@@ -15,7 +15,7 @@ class _UploadedFileSchema(Anything):
 
 
 class UploadedFileProperty(FieldProperty):
-    """Provides support for storing attachments to Ming MongoDB models.
+    """Provides support for storing attachments to **Ming** MongoDB models.
 
     ``UploadedFileProperty`` can be used as a field type to store files
     into the model. The actual file itself will be uploaded to the

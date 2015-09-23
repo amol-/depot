@@ -14,7 +14,7 @@ from .upload import UploadedFile
 
 
 class UploadedFileField(types.TypeDecorator):
-    """Provides support for storing attachments to SQLAlchemy models.
+    """Provides support for storing attachments to **SQLAlchemy** models.
 
     ``UploadedFileField`` can be used as a Column type to store files
     into the model. The actual file itself will be uploaded to the
