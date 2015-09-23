@@ -15,46 +15,46 @@ class _UploadedFileSchema(Anything):
 
 
 class UploadedFileProperty(FieldProperty):
-        def __init__(self,  filters=tuple(), upload_type=UploadedFile, upload_storage=None):
-            FieldProperty.__init__(self, _UploadedFileSchema())
-            self._filters = filters
-            self._upload_type = upload_type
-            self._upload_storage = upload_storage
+    def __init__(self,  filters=tuple(), upload_type=UploadedFile, upload_storage=None):
+        FieldProperty.__init__(self, _UploadedFileSchema())
+        self._filters = filters
+        self._upload_type = upload_type
+        self._upload_storage = upload_storage
 
-        def __set__(self, instance, value):
-            if value is not None and not isinstance(value, UploadedFile):
-                upload_type = self._upload_type
-                value = upload_type(value, self._upload_storage)
+    def __set__(self, instance, value):
+        if value is not None and not isinstance(value, UploadedFile):
+            upload_type = self._upload_type
+            value = upload_type(value, self._upload_storage)
 
-            if isinstance(value, UploadedFile):
-                value._apply_filters(self._filters)
+        if isinstance(value, UploadedFile):
+            value._apply_filters(self._filters)
 
-            old_value = self.__get__(instance, instance.__class__)
-            DepotExtension.get_depot_history(instance).swap(old_value, value)
-            return FieldProperty.__set__(self, instance, value)
+        old_value = self.__get__(instance, instance.__class__)
+        DepotExtension.get_depot_history(instance).swap(old_value, value)
+        return FieldProperty.__set__(self, instance, value)
 
-        def __get__(self, instance, owner=None):
-            try:
-                value = FieldProperty.__get__(self, instance, owner)
-            except AttributeError:
-                value = None
+    def __get__(self, instance, owner=None):
+        try:
+            value = FieldProperty.__get__(self, instance, owner)
+        except AttributeError:
+            value = None
 
-            if not value:
-                return None
+        if not value:
+            return None
 
-            if instance is None:
-                return value
+        if instance is None:
+            return value
 
-            return self._upload_type(value)
+        return self._upload_type(value)
 
 
-        """
-        # Looks like this should do nothing on ming.
-        def __delete__(self, instance, owner=None):
-            old_value = self.__get__(instance, instance.__class__)
-            DepotExtension.get_depot_history(instance).delete(old_value)
-            return FieldProperty.__delete__(self, instance, owner)
-        """
+    """
+    # Looks like this should do nothing on ming.
+    def __delete__(self, instance, owner=None):
+        old_value = self.__get__(instance, instance.__class__)
+        DepotExtension.get_depot_history(instance).delete(old_value)
+        return FieldProperty.__delete__(self, instance, owner)
+    """
 
 
 class DepotExtension(SessionExtension):
