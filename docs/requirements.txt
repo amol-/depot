@@ -1,4 +1,5 @@
 sqlalchemy
 boto
 pymongo
+ming
 -e git://github.com/amol-/depot.git@master#egg=filedepot
