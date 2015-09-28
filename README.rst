@@ -56,6 +56,13 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.1.2
+~~~~~
+
+- It is now possible to use multiple ``WithThumbnailFilter`` to generate multiple thumbnails
+  with different resolutions.
+- Better documentation for MongoDB ``UploadedFileProperty`` 
+
 0.1.1
 ~~~~~
 
