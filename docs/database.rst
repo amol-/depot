@@ -11,7 +11,7 @@ Attaching to Models
 Attaching files to models is as simple as declaring a field on the model itself,
 support is currently provided for **SQLAlchemy** through the
 :class:`depot.fields.sqlalchemy.UploadedFileField` and for **Ming (MongoDB)** through
-the :class:`.ming.UploadedFileProperty`::
+the :class:`depot.fields.ming.UploadedFileProperty`::
 
     from depot.fields.sqlalchemy import UploadedFileField
 
