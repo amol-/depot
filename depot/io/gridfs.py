@@ -108,6 +108,11 @@ class GridFSStorage(FileStorage):
         fileid = _check_file_id(fileid)
         return self._gridfs.exists(fileid)
 
+    def list(self):
+        list_ids = []
+        for filename in self._gridfs.list():
+            list_ids.append(self._gridfs.find_one({"filename": filename})._id)
+        return list_ids
 
 def _check_file_id(file_id):
     # Check that the given file id is valid, this also

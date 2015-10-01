@@ -147,6 +147,9 @@ class LocalFileStorage(FileStorage):
         local_file_path = self.__local_path(fileid)
         return os.path.exists(local_file_path)
 
+    def list(self):
+        return [os.path.basename(fileid) for fileid in os.listdir(self.storage_path)]
+
 
 def _check_file_id(file_id):
     # Check that the given file id is valid, this also

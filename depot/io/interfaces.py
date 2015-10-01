@@ -209,3 +209,8 @@ class FileStorage(with_metaclass(ABCMeta, object)):
     def exists(self, file_or_id):  # pragma: no cover
         """Returns if a file or its ID still exist."""
         return
+
+    @abstractmethod
+    def list(self):
+        """Returns a list of file IDs that exist in the Storage"""
+        return []

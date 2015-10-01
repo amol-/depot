@@ -157,6 +157,14 @@ class BaseStorageTestFixture(object):
         self.fs.delete(file_id)
         assert not self.fs.exists(file_id)
 
+    def test_list(self):
+        file_ids = list()
+        for i in range(3):
+            file_ids.append(self.fs.create(FILE_CONTENT, 'file{}.txt'.format(i)))
+
+        for id in self.fs.list():
+            assert id in file_ids
+
     @raises(ValueError)
     def test_exists_invalidid(self):
         self.fs.exists('INVALIDID')
@@ -228,7 +236,6 @@ class TestLocalFileStorage(BaseStorageTestFixture):
 
     def teardown(self):
         shutil.rmtree('./lfs', ignore_errors=True)
-
 
 class TestGridFSFileStorage(BaseStorageTestFixture):
     def setup(self):

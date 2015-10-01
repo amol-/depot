@@ -158,6 +158,9 @@ class S3Storage(FileStorage):
         k = self._bucket.get_key(fileid)
         return k is not None
 
+    def list(self):
+        return [key.name for key in self._bucket.list()]
+
 
 def _check_file_id(file_id):
     # Check that the given file id is valid, this also
