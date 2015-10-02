@@ -37,10 +37,11 @@ class FileIntent(object):
     to easily upload objects that are not files or to add
     missing information to the uploaded files.
     """
-    def __init__(self, fileobj, filename, content_type):
+    def __init__(self, fileobj, filename, content_type, extra_metadata=None):
         self._fileobj = fileobj
         self._filename = filename
         self._content_type = content_type
+        self._extra_metadata = extra_metadata
 
     @property
     def fileinfo(self):

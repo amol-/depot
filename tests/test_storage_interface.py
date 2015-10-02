@@ -21,12 +21,15 @@ class BaseStorageTestFixture(object):
 
     def test_creation_metadata(self):
         with mock.patch('depot.io.utils.timestamp', return_value='2001-01-01 00:00:01'):
-            file_id = self.fs.create(FILE_CONTENT, 'file.txt')
+            file_id = self.fs.create(FILE_CONTENT, 'file.txt', extra_metadata={'author':'Mustermann',
+                                                                               'topic': 'examples'})
 
         f = self.fs.get(file_id)
         assert f.filename == 'file.txt', f.filename
         assert f.last_modified == datetime.datetime(2001, 1, 1, 0, 0, 1), f.last_modified
         assert f.content_type == 'text/plain', f.content_type
+        assert f.extra_metadata['author'] == 'Mustermann', f.extra_metadata['author']
+        assert f.extra_metadata['topic'] == 'examples', f.extra_metadata['topic']
 
     @raises(IOError)
     def test_notexisting(self):
@@ -229,7 +232,7 @@ class TestLocalFileStorage(BaseStorageTestFixture):
     def teardown(self):
         shutil.rmtree('./lfs', ignore_errors=True)
 
-
+@SkipTest
 class TestGridFSFileStorage(BaseStorageTestFixture):
     def setup(self):
         try:
