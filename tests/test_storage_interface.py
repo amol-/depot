@@ -163,7 +163,7 @@ class BaseStorageTestFixture(object):
             file_ids.append(self.fs.create(FILE_CONTENT, 'file{}.txt'.format(i)))
 
         for _id in self.fs.list():
-            assert _id in file_ids, _id
+            assert _id in file_ids, ("{} in {}".format(_id, file_ids))
 
     @raises(ValueError)
     def test_exists_invalidid(self):
