@@ -164,7 +164,7 @@ class BaseStorageTestFixture(object):
 
         existing_files = self.fs.list()
         for _id in file_ids:
-            assert _id in existing_files, ("{0} from {1} in {2}".format(_id, self.fs.list(), file_ids))
+            assert _id in existing_files, ("{0} not in {1}".format(_id, file_ids))
 
     @raises(ValueError)
     def test_exists_invalidid(self):
