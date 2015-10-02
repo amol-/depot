@@ -10,6 +10,7 @@ from datetime import datetime
 from pymongo import MongoClient
 import gridfs
 from bson import ObjectId
+import json
 
 from .interfaces import FileStorage, StoredFile
 from . import utils
@@ -24,13 +25,21 @@ class GridFSStoredFile(StoredFile):
         metadata_info = {'filename': gridout.filename,
                          'content_type': gridout.content_type,
                          'content_length': gridout.length,
-                         'last_modified': None}
+                         'last_modified': None,
+                         'extra_metadata': None}
 
         try:
             last_modified = gridout.last_modified
             if last_modified:
                 metadata_info['last_modified'] = datetime.strptime(last_modified,
                                                                    '%Y-%m-%d %H:%M:%S')
+        except:
+            pass
+
+        try:
+            extra_metadata = gridout.extra_metadata
+            if extra_metadata:
+                metadata_info['extra_metadata'] = json.loads(extra_metadata)
         except:
             pass
 
@@ -73,15 +82,16 @@ class GridFSStorage(FileStorage):
 
         return GridFSStoredFile(fileid, gridout)
 
-    def create(self, content, filename=None, content_type=None):
+    def create(self, content, filename=None, content_type=None, extra_metadata=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
         new_file_id = self._gridfs.put(content,
                                        filename=filename or 'unknown',
                                        content_type=content_type,
-                                       last_modified=utils.timestamp())
+                                       last_modified=utils.timestamp(),
+                                       extra_metadata=json.dumps(extra_metadata))
         return str(new_file_id)
 
-    def replace(self, file_or_id, content, filename=None, content_type=None):
+    def replace(self, file_or_id, content, filename=None, content_type=None, extra_metadata=None):
         fileid = self.fileid(file_or_id)
         fileid = _check_file_id(fileid)
 
@@ -95,7 +105,8 @@ class GridFSStorage(FileStorage):
         new_file_id = self._gridfs.put(content, _id=fileid,
                                        filename=filename or 'unknown',
                                        content_type=content_type,
-                                       last_modified=utils.timestamp())
+                                       last_modified=utils.timestamp(),
+                                       extra_metadata=json.dumps(extra_metadata))
         return str(new_file_id)
 
     def delete(self, file_or_id):
