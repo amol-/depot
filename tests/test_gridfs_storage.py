@@ -1,5 +1,4 @@
 from depot.io.gridfs import GridFSStorage
-from nose import SkipTest
 
 FILE_CONTENT = b'HELLO WORLD'
 
