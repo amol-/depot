@@ -217,7 +217,9 @@ be able to switch the alias to whatever new storage you want while the files pre
 uploaded to the old storage keep wFor example if you are storing all your user avatars locally you might have
 a configuration like::
 
-        DepotManager.configure('local_avatars', {'depot.storage_path': '/var/www/lfs'})
+        DepotManager.configure('local_avatars', {
+            'depot.storage_path': '/var/www/lfs'
+        })
         DepotManager.alias('avatar', 'local_avatars')
 
         storage = DepotManager.get('avatar')
@@ -225,9 +227,13 @@ a configuration like::
 
 Then when switching your avatars to GridFS you might switch your configuration to something like::
 
-        DepotManager.configure('local_avatars', {'depot.storage_path': '/var/www/lfs'})
-        DepotManager.configure('gridfs_avatars', {'depot.backend': 'depot.io.gridfs.GridFSStorage',
-                                                  'depot.mongouri': 'mongodb://localhost/db'})
+        DepotManager.configure('local_avatars', {
+            'depot.storage_path': '/var/www/lfs'
+        })
+        DepotManager.configure('gridfs_avatars', {
+            'depot.backend': 'depot.io.gridfs.GridFSStorage',
+            'depot.mongouri': 'mongodb://localhost/db'
+        })
         DepotManager.alias('avatar', 'gridfs_avatars')
 
         storage = DepotManager.get('avatar')
