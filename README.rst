@@ -56,6 +56,12 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.2.0
+~~~~~
+
+- Storages now provide a ``list`` method to list files available on the store (This is not meant to be used to retrieve files uploaded by depot as it lists all the files).
+- ``DepotExtension`` for Ming is now properly documented
+
 0.1.2
 ~~~~~
 
