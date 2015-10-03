@@ -71,7 +71,6 @@ class UploadedFileProperty(FieldProperty):
 
         return self._upload_type(value)
 
-
     """
     # Looks like this should do nothing on ming.
     def __delete__(self, instance, owner=None):
@@ -82,6 +81,12 @@ class UploadedFileProperty(FieldProperty):
 
 
 class DepotExtension(SessionExtension):
+    """Extends the Ming Session to track files.
+
+    Deletes old files when an entry gets removed or replaced,
+    apply this as a Ming ``SessionExtension`` according to Ming
+    documentation.
+    """
     @classmethod
     def get_depot_history(cls, instance):
         istate = state(instance)

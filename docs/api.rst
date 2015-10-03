@@ -26,6 +26,9 @@ Database Support
 .. autoclass:: depot.fields.ming.UploadedFileProperty
     :members:
 
+.. autoclass:: depot.fields.ming.DepotExtension
+    :members:
+
 .. autoclass:: depot.fields.interfaces.DepotFileInfo
     :members:
 
