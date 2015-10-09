@@ -1,7 +1,7 @@
 """
-Provides FileStorage implementation for MongoDB GridFS.
+Provides FileStorage implementation for Amazon S3.
 
-This is useful for storing files inside a mongodb database.
+This is useful for storing files in S3.
 
 """
 from __future__ import absolute_import
