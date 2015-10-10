@@ -8,6 +8,7 @@ from __future__ import absolute_import
 
 from datetime import datetime
 import uuid
+import json
 from boto.s3.connection import S3Connection
 from depot._compat import unicode_text
 
@@ -26,13 +27,21 @@ class S3StoredFile(StoredFile):
         metadata_info = {'filename': key.get_metadata('x-depot-filename'),
                          'content_type': key.content_type,
                          'content_length': key.size,
-                         'last_modified': None}
+                         'last_modified': None,
+                         'extra_metadata': None}
 
         try:
             last_modified = key.get_metadata('x-depot-modified')
             if last_modified:
                 metadata_info['last_modified'] = datetime.strptime(last_modified,
                                                                    '%Y-%m-%d %H:%M:%S')
+        except:
+            pass
+
+        try:
+            extra_metadata = key.get_metadata('x-depot-extra-metadata')
+            if extra_metadata:
+                metadata_info['extra_metadata'] = json.loads(extra_metadata)
         except:
             pass
 
@@ -96,10 +105,11 @@ class S3Storage(FileStorage):
 
         return S3StoredFile(fileid, key)
 
-    def __save_file(self, key, content, filename, content_type=None):
+    def __save_file(self, key, content, filename, content_type=None, extra_metadata=None):
         key.set_metadata('content-type', content_type)
         key.set_metadata('x-depot-filename', filename)
         key.set_metadata('x-depot-modified', utils.timestamp())
+        key.set_metadata('x-depot-extra-metadata', json.dumps(extra_metadata))
         key.set_metadata('Content-Disposition', 'inline; filename="%s"' % filename)
 
         if hasattr(content, 'read'):
@@ -122,14 +132,14 @@ class S3Storage(FileStorage):
             key.set_contents_from_string(content, policy=self._policy,
                                          encrypt_key=self._encrypt_key)
 
-    def create(self, content, filename=None, content_type=None):
+    def create(self, content, filename=None, content_type=None, extra_metadata=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
         new_file_id = str(uuid.uuid1())
         key = self._bucket.new_key(new_file_id)
-        self.__save_file(key, content, filename, content_type)
+        self.__save_file(key, content, filename, content_type, extra_metadata)
         return new_file_id
 
-    def replace(self, file_or_id, content, filename=None, content_type=None):
+    def replace(self, file_or_id, content, filename=None, content_type=None, extra_metadata=None):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
@@ -140,7 +150,7 @@ class S3Storage(FileStorage):
             content_type = f.content_type
 
         key = self._bucket.get_key(fileid)
-        self.__save_file(key, content, filename, content_type)
+        self.__save_file(key, content, filename, content_type, extra_metadata)
         return fileid
 
     def delete(self, file_or_id):

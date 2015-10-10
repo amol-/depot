@@ -81,7 +81,7 @@ class LocalFileStorage(FileStorage):
         local_file_path = self.__local_path(fileid)
         return LocalStoredFile(fileid, local_file_path)
 
-    def __save_file(self, file_id, content, filename, content_type=None):
+    def __save_file(self, file_id, content, filename, content_type=None, extra_metadata=None):
         local_file_path = self.__local_path(file_id)
         os.makedirs(local_file_path)
         saved_file_path = _file_path(local_file_path)
@@ -100,18 +100,19 @@ class LocalFileStorage(FileStorage):
         metadata = {'filename': filename or 'unknown',
                     'content_type': content_type,
                     'content_length': os.path.getsize(saved_file_path),
-                    'last_modified': utils.timestamp()}
+                    'last_modified': utils.timestamp(),
+                    'extra_metadata': extra_metadata}
 
         with open(_metadata_path(local_file_path), 'w') as metadatafile:
             metadatafile.write(json.dumps(metadata))
 
-    def create(self, content, filename=None, content_type=None):
+    def create(self, content, filename=None, content_type=None, extra_metadata=None):
         new_file_id = str(uuid.uuid1())
         content, filename, content_type = self.fileinfo(content, filename, content_type)
-        self.__save_file(new_file_id, content, filename, content_type)
+        self.__save_file(new_file_id, content, filename, content_type, extra_metadata)
         return new_file_id
 
-    def replace(self, file_or_id, content, filename=None, content_type=None):
+    def replace(self, file_or_id, content, filename=None, content_type=None, extra_metadata=None):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
@@ -127,7 +128,7 @@ class LocalFileStorage(FileStorage):
             content_type = f.content_type
 
         self.delete(fileid)
-        self.__save_file(fileid, content, filename, content_type)
+        self.__save_file(fileid, content, filename, content_type, extra_metadata)
         return fileid
 
     def delete(self, file_or_id):

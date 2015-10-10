@@ -22,6 +22,7 @@ class StoredFile(IOBase):
         - content_type
         - last_modified
         - content_length
+        - extra_metadata
 
     Already stored files can only be read back, so they are required to only provide
     ``read(self, n=-1)``, ``close()`` methods and ``closed`` property so that they
@@ -31,12 +32,13 @@ class StoredFile(IOBase):
     instead use the storage backend to replace the file content.
     """
     def __init__(self, file_id, filename=None, content_type=None, last_modified=None,
-                 content_length=None):
+                 content_length=None, extra_metadata=None):
         self.file_id = file_id
         self.filename = filename
         self.content_type = content_type
         self.last_modified = last_modified
         self.content_length = content_length
+        self.extra_metadata = extra_metadata
 
     def readable(self):
         """Returns if the stored file is readable or not
@@ -180,7 +182,7 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         return
 
     @abstractmethod
-    def create(self, content, filename=None, content_type=None):  # pragma: no cover
+    def create(self, content, filename=None, content_type=None, extra_metadata=None):  # pragma: no cover
         """Saves a new file and returns the ID of the newly created file.
 
         ``content`` parameter can either be ``bytes``, another ``file object``
@@ -190,7 +192,7 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         return
 
     @abstractmethod
-    def replace(self, file_or_id, content, filename=None, content_type=None):  # pragma: no cover
+    def replace(self, file_or_id, content, filename=None, content_type=None, extra_metadata=None):  # pragma: no cover
         """Replaces an existing file, an ``IOError`` is raised if the file didn't already exist.
 
         Given a :class:`StoredFile` or its ID it will replace the current content
