@@ -253,6 +253,12 @@ class TestGridFSFileStorage(BaseStorageTestFixture):
 
 
 class TestS3FileStorage(BaseStorageTestFixture):
+
+    @classmethod
+    def get_storage(cls, access_key_id, secret_access_key, bucket_name):
+        from depot.io.awss3 import S3Storage
+        return S3Storage(access_key_id, secret_access_key, bucket_name)
+
     @classmethod
     def setup_class(cls):
         try:
@@ -269,7 +275,7 @@ class TestS3FileStorage(BaseStorageTestFixture):
         PID = os.getpid()
         NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]
         BUCKET_NAME = 'fdtest-%s-%s-%s' % (access_key_id.lower(), NODE, PID)
-        cls.fs = S3Storage(access_key_id, secret_access_key, BUCKET_NAME)
+        cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
 
     def teardown(self):
         keys = [key.name for key in self.fs._bucket]
@@ -282,3 +288,15 @@ class TestS3FileStorage(BaseStorageTestFixture):
             cls.fs._conn.delete_bucket(cls.fs._bucket.name)
         except:
             pass
+
+
+class TestS3PrefixedFileStorage(TestS3FileStorage):
+
+    @classmethod
+    def get_storage(cls, access_key_id, secret_access_key, bucket_name):
+        from depot.io.awss3 import S3PrefixedStorage
+        return S3PrefixedStorage(
+            access_key_id,
+            secret_access_key,
+            bucket_name,
+            prefix='my-prefix/')
