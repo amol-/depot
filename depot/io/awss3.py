@@ -121,9 +121,12 @@ class S3Storage(FileStorage):
             key.set_contents_from_string(content, policy=self._policy,
                                          encrypt_key=self._encrypt_key)
 
+    def _get_new_file_id(self):
+        return str(uuid.uuid1())
+
     def create(self, content, filename=None, content_type=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
-        new_file_id = str(uuid.uuid1())
+        new_file_id = self._get_new_file_id()
         key = self._bucket.new_key(new_file_id)
         self.__save_file(key, content, filename, content_type)
         return new_file_id
@@ -167,3 +170,24 @@ class S3Storage(FileStorage):
             uuid.UUID('{%s}' % file_id)
         except:
             raise ValueError('Invalid file id %s' % file_id)
+
+
+class S3PrefixedStorage(S3Storage):
+
+    def __init__(self, *args, **kwargs):
+        self._prefix = kwargs.pop('prefix')
+        super(S3PrefixedStorage, self).__init__(*args, **kwargs)
+
+    def _get_new_file_id(self):
+        new_file_id = super(S3PrefixedStorage, self)._get_new_file_id()
+        return '%s%s' % (self._prefix, new_file_id)
+
+    def _check_file_id(self, file_id):
+        # Check that the given file id is valid, this also
+        # prevents unsafe paths.
+        if file_id.startswith(self._prefix):
+            file_id = file_id[len(self._prefix):]
+        super(S3PrefixedStorage, self)._check_file_id(file_id)
+
+    def list(self):
+        return [key.name for key in self._bucket.list(prefix=self._prefix)]
