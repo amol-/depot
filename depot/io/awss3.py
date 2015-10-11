@@ -20,7 +20,6 @@ CANNED_ACL_PRIVATE = 'private'
 
 class S3StoredFile(StoredFile):
     def __init__(self, file_id, key):
-        _check_file_id(file_id)
         self._key = key
 
         metadata_info = {'filename': key.get_metadata('x-depot-filename'),
@@ -88,7 +87,7 @@ class S3Storage(FileStorage):
 
     def get(self, file_or_id):
         fileid = self.fileid(file_or_id)
-        _check_file_id(fileid)
+        self._check_file_id(fileid)
 
         key = self._bucket.get_key(fileid)
         if key is None:
@@ -131,7 +130,7 @@ class S3Storage(FileStorage):
 
     def replace(self, file_or_id, content, filename=None, content_type=None):
         fileid = self.fileid(file_or_id)
-        _check_file_id(fileid)
+        self._check_file_id(fileid)
 
         content, filename, content_type = self.fileinfo(content, filename, content_type)
         if filename is None:
@@ -145,7 +144,7 @@ class S3Storage(FileStorage):
 
     def delete(self, file_or_id):
         fileid = self.fileid(file_or_id)
-        _check_file_id(fileid)
+        self._check_file_id(fileid)
 
         k = self._bucket.get_key(fileid)
         if k:
@@ -153,7 +152,7 @@ class S3Storage(FileStorage):
 
     def exists(self, file_or_id):
         fileid = self.fileid(file_or_id)
-        _check_file_id(fileid)
+        self._check_file_id(fileid)
 
         k = self._bucket.get_key(fileid)
         return k is not None
@@ -161,11 +160,10 @@ class S3Storage(FileStorage):
     def list(self):
         return [key.name for key in self._bucket.list()]
 
-
-def _check_file_id(file_id):
-    # Check that the given file id is valid, this also
-    # prevents unsafe paths.
-    try:
-        uuid.UUID('{%s}' % file_id)
-    except:
-        raise ValueError('Invalid file id %s' % file_id)
+    def _check_file_id(self, file_id):
+        # Check that the given file id is valid, this also
+        # prevents unsafe paths.
+        try:
+            uuid.UUID('{%s}' % file_id)
+        except:
+            raise ValueError('Invalid file id %s' % file_id)
