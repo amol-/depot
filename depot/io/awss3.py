@@ -82,7 +82,7 @@ class S3Storage(FileStorage):
     either ``private`` or ``public-read`` can be specified with the ``policy`` parameter.
     The ``encrypt_key`` parameter can be specified to use the server side
     encryption feature. The ``prefix`` parameter can be used to store all files
-    under specified prefix
+    under specified prefix.
     """
 
     def __init__(self, access_key_id, secret_access_key, bucket=None, host=None,
