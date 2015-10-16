@@ -56,6 +56,23 @@ class S3StoredFile(StoredFile):
         return self._key.generate_url(expires_in=0, query_auth=False)
 
 
+class BucketDriver(object):
+
+    def __init__(self, bucket, prefix):
+        self.bucket = bucket
+        self.prefix = prefix
+
+    def get_key(self, key_name):
+        return self.bucket.get_key('%s%s' % (self.prefix, key_name))
+
+    def new_key(self, key_name):
+        return self.bucket.new_key('%s%s' % (self.prefix, key_name))
+
+    def list_key_names(self):
+        keys = self.bucket.list(prefix=self.prefix)
+        return [k.name[len(self.prefix):] for k in keys]
+
+
 class S3Storage(FileStorage):
     """:class:`depot.io.interfaces.FileStorage` implementation that stores files on S3.
 
@@ -63,12 +80,13 @@ class S3Storage(FileStorage):
     connects to using ``access_key_id`` and ``secret_access_key``. If ``host`` is
     omitted the Amazon AWS S3 storage is used. Additionally, a canned ACL policy of
     either ``private`` or ``public-read`` can be specified with the ``policy`` parameter.
-    Finally, the ``encrypt_key`` parameter can be specified to use the server side
-    encryption feature.
+    The ``encrypt_key`` parameter can be specified to use the server side
+    encryption feature. The ``prefix`` parameter can be used to store all files
+    under specified prefix.
     """
 
     def __init__(self, access_key_id, secret_access_key, bucket=None, host=None,
-                 policy=None, encrypt_key=False):
+                 policy=None, encrypt_key=False, prefix=''):
         policy = policy or CANNED_ACL_PUBLIC_READ
         assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
             "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
@@ -82,15 +100,15 @@ class S3Storage(FileStorage):
         if host is not None:
             kw['host'] = host
         self._conn = S3Connection(access_key_id, secret_access_key, **kw)
-        self._bucket = self._conn.lookup(bucket)
-        if self._bucket is None:
-            self._bucket = self._conn.create_bucket(bucket)
+        bucket = self._conn.lookup(bucket) or self._conn.create_bucket(bucket)
+        self._bucket_driver = BucketDriver(bucket, prefix)
+
 
     def get(self, file_or_id):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
-        key = self._bucket.get_key(fileid)
+        key = self._bucket_driver.get_key(fileid)
         if key is None:
             raise IOError('File %s not existing' % fileid)
 
@@ -125,7 +143,7 @@ class S3Storage(FileStorage):
     def create(self, content, filename=None, content_type=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
         new_file_id = str(uuid.uuid1())
-        key = self._bucket.new_key(new_file_id)
+        key = self._bucket_driver.new_key(new_file_id)
         self.__save_file(key, content, filename, content_type)
         return new_file_id
 
@@ -139,7 +157,7 @@ class S3Storage(FileStorage):
             filename = f.filename
             content_type = f.content_type
 
-        key = self._bucket.get_key(fileid)
+        key = self._bucket_driver.get_key(fileid)
         self.__save_file(key, content, filename, content_type)
         return fileid
 
@@ -147,7 +165,7 @@ class S3Storage(FileStorage):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
-        k = self._bucket.get_key(fileid)
+        k = self._bucket_driver.get_key(fileid)
         if k:
             k.delete()
 
@@ -155,11 +173,11 @@ class S3Storage(FileStorage):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
-        k = self._bucket.get_key(fileid)
+        k = self._bucket_driver.get_key(fileid)
         return k is not None
 
     def list(self):
-        return [key.name for key in self._bucket.list()]
+        return self._bucket_driver.list_key_names()
 
 
 def _check_file_id(file_id):
