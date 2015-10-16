@@ -101,14 +101,14 @@ class S3Storage(FileStorage):
             kw['host'] = host
         self._conn = S3Connection(access_key_id, secret_access_key, **kw)
         bucket = self._conn.lookup(bucket) or self._conn.create_bucket(bucket)
-        self.bucket_driver = BucketDriver(bucket, prefix)
+        self._bucket_driver = BucketDriver(bucket, prefix)
 
 
     def get(self, file_or_id):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
-        key = self.bucket_driver.get_key(fileid)
+        key = self._bucket_driver.get_key(fileid)
         if key is None:
             raise IOError('File %s not existing' % fileid)
 
@@ -143,7 +143,7 @@ class S3Storage(FileStorage):
     def create(self, content, filename=None, content_type=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
         new_file_id = str(uuid.uuid1())
-        key = self.bucket_driver.new_key(new_file_id)
+        key = self._bucket_driver.new_key(new_file_id)
         self.__save_file(key, content, filename, content_type)
         return new_file_id
 
@@ -157,7 +157,7 @@ class S3Storage(FileStorage):
             filename = f.filename
             content_type = f.content_type
 
-        key = self.bucket_driver.get_key(fileid)
+        key = self._bucket_driver.get_key(fileid)
         self.__save_file(key, content, filename, content_type)
         return fileid
 
@@ -165,7 +165,7 @@ class S3Storage(FileStorage):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
-        k = self.bucket_driver.get_key(fileid)
+        k = self._bucket_driver.get_key(fileid)
         if k:
             k.delete()
 
@@ -173,11 +173,11 @@ class S3Storage(FileStorage):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
-        k = self.bucket_driver.get_key(fileid)
+        k = self._bucket_driver.get_key(fileid)
         return k is not None
 
     def list(self):
-        return self.bucket_driver.list_key_names()
+        return self._bucket_driver.list_key_names()
 
 
 def _check_file_id(file_id):

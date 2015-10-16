@@ -31,7 +31,7 @@ class TestS3FileStorage(object):
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
-        key = self.fs.bucket_driver.new_key(fid)
+        key = self.fs._bucket_driver.new_key(fid)
         key.set_contents_from_string(FILE_CONTENT)
 
         f = self.fs.get(fid)
@@ -39,7 +39,7 @@ class TestS3FileStorage(object):
 
     def test_invalid_modified(self):
         fid = str(uuid.uuid1())
-        key = self.fs.bucket_driver.new_key(fid)
+        key = self.fs._bucket_driver.new_key(fid)
         key.set_metadata('x-depot-modified', 'INVALID')
         key.set_contents_from_string(FILE_CONTENT)
 
@@ -56,11 +56,11 @@ class TestS3FileStorage(object):
     def test_default_bucket_name(self):
         with mock.patch('boto.s3.connection.S3Connection.lookup', return_value='YES'):
             fs = S3Storage(*self.cred)
-            assert fs.bucket_driver.bucket == 'YES'
+            assert fs._bucket_driver.bucket == 'YES'
 
     def test_public_url(self):
         fid = str(uuid.uuid1())
-        key = self.fs.bucket_driver.new_key(fid)
+        key = self.fs._bucket_driver.new_key(fid)
         key.set_contents_from_string(FILE_CONTENT)
 
         f = self.fs.get(fid)
@@ -68,11 +68,11 @@ class TestS3FileStorage(object):
         assert f.public_url.endswith('/%s' % fid), f.public_url
 
     def teardown(self):
-        keys = [key.name for key in self.fs.bucket_driver.bucket]
+        keys = [key.name for key in self.fs._bucket_driver.bucket]
         if keys:
-            self.fs.bucket_driver.bucket.delete_keys(keys)
+            self.fs._bucket_driver.bucket.delete_keys(keys)
 
         try:
-            self.fs._conn.delete_bucket(self.fs.bucket_driver.bucket.name)
+            self.fs._conn.delete_bucket(self.fs._bucket_driver.bucket.name)
         except:
             pass

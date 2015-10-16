@@ -278,14 +278,14 @@ class TestS3FileStorage(BaseStorageTestFixture):
         cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
 
     def teardown(self):
-        keys = [key.name for key in self.fs.bucket_driver.bucket]
+        keys = [key.name for key in self.fs._bucket_driver.bucket]
         if keys:
-            self.fs.bucket_driver.bucket.delete_keys(keys)
+            self.fs._bucket_driver.bucket.delete_keys(keys)
 
     @classmethod
     def teardown_class(cls):
         try:
-            cls.fs._conn.delete_bucket(cls.fs.bucket_driver.bucket.name)
+            cls.fs._conn.delete_bucket(cls.fs._bucket_driver.bucket.name)
         except:
             pass
 
