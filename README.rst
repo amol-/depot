@@ -56,6 +56,11 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.2.1
+~~~~~
+
+- ``S3Storage`` now supports the ``prefix`` option to store files in a subpath
+
 0.2.0
 ~~~~~
 
