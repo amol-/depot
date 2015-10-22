@@ -77,12 +77,18 @@ class S3Storage(FileStorage):
     """:class:`depot.io.interfaces.FileStorage` implementation that stores files on S3.
 
     All the files are stored inside a bucket named ``bucket`` on ``host`` which Depot
-    connects to using ``access_key_id`` and ``secret_access_key``. If ``host`` is
-    omitted the Amazon AWS S3 storage is used. Additionally, a canned ACL policy of
-    either ``private`` or ``public-read`` can be specified with the ``policy`` parameter.
-    The ``encrypt_key`` parameter can be specified to use the server side
-    encryption feature. The ``prefix`` parameter can be used to store all files
-    under specified prefix.
+    connects to using ``access_key_id`` and ``secret_access_key``.
+ 
+    Additional options include:
+        * ``host`` which can be used to specify an host different from Amazon 
+          AWS S3 Storage
+        * ``policy`` which can be used to specify a canned ACL policy of either 
+          ``private`` or ``public-read``.
+        * ``encrypt_key`` which can be specified to use the server side 
+          encryption feature. 
+        * ``prefix`` parameter can be used to store all files under 
+          specified prefix. Use a prefix like **dirname/** (*see trailing slash*)
+          to store in a subdirectory.
     """
 
     def __init__(self, access_key_id, secret_access_key, bucket=None, host=None,
