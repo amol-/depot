@@ -53,7 +53,10 @@ class S3StoredFile(StoredFile):
 
     @property
     def public_url(self):
-        return self._key.generate_url(expires_in=0, query_auth=False)
+        # Old boto versions did support neve.
+        # but latests seems not to https://github.com/boto/boto/blob/develop/boto/s3/connection.py#L390
+        expires_in = 31536000 # 1 YEAR
+        return self._key.generate_url(expires_in=expires_in, query_auth=False)
 
 
 class BucketDriver(object):
