@@ -27,6 +27,7 @@ else:
 INSTALL_DEPENDENCIES = ['unidecode']
 if py_version == (2, 6):
     INSTALL_DEPENDENCIES += ['importlib']
+    TEST_DEPENDENCIES += ['ordereddict']
 
 setup(name='filedepot',
       version=version,
