@@ -153,7 +153,7 @@ class S3Storage(FileStorage):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
         new_file_id = str(uuid.uuid1())
         key = self._bucket_driver.new_key(new_file_id)
-        self.__save_file(key, content, filename, content_type)
+        self.__save_file(key, content, filename or 'unknown', content_type)
         return new_file_id
 
     def replace(self, file_or_id, content, filename=None, content_type=None):
@@ -167,7 +167,7 @@ class S3Storage(FileStorage):
             content_type = f.content_type
 
         key = self._bucket_driver.get_key(fileid)
-        self.__save_file(key, content, filename, content_type)
+        self.__save_file(key, content, filename or 'unknown', content_type)
         return fileid
 
     def delete(self, file_or_id):
