@@ -229,6 +229,11 @@ class BaseStorageTestFixture(object):
         f = self.fs.get(file_id)
         assert f.name == f.filename
 
+    def test_create_from_bytes(self):
+        file_id = self.fs.create(b'this is the content')
+        f = self.fs.get(file_id)
+        assert f.name == 'unknown'
+
 
 class TestLocalFileStorage(BaseStorageTestFixture):
     def setup(self):

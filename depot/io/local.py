@@ -97,7 +97,7 @@ class LocalFileStorage(FileStorage):
                 fileobj.write(content)
                 fileobj.flush()
 
-        metadata = {'filename': filename or 'unknown',
+        metadata = {'filename': filename,
                     'content_type': content_type,
                     'content_length': os.path.getsize(saved_file_path),
                     'last_modified': utils.timestamp()}
@@ -108,7 +108,7 @@ class LocalFileStorage(FileStorage):
     def create(self, content, filename=None, content_type=None):
         new_file_id = str(uuid.uuid1())
         content, filename, content_type = self.fileinfo(content, filename, content_type)
-        self.__save_file(new_file_id, content, filename, content_type)
+        self.__save_file(new_file_id, content, filename or 'unknown', content_type)
         return new_file_id
 
     def replace(self, file_or_id, content, filename=None, content_type=None):
@@ -127,7 +127,7 @@ class LocalFileStorage(FileStorage):
             content_type = f.content_type
 
         self.delete(fileid)
-        self.__save_file(fileid, content, filename, content_type)
+        self.__save_file(fileid, content, filename or 'unknown', content_type)
         return fileid
 
     def delete(self, file_or_id):
