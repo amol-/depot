@@ -10,7 +10,6 @@ except IOError:
     README = ''
 
 TEST_DEPENDENCIES = ['mock',
-                     'pymongo >= 2.7',
                      'sqlalchemy',
                      'pillow',
                      'ming',
