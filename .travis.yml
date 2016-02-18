@@ -11,6 +11,7 @@ services:
 
 env:
   global:
+    - BOTO_CONFIG=/tmp/nowhere
     - secure: "AOD+7FtWk9oHqLwtbS/aCoKNPsYA/uNsC9N3js7UZO7/5qQAYzvYvWiEiRUAtI620+hsAyTd8hyHZkI7Yk+BFqtdA1XWbDIjYam5WI2euW2ME+FtokxyT3LoLu2fNAabMaNdru0JxSThW+bOurFwshRDEwxvkAgAkgZIMashMVs="
     - secure: "Ub7LbB1M9Uh1qBXZTyOyP65bgZrn62ZFqmc9mdlJmeQHksWqQoNApRw9SHYiu/zx9fiAQZl8HLFc2cbACC+45N7d/lN4kwFRf2fFzu8hNCzHBvYo9y7ciHiVfOQX9z+33HR4LvzbU3s3T3P57zu78m91xgWeHwIWh7mSqiAIxM0="
 
