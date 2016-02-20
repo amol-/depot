@@ -117,6 +117,60 @@ class StoredFile(IOBase):
                                                                          self.last_modified)
 
 
+class FileInfo(object):
+
+    DEFAULT_NAME = 'unnamed'
+    DEFAULT_CONTENT_TYPE = 'application/octet-stream'
+
+    def __init__(self, fileobj, filename=None, content_type=None):
+        self._fileobj = fileobj
+        self._filename = filename
+        self._content_type = content_type
+
+    def get_data(self, fallback_obj=None):
+        if isinstance(self._fileobj, FileIntent):
+            return self._fileobj.fileinfo
+
+        content = self._get_content(self._fileobj)
+
+        filename = self._filename or self._get_filename_from_fileob(self._fileobj)
+        if filename is None and fallback_obj:
+            if callable(fallback_obj):
+                fallback_obj = fallback_obj()
+            filename = fallback_obj.filename
+            content_type = fallback_obj.content_type
+            return content, filename, content_type
+
+        content_type = self._content_type
+        if content_type is None:
+            content_type = self._get_content_type_from_fileobj(self._fileobj)
+        if content_type is None and filename is not None:
+            content_type = mimetypes.guess_type(filename, strict=False)[0]
+
+        return (
+            content,
+            filename or self.DEFAULT_NAME,
+            content_type or self.DEFAULT_CONTENT_TYPE,
+        )
+
+    def _get_content(self, fileobj):
+        if isinstance(fileobj, cgi.FieldStorage):
+            return fileobj.file
+        return fileobj
+
+    def _get_filename_from_fileob(self, fileobj):
+        if getattr(fileobj, 'filename', None) is not None:
+            return fileobj.filename
+        elif getattr(fileobj, 'name', None) is not None:
+            return os.path.basename(fileobj.name)
+
+    def _get_content_type_from_fileobj(self, fileobj):
+        if getattr(fileobj, 'content_type', None) is not None:
+            return fileobj.content_type
+        elif getattr(fileobj, 'type', None) is not None:
+            return fileobj.type
+
+
 class FileStorage(with_metaclass(ABCMeta, object)):
     """Interface for storage providers.
 
