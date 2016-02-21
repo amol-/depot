@@ -65,7 +65,7 @@ class StoredFile(IOBase):
         """This is the filename of the saved file
 
         If a filename was not available when the file was created
-        this will return "unknown" as filename.
+        this will return "unnamed" as filename.
         """
         return self.filename
 

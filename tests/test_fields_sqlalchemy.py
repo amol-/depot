@@ -358,7 +358,7 @@ class TestSQLAThumbnailFilter(object):
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
         assert d.second_photo.file.read() == self.file_content
-        assert d.second_photo.filename == 'unknown'
+        assert d.second_photo.filename == 'unnamed'
 
     def test_create_fromfield(self):
         field = cgi.FieldStorage()

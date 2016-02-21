@@ -28,7 +28,7 @@ class LocalStoredFile(StoredFile):
         except:
             raise IOError('File %s not existing' % file_id)
 
-        metadata_info = {'filename': 'unknown',
+        metadata_info = {'filename': 'unnamed',
                          'content_type': 'application/octet-stream',
                          'last_modified': None}
         with metadata:
@@ -97,7 +97,7 @@ class LocalFileStorage(FileStorage):
                 fileobj.write(content)
                 fileobj.flush()
 
-        metadata = {'filename': filename or 'unknown',
+        metadata = {'filename': filename,
                     'content_type': content_type,
                     'content_length': os.path.getsize(saved_file_path),
                     'last_modified': utils.timestamp()}
