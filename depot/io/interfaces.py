@@ -191,37 +191,13 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         return getattr(file_or_id, 'file_id', file_or_id)
 
     @staticmethod
-    def fileinfo(fileobj, filename=None, content_type=None):
+    def fileinfo(fileobj, filename=None, content_type=None, fallback_obj=None):
         """Tries to extract from the given input the actual file object, filename and content_type
 
         This is used by the create and replace methods to correctly deduce their parameters
         from the available information when possible.
         """
-        if isinstance(fileobj, FileIntent):
-            return fileobj.fileinfo
-
-        content = fileobj
-        if isinstance(fileobj, cgi.FieldStorage):
-            content = fileobj.file
-
-        if filename is None:
-            if getattr(fileobj, 'filename', None) is not None:
-                filename = fileobj.filename
-            elif getattr(fileobj, 'name', None) is not None:
-                filename = os.path.basename(fileobj.name)
-
-        if content_type is None:
-            if getattr(fileobj, 'content_type', None) is not None:
-                content_type = fileobj.content_type
-            elif getattr(fileobj, 'type', None) is not None:
-                content_type = fileobj.type
-
-        if content_type is None:
-            if filename is not None:
-                content_type = mimetypes.guess_type(filename, strict=False)[0]
-            content_type = content_type or 'application/octet-stream'
-
-        return content, filename, content_type
+        return FileInfo(fileobj, filename, content_type).get_data(fallback_obj)
 
     @abstractmethod
     def get(self, file_or_id):  # pragma: no cover
