@@ -129,8 +129,8 @@ class FileStorage(with_metaclass(ABCMeta, object)):
 
     class _FileInfo(object):
 
-        DEFAULT_NAME = 'unnamed'
         DEFAULT_CONTENT_TYPE = 'application/octet-stream'
+        DEFAULT_NAME = 'unnamed'
 
         def __init__(self, fileobj, filename=None, content_type=None):
             self._fileobj = fileobj
@@ -141,15 +141,13 @@ class FileStorage(with_metaclass(ABCMeta, object)):
             if isinstance(self._fileobj, FileIntent):
                 return self._fileobj.fileinfo
 
-            content = self._get_content(self._fileobj)
+            content = self._get_content_from_file_obj(self._fileobj)
 
             filename = self._filename or self._get_filename_from_fileob(self._fileobj)
             if filename is None and fallback_obj:
                 if callable(fallback_obj):
                     fallback_obj = fallback_obj()
-                filename = fallback_obj.filename
-                content_type = fallback_obj.content_type
-                return content, filename, content_type
+                return content, fallback_obj.filename, fallback_obj.content_type
 
             content_type = self._content_type
             if content_type is None:
@@ -163,7 +161,7 @@ class FileStorage(with_metaclass(ABCMeta, object)):
                 content_type or self.DEFAULT_CONTENT_TYPE,
             )
 
-        def _get_content(self, fileobj):
+        def _get_content_from_file_obj(self, fileobj):
             if isinstance(fileobj, cgi.FieldStorage):
                 return fileobj.file
             return fileobj
