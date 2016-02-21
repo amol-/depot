@@ -85,11 +85,8 @@ class GridFSStorage(FileStorage):
         fileid = self.fileid(file_or_id)
         fileid = _check_file_id(fileid)
 
-        content, filename, content_type = self.fileinfo(content, filename, content_type)
-        if filename is None:
-            f = self.get(fileid)
-            filename = f.filename
-            content_type = f.content_type
+        content, filename, content_type = self.fileinfo(
+            content, filename, content_type, lambda: self.get(fileid))
 
         self._gridfs.delete(fileid)
         new_file_id = self._gridfs.put(content, _id=fileid,
