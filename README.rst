@@ -10,10 +10,10 @@ DEPOT - File Storage Made Easy
 .. image:: https://coveralls.io/repos/amol-/depot/badge.png?branch=master
     :target: https://coveralls.io/r/amol-/depot?branch=master 
 
-.. image:: https://pypip.in/v/filedepot/badge.png
+.. image:: https://img.shields.io/pypi/v/filedepot.svg
    :target: https://pypi.python.org/pypi/filedepot
 
-.. image:: https://pypip.in/d/filedepot/badge.png
+.. image:: https://img.shields.io/pypi/dm/filedepot.svg
    :target: https://pypi.python.org/pypi/filedepot
 
 DEPOT is a framework for easily storing and serving files in
