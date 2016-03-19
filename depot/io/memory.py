@@ -90,11 +90,8 @@ class MemoryFileStorage(FileStorage):
         if fileid not in self.files:
             raise IOError('File %s not existing' % file_or_id)
 
-        content, filename, content_type = self.fileinfo(content, filename, content_type)
-        if filename is None:
-            f = self.get(fileid)
-            filename = f.filename
-            content_type = f.content_type
+        content, filename, content_type = self.fileinfo(content, filename, content_type,
+                                                        lambda: self.get(fileid))
 
         self.delete(fileid)
         self.__save_file(fileid, content, filename, content_type)

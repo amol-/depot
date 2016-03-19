@@ -160,8 +160,8 @@ class S3Storage(FileStorage):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
-        content, filename, content_type = self.fileinfo(
-            content, filename, content_type, lambda: self.get(fileid))
+        content, filename, content_type = self.fileinfo(content, filename, content_type,
+                                                        lambda: self.get(fileid))
 
         key = self._bucket_driver.get_key(fileid)
         self.__save_file(key, content, filename, content_type)
