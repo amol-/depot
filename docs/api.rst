@@ -75,6 +75,8 @@ Storing Files
 .. autoclass:: depot.io.awss3.S3Storage
     :members:
 
+.. autoclass:: depot.io.memory.MemoryFileStorage
+    :members:
 
 Utilities
 ---------

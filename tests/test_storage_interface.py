@@ -300,3 +300,12 @@ class TestS3FileStorageWithPrefix(TestS3FileStorage):
             secret_access_key,
             bucket_name,
             prefix='my-prefix/')
+
+
+class TestMemoryFileStorage(BaseStorageTestFixture):
+    def setup(self):
+        from depot.io.memory import MemoryFileStorage
+        self.fs = MemoryFileStorage()
+
+    def teardown(self):
+        map(self.fs.delete, self.fs.list())

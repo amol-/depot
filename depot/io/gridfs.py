@@ -114,6 +114,7 @@ class GridFSStorage(FileStorage):
             list_ids.append(str(self._gridfs.find_one({"filename": filename})._id))
         return list_ids
 
+
 def _check_file_id(file_id):
     # Check that the given file id is valid, this also
     # prevents unsafe paths.

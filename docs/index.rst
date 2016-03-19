@@ -20,6 +20,8 @@ like you would for plain data.
 Depot is a swiss army knife for files that provides:
 
     - Multiple backends: Store your data on GridFS or S3 with a *single API*
+    - In Memory storage :class:`depot.io.memory.MemoryFileStorage` provided for tests suite.
+      Provides faster tests and no need to clean-up fixtures.
     - Meant for *Evolution*: Change the backend anytime you want, old data will continue to work
     - Integrates with your *ORM*: When using SQLAlchemy, attachments are handled like a
       plain model attribute. It's also *session ready*: Rollback causes the files to be deleted.
