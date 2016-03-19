@@ -65,7 +65,7 @@ class StoredFile(IOBase):
         """This is the filename of the saved file
 
         If a filename was not available when the file was created
-        this will return "unknown" as filename.
+        this will return "unnamed" as filename.
         """
         return self.filename
 
@@ -127,6 +127,57 @@ class FileStorage(with_metaclass(ABCMeta, object)):
     with filedepot.
     """
 
+    class _FileInfo(object):
+
+        DEFAULT_CONTENT_TYPE = 'application/octet-stream'
+        DEFAULT_NAME = 'unnamed'
+
+        def __init__(self, fileobj, filename=None, content_type=None):
+            self._fileobj = fileobj
+            self._filename = filename
+            self._content_type = content_type
+
+        def get_data(self, fallback_obj=None):
+            if isinstance(self._fileobj, FileIntent):
+                return self._fileobj.fileinfo
+
+            content = self._get_content_from_file_obj(self._fileobj)
+
+            filename = self._filename or self._get_filename_from_fileob(self._fileobj)
+            if filename is None and fallback_obj:
+                if callable(fallback_obj):
+                    fallback_obj = fallback_obj()
+                return content, fallback_obj.filename, fallback_obj.content_type
+
+            content_type = self._content_type
+            if content_type is None:
+                content_type = self._get_content_type_from_fileobj(self._fileobj)
+            if content_type is None and filename is not None:
+                content_type = mimetypes.guess_type(filename, strict=False)[0]
+
+            return (
+                content,
+                filename or self.DEFAULT_NAME,
+                content_type or self.DEFAULT_CONTENT_TYPE,
+            )
+
+        def _get_content_from_file_obj(self, fileobj):
+            if isinstance(fileobj, cgi.FieldStorage):
+                return fileobj.file
+            return fileobj
+
+        def _get_filename_from_fileob(self, fileobj):
+            if getattr(fileobj, 'filename', None) is not None:
+                return fileobj.filename
+            elif getattr(fileobj, 'name', None) is not None:
+                return os.path.basename(fileobj.name)
+
+        def _get_content_type_from_fileobj(self, fileobj):
+            if getattr(fileobj, 'content_type', None) is not None:
+                return fileobj.content_type
+            elif getattr(fileobj, 'type', None) is not None:
+                return fileobj.type
+
     @staticmethod
     def fileid(file_or_id):
         """Gets the ID of a given :class:`StoredFile`
@@ -137,37 +188,13 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         return getattr(file_or_id, 'file_id', file_or_id)
 
     @staticmethod
-    def fileinfo(fileobj, filename=None, content_type=None):
+    def fileinfo(fileobj, filename=None, content_type=None, fallback_obj=None):
         """Tries to extract from the given input the actual file object, filename and content_type
 
         This is used by the create and replace methods to correctly deduce their parameters
         from the available information when possible.
         """
-        if isinstance(fileobj, FileIntent):
-            return fileobj.fileinfo
-
-        content = fileobj
-        if isinstance(fileobj, cgi.FieldStorage):
-            content = fileobj.file
-
-        if filename is None:
-            if getattr(fileobj, 'filename', None) is not None:
-                filename = fileobj.filename
-            elif getattr(fileobj, 'name', None) is not None:
-                filename = os.path.basename(fileobj.name)
-
-        if content_type is None:
-            if getattr(fileobj, 'content_type', None) is not None:
-                content_type = fileobj.content_type
-            elif getattr(fileobj, 'type', None) is not None:
-                content_type = fileobj.type
-
-        if content_type is None:
-            if filename is not None:
-                content_type = mimetypes.guess_type(filename, strict=False)[0]
-            content_type = content_type or 'application/octet-stream'
-
-        return content, filename, content_type
+        return FileStorage._FileInfo(fileobj, filename, content_type).get_data(fallback_obj)
 
     @abstractmethod
     def get(self, file_or_id):  # pragma: no cover
