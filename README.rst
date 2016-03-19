@@ -56,6 +56,14 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.3.0
+~~~~~
+
+- ``MemoryFileStorage`` provides in memory storage for files. This is meant to provide a
+  convenient way to speed up test suites and avoid fixture clean up issues.
+- S3Storage can now generate public urls for private files (expire in 1 year)
+- Files created from plain bytes are now named "unnamed" instead of missing a filename.
+
 0.2.1
 ~~~~~
 
