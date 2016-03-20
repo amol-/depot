@@ -67,6 +67,14 @@ class TestS3FileStorage(object):
         assert '.s3.amazonaws.com' in f.public_url, f.public_url
         assert f.public_url.endswith('/%s' % fid), f.public_url
 
+    def test_content_disposition(self):
+        import requests
+        from depot._compat import unicode_text
+        file_id = self.fs.create(b'content', unicode_text('test.txt'), 'text/plain')
+        test_file = self.fs.get(file_id)
+        response = requests.get(test_file.public_url)
+        assert response.headers['Content-Disposition'] == 'inline; filename=test.txt'
+
     def teardown(self):
         keys = [key.name for key in self.fs._bucket_driver.bucket]
         if keys:
