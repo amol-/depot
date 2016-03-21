@@ -69,7 +69,9 @@ class TestS3FileStorage(object):
 
     def test_content_disposition(self):
         import requests
-        from depot._compat import unicode_text
+        from depot._compat import PY2, unicode_text
+        if not PY2:
+            return
         file_id = self.fs.create(b'content', unicode_text('test.txt'), 'text/plain')
         test_file = self.fs.get(file_id)
         response = requests.get(test_file.public_url)
