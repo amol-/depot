@@ -23,7 +23,7 @@ else:
     TEST_DEPENDENCIES += ['coverage < 4.0']
 
 
-INSTALL_DEPENDENCIES = ['unidecode']
+INSTALL_DEPENDENCIES = ['rfc6266', 'unidecode']
 if py_version == (2, 6):
     INSTALL_DEPENDENCIES += ['importlib']
     TEST_DEPENDENCIES += ['ordereddict']
