@@ -40,7 +40,7 @@ class UploadedFileField(types.TypeDecorator):
         self._upload_storage = upload_storage
 
     def load_dialect_impl(self, dialect):
-        return dialect.type_descriptor(types.VARCHAR(4096))
+        return dialect.type_descriptor(types.VARCHAR(4000))
 
     def process_bind_param(self, value, dialect):
         if not value:
