@@ -10,7 +10,7 @@ from datetime import datetime
 import uuid
 from boto.s3.connection import S3Connection
 from depot._compat import unicode_text
-import rfc6266
+from depot.utils import make_content_disposition
 
 from .interfaces import FileStorage, StoredFile
 from . import utils
@@ -130,7 +130,7 @@ class S3Storage(FileStorage):
         key.set_metadata('x-depot-modified', utils.timestamp())
         key.set_metadata(
             'Content-Disposition',
-            str(rfc6266.build_header(filename, 'inline')))
+            make_content_disposition('inline', filename))
 
         if hasattr(content, 'read'):
             can_seek_and_tell = True

@@ -75,7 +75,7 @@ class TestS3FileStorage(object):
         file_id = self.fs.create(b'content', unicode_text('test.txt'), 'text/plain')
         test_file = self.fs.get(file_id)
         response = requests.get(test_file.public_url)
-        assert response.headers['Content-Disposition'] == 'inline; filename=test.txt'
+        assert response.headers['Content-Disposition'] == "inline;filename=test.txt;filename*=utf-8''test.txt"
 
     def teardown(self):
         keys = [key.name for key in self.fs._bucket_driver.bucket]
