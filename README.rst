@@ -29,7 +29,7 @@ Installing DEPOT can be done from PyPi itself by installing the ``filedepot`` di
 Getting Started
 ---------------
 
-To start using Depot refer to `Documentation <http://depot.readthedocs.org/en/latest/>`_
+To start using Depot refer to `Documentation <https://depot.readthedocs.io/en/latest/>`_
 
 DEPOT was `presented at PyConUK and PyConFR <http://www.slideshare.net/__amol__/pyconfr-2014-depot-story-of-a-filewrite-gone-wrong>`_ in 2014
 
