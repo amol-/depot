@@ -10,6 +10,7 @@ except IOError:
     README = ''
 
 TEST_DEPENDENCIES = ['mock',
+                     'requests',
                      'sqlalchemy',
                      'pillow',
                      'ming',
