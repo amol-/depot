@@ -73,8 +73,6 @@ class TestS3FileStorage(object):
         assert f.public_url.endswith('/%s' % fid), f.public_url
 
     def test_content_disposition(self):
-        if not PY2:
-            raise SkipTest('Test is for Python2.X only')
         file_id = self.fs.create(b'content', unicode_text('test.txt'), 'text/plain')
         test_file = self.fs.get(file_id)
         response = requests.get(test_file.public_url)
