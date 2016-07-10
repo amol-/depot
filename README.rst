@@ -56,6 +56,12 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.3.1
+~~~~~
+
+* Fixed ``Content-Disposition`` header when serving from S3 directly
+* Fixed size of SQLAlchemy field on Oracle (was bigger than the allowed maximum)
+
 0.3.0
 ~~~~~
 
