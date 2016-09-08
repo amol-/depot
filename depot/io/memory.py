@@ -43,7 +43,7 @@ class MemoryFileStorage(FileStorage):
 
     This is generally useful for caches and tests.
     """
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.files = {}
 
     def get(self, file_or_id):
