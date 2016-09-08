@@ -56,6 +56,11 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.3.2
+~~~~~
+
+- ``MemoryFileStorage`` now accepts any option, for easier testing configuration
+
 0.3.1
 ~~~~~
 
