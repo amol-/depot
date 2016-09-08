@@ -177,11 +177,11 @@ class TestWSGIMiddleware(object):
 
         uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
         content_disposition = uploaded_file.headers['Content-Disposition']
-        assert content_disposition == "inline;filename=Krupnyi;filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
+        assert content_disposition == "inline;filename=\"Krupnyi\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
 
         new_file = app.post('/create_file', params={'lang': 'it'}).json
         uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
         content_disposition = uploaded_file.headers['Content-Disposition']
         _, asciiname, uniname = content_disposition.split(';')
-        assert asciiname == 'filename=aeiou', asciiname
+        assert asciiname == 'filename="aeiou"', asciiname
         assert u_(unquote(uniname[17:])) == u_('àèìòù'), unquote(uniname[17:])
