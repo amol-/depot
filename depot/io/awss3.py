@@ -43,6 +43,8 @@ class S3StoredFile(StoredFile):
         if self.closed:
             raise ValueError("cannot read from a closed file")
 
+        if n <= 0:
+            n = 0
         return self._key.read(n)
 
     def close(self):
