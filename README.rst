@@ -56,6 +56,12 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.4.0
+~~~~~
+
+- Support for Python 3.5
+- Fixed ``Content-Disposition`` header for filenames including a comma
+
 0.3.2
 ~~~~~
 
