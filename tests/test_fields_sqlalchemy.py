@@ -6,7 +6,7 @@ from PIL import Image
 from nose.tools import raises
 from sqlalchemy.exc import StatementError
 from sqlalchemy.schema import Column
-from sqlalchemy.types import Unicode, Integer
+from sqlalchemy.types import Unicode, Integer, Text
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
 from depot.fields.sqlalchemy import UploadedFileField
 from depot.fields.upload import UploadedFile
@@ -42,6 +42,16 @@ class Document(DeclarativeBase):
     photo = Column(UploadedFileField(upload_type=UploadedImageWithThumb))
     second_photo = Column(UploadedFileField(filters=(WithThumbnailFilter((12, 12), 'PNG'),)))
     targeted_content = Column(UploadedFileField(upload_storage='another_alias'))
+    type = Column(Text, nullable=True)
+
+    __mapper_args__ = {
+        'polymorphic_on': 'type'
+    }
+
+
+class Confidential(Document):
+    __mapper_args__ = {'polymorphic_identity': 'confidential'}
+
 
 class TestSQLAAttachments(object):
     def __init__(self):
@@ -61,6 +71,17 @@ class TestSQLAAttachments(object):
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        assert d.content.file.read() == self.file_content
+        assert d.content.file.filename == os.path.basename(self.fake_file.name)
+
+    def test_create_polymorphic_from_file(self):
+        doc = Confidential(name=u_('Secret'))
+        doc.content = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        d = DBSession.query(Confidential).filter_by(name=u_('Secret')).first()
         assert d.content.file.read() == self.file_content
         assert d.content.file.filename == os.path.basename(self.fake_file.name)
 

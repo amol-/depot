@@ -89,7 +89,7 @@ class _SQLAMutationTracker(object):
                             # that it would be the right thing to do.
                             raise TypeError('UploadedFileField currently supports a single column')
                         cls.mapped_entities.setdefault(class_, []).append(mapper_property.key)
-                        event.listen(mapper_property, 'set', cls._field_set, retval=True)
+                        event.listen(mapper_property, 'set', cls._field_set, retval=True, propagate=True)
 
     @classmethod
     def _session_rollback(cls, session, previous_transaction):
