@@ -94,7 +94,7 @@ ChangeLog
 
 - It is now possible to use multiple ``WithThumbnailFilter`` to generate multiple thumbnails
   with different resolutions.
-- Better documentation for MongoDB ``UploadedFileProperty`` 
+- Better documentation for MongoDB ``UploadedFileProperty``
 
 0.1.1
 ~~~~~
