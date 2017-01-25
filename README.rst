@@ -53,6 +53,12 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.4.1
+~~~~~
+
+- Fixed installation error on non-UTF8 systems
+- Improved support for polymorphic subtypes in SQLAlchemy
+
 0.4.0
 ~~~~~
 
