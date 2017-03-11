@@ -94,12 +94,37 @@ class TestSQLAAttachments(object):
         DBSession.remove()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
-        old_file =  d.content.path
+        old_file = d.content.path
 
         d.content = b'HELLO'
         new_file = d.content.path
 
         DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        assert get_file(new_file).read() == b'HELLO'
+
+        try:
+            fold = get_file(old_file)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass
+
+    def test_edit_existing_noflush(self):
+        doc = Document(name=u_('Foo2'))
+        doc.content = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
+        old_file = d.content.path
+
+        d.content = b'HELLO'
+        new_file = d.content.path
+
         DBSession.commit()
         DBSession.remove()
 
@@ -126,6 +151,31 @@ class TestSQLAAttachments(object):
         new_file = d.content.path
 
         DBSession.flush()
+        DBSession.rollback()
+        DBSession.remove()
+
+        assert get_file(old_file).read() == self.file_content
+
+        try:
+            fold = get_file(new_file)
+            assert False, 'Should have raised IOError here'
+        except IOError:
+            pass
+
+    def test_edit_existing_rollback_noflush(self):
+        doc = Document(name=u_('Foo3'))
+        doc.content = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo3')).first()
+        old_file = d.content.path
+
+        d.content = b'HELLO'
+        new_file = d.content.path
+
         DBSession.rollback()
         DBSession.remove()
 

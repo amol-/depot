@@ -66,13 +66,22 @@ class _SQLAMutationTracker(object):
         if value is None or isinstance(value, UploadedFile):
             return value
 
-        set_property = inspect(target).mapper.get_property(initiator.key)
+        inspection = inspect(target)
+        set_property = inspection.mapper.get_property(initiator.key)
         column_type = set_property.columns[0].type
         assert(isinstance(column_type, UploadedFileField))
 
         upload_type = column_type._upload_type
         value = upload_type(value, column_type._upload_storage)
         value._apply_filters(column_type._filters)
+
+        # Mark newly added files on assignment, so that in case of a rollback
+        # without going through flush we have track of the files
+        # that need to be rolled back.
+        session = inspection.session
+        if session is not None:
+            session._depot_new = getattr(session, '_depot_new', set())
+            session._depot_new.update(value.files)
 
         return value
 
