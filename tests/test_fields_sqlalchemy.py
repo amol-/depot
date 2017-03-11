@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import shutil
 
-import tempfile, os, cgi, base64
+import tempfile
+import os
+import cgi
+import base64
 from PIL import Image
-from nose.tools import raises
 from sqlalchemy.exc import StatementError
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer, Text
@@ -15,7 +17,16 @@ from depot.manager import DepotManager, get_file
 from .utils import create_cgifs
 from depot.fields.specialized.image import UploadedImageWithThumb
 from depot.fields.filters.thumbnails import WithThumbnailFilter
-from depot._compat import u_, bytes_
+from depot._compat import u_
+
+
+def file_exists(file_id):
+    try:
+        get_file(file_id)
+        return True
+    except IOError:
+        return False
+
 
 def setup():
     setup_database()
@@ -29,8 +40,6 @@ def setup():
 
 def teardown():
     shutil.rmtree('./lfs', ignore_errors=True)
-
-
 
 
 class Document(DeclarativeBase):
@@ -67,7 +76,7 @@ class TestSQLAAttachments(object):
         doc = Document(name=u_('Foo'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -78,7 +87,7 @@ class TestSQLAAttachments(object):
         doc = Confidential(name=u_('Secret'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Confidential).filter_by(name=u_('Secret')).first()
@@ -89,7 +98,7 @@ class TestSQLAAttachments(object):
         doc = Document(name=u_('Foo2'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
@@ -99,23 +108,19 @@ class TestSQLAAttachments(object):
         d.content = b'HELLO'
         new_file = d.content.path
 
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
         assert get_file(new_file).read() == b'HELLO'
 
-        try:
-            fold = get_file(old_file)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(old_file)
 
     def test_edit_existing_noflush(self):
         doc = Document(name=u_('Foo2'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
@@ -130,17 +135,13 @@ class TestSQLAAttachments(object):
 
         assert get_file(new_file).read() == b'HELLO'
 
-        try:
-            fold = get_file(old_file)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(old_file)
 
     def test_edit_existing_rollback(self):
         doc = Document(name=u_('Foo3'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
@@ -150,23 +151,19 @@ class TestSQLAAttachments(object):
         d.content = b'HELLO'
         new_file = d.content.path
 
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.rollback()
         DBSession.remove()
 
         assert get_file(old_file).read() == self.file_content
 
-        try:
-            fold = get_file(new_file)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(new_file)
 
     def test_edit_existing_rollback_noflush(self):
         doc = Document(name=u_('Foo3'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
@@ -181,18 +178,14 @@ class TestSQLAAttachments(object):
 
         assert get_file(old_file).read() == self.file_content
 
-        try:
-            fold = get_file(new_file)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(new_file)
 
     def test_create_fromfield(self):
         field = create_cgifs('image/jpeg', self.fake_file, 'test.jpg')
 
         doc = Document(name=u_('Foo'), content=field)
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -204,7 +197,7 @@ class TestSQLAAttachments(object):
     def test_create_empty(self):
         doc = Document(name=u_('Foo'), content=None)
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -214,7 +207,7 @@ class TestSQLAAttachments(object):
         doc = Document(name=u_('Foo2'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
@@ -222,21 +215,17 @@ class TestSQLAAttachments(object):
         old_file = d.content.path
         DBSession.delete(d)
 
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
-        try:
-            fold = get_file(old_file)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(old_file)
 
     def test_delete_existing_rollback(self):
         doc = Document(name=u_('Foo3'))
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
         DBSession.remove()
 
@@ -244,7 +233,7 @@ class TestSQLAAttachments(object):
         old_file = d.content.path
         DBSession.delete(d)
 
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.rollback()
         DBSession.remove()
 
@@ -254,7 +243,7 @@ class TestSQLAAttachments(object):
         doc = Document(name=u_('Foo'))
         doc.targeted_content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -284,7 +273,7 @@ class TestSQLAImageAttachments(object):
         doc = Document(name=u_('Foo'))
         doc.photo = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -311,7 +300,7 @@ class TestSQLAImageAttachments(object):
 
         doc = Document(name=u_('Foo'), photo=field)
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -326,7 +315,7 @@ class TestSQLAImageAttachments(object):
 
         doc = Document(name=u_('Foo'), photo=field)
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -341,7 +330,7 @@ class TestSQLAImageAttachments(object):
 
         doc = Document(name=u_('Foo'), photo=field)
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -358,7 +347,7 @@ class TestSQLAImageAttachments(object):
         doc.photo = open(self.fake_file.name, 'rb')
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -376,7 +365,9 @@ class TestSQLAImageAttachments(object):
         doc = Document(name=u_('Foo3'))
         doc.photo = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # TODO: This .flush() shall not be required
+        # but now without .flush() it fails the case
+        # DBSession.flush()
 
         uploaded_file = doc.photo.path
         uploaded_thumb = doc.photo.thumb_path
@@ -384,17 +375,9 @@ class TestSQLAImageAttachments(object):
         DBSession.rollback()
         DBSession.remove()
 
-        try:
-            fold = get_file(uploaded_file)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(uploaded_file)
 
-        try:
-            fold = get_file(uploaded_thumb)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(uploaded_thumb)
 
 
 class TestSQLAThumbnailFilter(object):
@@ -413,7 +396,7 @@ class TestSQLAThumbnailFilter(object):
         doc = Document(name=u_('Foo'))
         doc.second_photo = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -424,7 +407,7 @@ class TestSQLAThumbnailFilter(object):
         doc = Document(name=u_('Foo'))
         doc.second_photo = self.file_content
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -438,7 +421,7 @@ class TestSQLAThumbnailFilter(object):
 
         doc = Document(name=u_('Foo'), second_photo=field)
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -453,7 +436,7 @@ class TestSQLAThumbnailFilter(object):
 
         doc = Document(name=u_('Foo'), second_photo=field)
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -469,7 +452,7 @@ class TestSQLAThumbnailFilter(object):
 
         doc = Document(name=u_('Foo'), second_photo=field)
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -487,7 +470,7 @@ class TestSQLAThumbnailFilter(object):
         doc.second_photo = open(self.fake_file.name, 'rb')
         doc.content = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # DBSession.flush()
         DBSession.commit()
 
         d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
@@ -504,7 +487,9 @@ class TestSQLAThumbnailFilter(object):
         doc = Document(name=u_('Foo3'))
         doc.second_photo = open(self.fake_file.name, 'rb')
         DBSession.add(doc)
-        DBSession.flush()
+        # TODO: This .flush() shall not be required
+        # but now without .flush() it fails the case
+        # DBSession.flush()
 
         uploaded_file = doc.second_photo.path
         uploaded_thumb = doc.second_photo.thumb_12x12_path
@@ -512,14 +497,6 @@ class TestSQLAThumbnailFilter(object):
         DBSession.rollback()
         DBSession.remove()
 
-        try:
-            fold = get_file(uploaded_file)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(uploaded_file)
 
-        try:
-            fold = get_file(uploaded_thumb)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
+        assert not file_exists(uploaded_thumb)
