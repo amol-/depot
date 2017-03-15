@@ -82,6 +82,11 @@ class _SQLAMutationTracker(object):
         if session is not None:
             session._depot_new = getattr(session, '_depot_new', set())
             session._depot_new.update(value.files)
+        else:
+            # If object is not attached to a session preserve the files
+            # until it gets added to one.
+            target._depot_new = getattr(target, '_depot_new', set())
+            target._depot_new.update(value.files)
 
         return value
 
@@ -149,10 +154,16 @@ class _SQLAMutationTracker(object):
                 session._depot_old.update(deleted_files)
 
     @classmethod
+    def _session_attached(cls, session, instance):
+        session._depot_new = getattr(session, '_depot_new', set())
+        session._depot_new.update(getattr(instance, '_depot_new', set()))
+
+    @classmethod
     def setup(cls):
         event.listen(orm.mapper, 'mapper_configured', cls._mapper_configured)
         event.listen(Session, 'after_soft_rollback', cls._session_rollback)
         event.listen(Session, 'after_commit', cls._session_committed)
+        event.listen(Session, 'before_attach', cls._session_attached)
         event.listen(Session, 'before_flush', cls._session_flush)
 
 _SQLAMutationTracker.setup()
