@@ -13,8 +13,7 @@ TEST_DEPENDENCIES = ['mock',
                      'requests',
                      'sqlalchemy',
                      'ming',
-                     'TurboGears2',
-                     'WebTest']
+                     'TurboGears2']
 
 py_version = sys.version_info[:2]
 if py_version != (3, 2):
@@ -26,10 +25,9 @@ else:
 INSTALL_DEPENDENCIES = ['unidecode']
 if py_version == (2, 6):
     INSTALL_DEPENDENCIES += ['importlib']
-    TEST_DEPENDENCIES += ['ordereddict']
-    TEST_DEPENDENCIES.append('pillow < 4.0.0')
+    TEST_DEPENDENCIES += ['ordereddict', 'pillow < 4.0.0', 'WebTest < 2.0.24']
 else:
-    TEST_DEPENDENCIES.append('pillow')
+    TEST_DEPENDENCIES += ['pillow', 'WebTest']
 
 
 setup(name='filedepot',
