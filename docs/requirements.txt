@@ -1,5 +1,9 @@
-sqlalchemy
+# -e .. # depot itself get installed by tox.ini automatically
 boto
-pymongo
+boto3
 ming
--e git://github.com/amol-/depot.git@master#egg=filedepot
+mongo
+pillow
+pymongo
+sphinx
+sqlalchemy
