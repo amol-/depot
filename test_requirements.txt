@@ -6,6 +6,7 @@ requests
 sqlalchemy
 ming
 TurboGears2
+boto3
 
 # python 3.2 or other ######
 # - python 3.2 -------------
