@@ -1,5 +1,5 @@
 """
-Provides FileStorage implementation for Amazon S3.
+Provides FileStorage implementation for Amazon S3 through boto3 library.
 
 This is useful for storing files in S3.
 
@@ -8,7 +8,8 @@ from __future__ import absolute_import
 
 from datetime import datetime
 import uuid
-from boto.s3.connection import S3Connection
+import boto3
+from botocore.exceptions import ClientError
 from depot._compat import unicode_text
 from depot.utils import make_content_disposition
 
@@ -22,15 +23,17 @@ CANNED_ACL_PRIVATE = 'private'
 class S3StoredFile(StoredFile):
     def __init__(self, file_id, key):
         _check_file_id(file_id)
+        self._closed = False
         self._key = key
+        self._body = None
 
-        metadata_info = {'filename': key.get_metadata('x-depot-filename'),
+        metadata_info = {'filename': key.metadata.get('x-depot-filename'),
                          'content_type': key.content_type,
-                         'content_length': key.size,
+                         'content_length': key.content_length,
                          'last_modified': None}
 
         try:
-            last_modified = key.get_metadata('x-depot-modified')
+            last_modified = key.metadata.get('x-depot-modified')
             if last_modified:
                 metadata_info['last_modified'] = datetime.strptime(last_modified,
                                                                    '%Y-%m-%d %H:%M:%S')
@@ -43,40 +46,55 @@ class S3StoredFile(StoredFile):
         if self.closed:
             raise ValueError("cannot read from a closed file")
 
-        if n <= 0:
-            n = 0
-        return self._key.read(n)
+        if self._body is None:
+            self._body = self._key.get()['Body']
+        return self._body.read(n)
 
     def close(self):
-        self._key.close()
+        self._closed = True
+        if self._body is not None:
+            self._body.close()
 
     @property
     def closed(self):
-        return self._key.closed
+        return self._closed
 
     @property
     def public_url(self):
-        # Old boto versions did support never.
-        # but latests seems not to https://github.com/boto/boto/blob/develop/boto/s3/connection.py#L390
         expires_in = 31536000 # 1 YEAR
-        return self._key.generate_url(expires_in=expires_in, query_auth=False)
+        url = self._key.meta.client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': self._key.Bucket().name, 'Key': self._key.key},
+            ExpiresIn=expires_in
+        )
+        # Remove query auth
+        url = url.split('?', 1)[0]
+        return url
 
 
 class BucketDriver(object):
 
-    def __init__(self, bucket, prefix):
+    def __init__(self, s3, bucket, prefix):
+        self.s3 = s3
         self.bucket = bucket
         self.prefix = prefix
 
     def get_key(self, key_name):
-        return self.bucket.get_key('%s%s' % (self.prefix, key_name))
+        k = self.bucket.Object('%s%s' % (self.prefix, key_name))
+        try:
+            k.reload()
+        except ClientError as exc:
+            k = None
+            if exc.response['Error']['Code'] != '404':
+                raise
+        return k
 
     def new_key(self, key_name):
-        return self.bucket.new_key('%s%s' % (self.prefix, key_name))
+        return self.bucket.Object('%s%s' % (self.prefix, key_name))
 
     def list_key_names(self):
-        keys = self.bucket.list(prefix=self.prefix)
-        return [k.name[len(self.prefix):] for k in keys]
+        keys = self.bucket.objects.filter(Prefix=self.prefix)
+        return [k.key[len(self.prefix):] for k in keys]
 
 
 class S3Storage(FileStorage):
@@ -86,35 +104,43 @@ class S3Storage(FileStorage):
     connects to using ``access_key_id`` and ``secret_access_key``.
  
     Additional options include:
-        * ``host`` which can be used to specify an host different from Amazon
+        * ``region`` which can be used to specify the AWS region.
+        * ``endpoint_url`` which can be used to specify an host different from Amazon
           AWS S3 Storage
-        * ``policy`` which can be used to specify a canned ACL policy of either 
+        * ``policy`` which can be used to specify a canned ACL policy of either
           ``private`` or ``public-read``.
-        * ``encrypt_key`` which can be specified to use the server side
-          encryption feature.
-        * ``prefix`` parameter can be used to store all files under
+        * ``prefix`` parameter can be used to store all files under 
           specified prefix. Use a prefix like **dirname/** (*see trailing slash*)
           to store in a subdirectory.
     """
 
-    def __init__(self, access_key_id, secret_access_key, bucket=None, host=None,
-                 policy=None, encrypt_key=False, prefix=''):
+    def __init__(self, access_key_id, secret_access_key, bucket=None, region_name=None,
+                 policy=None, endpoint_url=None, prefix=''):
         policy = policy or CANNED_ACL_PUBLIC_READ
         assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
             "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
         self._policy = policy or CANNED_ACL_PUBLIC_READ
-        self._encrypt_key = encrypt_key
 
         if bucket is None:
             bucket = 'filedepot-%s' % (access_key_id.lower(),)
 
         kw = {}
-        if host is not None:
-            kw['host'] = host
-        self._conn = S3Connection(access_key_id, secret_access_key, **kw)
-        bucket = self._conn.lookup(bucket) or self._conn.create_bucket(bucket)
-        self._bucket_driver = BucketDriver(bucket, prefix)
+        if endpoint_url is not None:
+            kw['endpoint_url'] = endpoint_url
+        if region_name is not None:
+            kw['region_name'] = region_name
+        self._conn = boto3.Session(aws_access_key_id=access_key_id,
+                                   aws_secret_access_key=secret_access_key)
+        self._s3 = self._conn.resource('s3')
+        bucket = self._s3.Bucket(bucket)
 
+        try:
+            bucket.load()
+        except ClientError as exc:
+            if exc.response['Error']['Code'] != '404':
+                raise
+            bucket.create()
+        self._bucket_driver = BucketDriver(self._s3, bucket, prefix)
 
     def get(self, file_or_id):
         fileid = self.fileid(file_or_id)
@@ -127,32 +153,27 @@ class S3Storage(FileStorage):
         return S3StoredFile(fileid, key)
 
     def __save_file(self, key, content, filename, content_type=None):
-        key.set_metadata('content-type', content_type)
-        key.set_metadata('x-depot-filename', filename)
-        key.set_metadata('x-depot-modified', utils.timestamp())
-        key.set_metadata(
-            'Content-Disposition',
-            make_content_disposition('inline', filename))
+        attrs = {
+            'ACL': self._policy,
+            'Metadata': {
+                'x-depot-filename': filename,
+                'x-depot-modified': utils.timestamp()
+            },
+            'ContentType': content_type,
+            'ContentDisposition': make_content_disposition('inline', filename)
+        }
 
         if hasattr(content, 'read'):
-            can_seek_and_tell = True
             try:
                 pos = content.tell()
                 content.seek(pos)
             except:
-                can_seek_and_tell = False
-
-            if can_seek_and_tell:
-                key.set_contents_from_file(content, policy=self._policy,
-                                           encrypt_key=self._encrypt_key)
-            else:
-                key.set_contents_from_string(content.read(), policy=self._policy,
-                                             encrypt_key=self._encrypt_key)
+                content = content.read()
+            key.put(Body=content, **attrs)
         else:
             if isinstance(content, unicode_text):
                 raise TypeError('Only bytes can be stored, not unicode')
-            key.set_contents_from_string(content, policy=self._policy,
-                                         encrypt_key=self._encrypt_key)
+            key.put(Body=content, **attrs)
 
     def create(self, content, filename=None, content_type=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)

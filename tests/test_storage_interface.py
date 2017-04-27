@@ -318,3 +318,40 @@ class TestMemoryFileStorage(BaseStorageTestFixture):
 
     def teardown(self):
         map(self.fs.delete, self.fs.list())
+
+
+class TestBoto3FileStorage(BaseStorageTestFixture):
+
+    @classmethod
+    def get_storage(cls, access_key_id, secret_access_key, bucket_name):
+        from depot.io.boto3 import S3Storage
+        return S3Storage(access_key_id, secret_access_key, bucket_name)
+
+    @classmethod
+    def setup_class(cls):
+        try:
+            from depot.io.boto3 import S3Storage
+        except ImportError:
+            raise SkipTest('Boto3 not installed')
+
+        env = os.environ
+        access_key_id = env.get('AWS_ACCESS_KEY_ID')
+        secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
+        if access_key_id is None or secret_access_key is None:
+            raise SkipTest('Amazon S3 credentials not available')
+
+        PID = os.getpid()
+        NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]
+        BUCKET_NAME = 'fdtest-%s-%s-%s' % (access_key_id.lower(), NODE, PID)
+        cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
+
+    def teardown(self):
+        for obj in self.fs._bucket_driver.bucket.objects.all():
+            obj.delete()
+
+    @classmethod
+    def teardown_class(cls):
+        try:
+            cls.fs._bucket_driver.bucket.delete()
+        except:
+            pass

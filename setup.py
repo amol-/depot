@@ -13,7 +13,8 @@ TEST_DEPENDENCIES = ['mock',
                      'requests',
                      'sqlalchemy',
                      'ming',
-                     'TurboGears2']
+                     'TurboGears2',
+                     'boto3']
 
 py_version = sys.version_info[:2]
 if py_version != (3, 2):
