@@ -251,7 +251,11 @@ class TestGridFSFileStorage(BaseStorageTestFixture):
         except ImportError:
             raise SkipTest('PyMongo not installed')
 
-        self.fs = GridFSStorage('mongodb://localhost/gridfs_example', 'testfs')
+        import pymongo.errors
+        try:
+            self.fs = GridFSStorage('mongodb://localhost/gridfs_example', 'testfs')
+        except pymongo.errors.ConnectionFailure:
+            raise SkipTest('MongoDB not running')
 
     def teardown(self):
         self.fs._db.drop_collection('testfs')
