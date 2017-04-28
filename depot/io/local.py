@@ -154,8 +154,7 @@ def _check_file_id(file_id):
     try:
         uuid.UUID('{%s}' % file_id)
     except:
-        raise ValueError('Invalid file id %s' % file_id)
-
+        return False
 
 def _metadata_path(local_path):
     return os.path.join(local_path, 'metadata.json')
