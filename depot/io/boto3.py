@@ -103,6 +103,9 @@ class BucketDriver(object):
 class S3Storage(FileStorage):
     """:class:`depot.io.interfaces.FileStorage` implementation that stores files on S3.
 
+    **This is a version implemented on top of boto3**.
+    Installing ``boto3`` as a dependency is required to use this.
+
     All the files are stored inside a bucket named ``bucket`` on ``host`` which Depot
     connects to using ``access_key_id`` and ``secret_access_key``.
  

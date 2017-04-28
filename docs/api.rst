@@ -72,6 +72,9 @@ Storing Files
 .. autoclass:: depot.io.gridfs.GridFSStorage
     :members:
 
+.. autoclass:: depot.io.boto3.S3Storage
+    :members:
+
 .. autoclass:: depot.io.awss3.S3Storage
     :members:
 

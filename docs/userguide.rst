@@ -157,9 +157,9 @@ Serving Files on HTTP
 ------------------------------
 
 In case of storages that directly support serving files on HTTP
-(like :class:`depot.io.awss3.S3Storage`) the stored file itself can be retrieved at the url
-provided by :class:`.StoredFile.public_url`. In case the ``public_url`` is ``None`` it means
-that the storage doesn't provide HTTP access directly.
+(like :class:`depot.io.awss3.S3Storage` and :class:`depot.io.boto3.S3Storage`) the
+stored file itself can be retrieved at the url provided by :class:`.StoredFile.public_url`.
+In case the ``public_url`` is ``None`` it means that the storage doesn't provide direct HTTP access.
 
 In such case files can be served using a :class:`.DepotMiddleware` WSGI middleware. The
 DepotMiddlware supports serving files from any backend, supports ETag caching and in case of
