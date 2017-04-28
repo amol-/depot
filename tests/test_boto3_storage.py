@@ -57,6 +57,12 @@ class TestS3FileStorage(object):
             fs = S3Storage(*self.cred)
         assert created_buckets == [self.default_bucket_name]
 
+    def test_client_receives_extra_args(self):
+        with mock.patch('boto3.session.Session.resource') as mockresource:
+            fs = S3Storage(*self.cred, endpoint_url='http://somehwere.it', region_name='worlwide')
+        mockresource.assert_called_once_with('s3', endpoint_url='http://somehwere.it',
+                                             region_name='worlwide')
+
     def test_invalid_modified(self):
         fid = str(uuid.uuid1())
         key = self.fs._bucket_driver.new_key(fid)

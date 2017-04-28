@@ -137,7 +137,7 @@ class S3Storage(FileStorage):
             kw['region_name'] = region_name
         self._conn = boto3.Session(aws_access_key_id=access_key_id,
                                    aws_secret_access_key=secret_access_key)
-        self._s3 = self._conn.resource('s3')
+        self._s3 = self._conn.resource('s3', **kw)
         bucket = self._s3.Bucket(bucket)
 
         try:
