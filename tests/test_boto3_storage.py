@@ -42,6 +42,21 @@ class TestS3FileStorage(object):
         f = self.fs.get(fid)
         assert f.read() == FILE_CONTENT
 
+    def test_creates_bucket_when_missing(self):
+        created_buckets = []
+        def mock_make_api_call(_, operation_name, kwarg):
+            if operation_name == 'ListBuckets':
+                return {'Buckets': []}
+            elif operation_name == 'CreateBucket':
+                created_buckets.append(kwarg['Bucket'])
+                return None
+            else:
+                assert False, 'Unexpected Call'
+
+        with mock.patch('botocore.client.BaseClient._make_api_call', new=mock_make_api_call):
+            fs = S3Storage(*self.cred)
+        assert created_buckets == [self.default_bucket_name]
+
     def test_invalid_modified(self):
         fid = str(uuid.uuid1())
         key = self.fs._bucket_driver.new_key(fid)
