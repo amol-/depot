@@ -48,6 +48,9 @@ class S3StoredFile(StoredFile):
 
         if self._body is None:
             self._body = self._key.get()['Body']
+
+        if n <= 0:
+            n = None
         return self._body.read(n)
 
     def close(self):
