@@ -53,6 +53,17 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.5.0
+~~~~~
+
+- ``depot.io.boto3.S3Storage`` now provides support for accessing S3 with ``boto3``.
+  The previously existing ``depot.io.awss3.S3Storage`` can still be used to store
+  files on S3 using ``boto``.
+- SQLAlchemy integration now handles deletion of files on rollback when session
+  is not flushed. Previously flushing the session was required before a rollback too.
+- It is now possible to run tests through ``tox`` and build docs through ``tox -e docs``
+- DEPOT is now tested against Python 3.6
+
 0.4.1
 ~~~~~
 
