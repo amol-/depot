@@ -3,7 +3,6 @@ import uuid
 
 import mock
 import requests
-
 from nose import SkipTest
 
 from depot._compat import PY2, unicode_text
@@ -54,14 +53,49 @@ class TestS3FileStorage(object):
                 assert False, 'Unexpected Call'
 
         with mock.patch('botocore.client.BaseClient._make_api_call', new=mock_make_api_call):
-            fs = S3Storage(*self.cred)
+            S3Storage(*self.cred)
         assert created_buckets == [self.default_bucket_name]
+
+    def test_bucket_failure(self):
+        from botocore.exceptions import ClientError
+        def mock_make_api_call(_, operation_name, kwarg):
+            if operation_name == 'ListBuckets':
+                raise ClientError(error_response={'Error': {'Code': 500}},
+                                  operation_name=operation_name)
+
+        try:
+            with mock.patch('botocore.client.BaseClient._make_api_call', new=mock_make_api_call):
+                S3Storage(*self.cred)
+        except ClientError:
+            pass
+        else:
+            assert False, 'Should have reraised ClientError'
 
     def test_client_receives_extra_args(self):
         with mock.patch('boto3.session.Session.resource') as mockresource:
-            fs = S3Storage(*self.cred, endpoint_url='http://somehwere.it', region_name='worlwide')
+            S3Storage(*self.cred, endpoint_url='http://somehwere.it', region_name='worlwide')
         mockresource.assert_called_once_with('s3', endpoint_url='http://somehwere.it',
                                              region_name='worlwide')
+
+    def test_get_key_failure(self):
+        from botocore.exceptions import ClientError
+
+        from botocore.client import BaseClient
+        make_api_call = BaseClient._make_api_call
+        def mock_make_api_call(cli, operation_name, kwarg):
+            if operation_name == 'HeadObject':
+                raise ClientError(error_response={'Error': {'Code': 500}},
+                                  operation_name=operation_name)
+            return make_api_call(cli, operation_name, kwarg)
+
+        fs = S3Storage(*self.cred)
+        try:
+            with mock.patch('botocore.client.BaseClient._make_api_call', new=mock_make_api_call):
+                fs.get(uuid.uuid1())
+        except ClientError:
+            pass
+        else:
+            assert False, 'Should have reraised ClientError'
 
     def test_invalid_modified(self):
         fid = str(uuid.uuid1())
