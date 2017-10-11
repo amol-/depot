@@ -14,6 +14,13 @@ FILE_CONTENT = b'HELLO WORLD'
 
 
 class TestS3FileStorage(object):
+    @classmethod
+    def setupClass(self):
+        # Travis runs multiple tests concurrently on fake machines that might
+        # collide on pid and hostid, so use an uuid1 which should be fairly random
+        # thanks to clock_seq
+        self.run_id = '%s-%s' % (uuid.uuid1().hex, os.getpid())
+
     def setup(self):
         try:
             global S3Storage
@@ -27,12 +34,10 @@ class TestS3FileStorage(object):
         if access_key_id is None or secret_access_key is None:
             raise SkipTest('Amazon S3 credentials not available')
 
-        PID = os.getpid()
-        NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]  # Travis runs multiple tests concurrently
         self.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(), )
         self.cred = (access_key_id, secret_access_key)
 
-        bucket_name = 'filedepot-testfs-%s-%s-%s' % (access_key_id.lower(), NODE, PID)
+        bucket_name = 'filedepot-testfs-%s' % self.run_id
         self.fs = S3Storage(access_key_id, secret_access_key, bucket_name)
         while not self.fs._conn.lookup(bucket_name):
             # Wait for bucket to exist, to avoid flaky tests...
