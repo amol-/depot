@@ -281,9 +281,7 @@ class TestS3FileStorage(BaseStorageTestFixture):
         if access_key_id is None or secret_access_key is None:
             raise SkipTest('Amazon S3 credentials not available')
 
-        PID = os.getpid()
-        NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]
-        BUCKET_NAME = 'fdtest-%s-%s-%s' % (access_key_id.lower(), NODE, PID)
+        BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
         cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
 
     def teardown(self):
@@ -340,9 +338,7 @@ class TestBoto3FileStorage(BaseStorageTestFixture):
         if access_key_id is None or secret_access_key is None:
             raise SkipTest('Amazon S3 credentials not available')
 
-        PID = os.getpid()
-        NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]
-        BUCKET_NAME = 'fdtest-%s-%s-%s' % (access_key_id.lower(), NODE, PID)
+        BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
         cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
 
     def teardown(self):
