@@ -132,11 +132,16 @@ class TestS3FileStorage(object):
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
 
     def teardown(self):
-        for obj in self.fs._bucket_driver.bucket.objects.all():
+        from botocore.exceptions import ClientError
+        try:
+            objs = self.fs._bucket_driver.bucket.objects.all()
+        except self.fs._bucket_driver.s3.exceptions.NoSuchBucket:
+            return
+
+        for obj in objs:
             obj.delete()
 
         try:
-            from botocore.exceptions import ClientError
             self.fs._bucket_driver.bucket.delete()
             while True:
                 # Wait for bucket to be deleted, to avoid flaky tests...
