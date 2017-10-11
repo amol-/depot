@@ -1,6 +1,6 @@
 import os
 import uuid
-
+import time
 import mock
 import requests
 
@@ -31,8 +31,12 @@ class TestS3FileStorage(object):
         NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]  # Travis runs multiple tests concurrently
         self.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(), )
         self.cred = (access_key_id, secret_access_key)
-        self.fs = S3Storage(access_key_id, secret_access_key,
-                            'filedepot-testfs-%s-%s-%s' % (access_key_id.lower(), NODE, PID))
+
+        bucket_name = 'filedepot-testfs-%s-%s-%s' % (access_key_id.lower(), NODE, PID)
+        self.fs = S3Storage(access_key_id, secret_access_key, bucket_name)
+        while not self.fs._conn.lookup(bucket_name):
+            # Wait for bucket to exist, to avoid flaky tests...
+            time.sleep(0.5)
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
@@ -79,11 +83,17 @@ class TestS3FileStorage(object):
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
 
     def teardown(self):
+        if not self.fs._conn.lookup(self.fs._bucket_driver.bucket.name):
+            return
+        
         keys = [key.name for key in self.fs._bucket_driver.bucket]
         if keys:
             self.fs._bucket_driver.bucket.delete_keys(keys)
 
         try:
             self.fs._conn.delete_bucket(self.fs._bucket_driver.bucket.name)
+            while self.fs._conn.lookup(self.fs._bucket_driver.bucket.name):
+                # Wait for bucket to be deleted, to avoid flaky tests...
+                time.sleep(0.5)
         except:
             pass

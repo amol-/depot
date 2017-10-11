@@ -1,6 +1,6 @@
 import os
 import uuid
-
+import time
 import mock
 import requests
 from nose import SkipTest
@@ -19,7 +19,8 @@ class TestS3FileStorage(object):
             from depot.io.boto3 import S3Storage
         except ImportError:
             raise SkipTest('Boto not installed')
-
+        
+        from botocore.exceptions import ClientError
         env = os.environ
         access_key_id = env.get('AWS_ACCESS_KEY_ID')
         secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
@@ -32,6 +33,16 @@ class TestS3FileStorage(object):
         self.cred = (access_key_id, secret_access_key)
         self.fs = S3Storage(access_key_id, secret_access_key,
                             'filedepot-testfs-%s-%s-%s' % (access_key_id.lower(), NODE, PID))
+        while True:
+            # Wait for bucket to exist, to avoid flaky tests...
+            try:
+                self.fs._bucket_driver.bucket.load()
+            except ClientError as exc:
+                if exc.response['Error']['Code'] != '404':
+                    raise
+                time.sleep(0.5)
+            else:
+                break
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
@@ -125,6 +136,16 @@ class TestS3FileStorage(object):
             obj.delete()
 
         try:
+            from botocore.exceptions import ClientError
             self.fs._bucket_driver.bucket.delete()
+            while True:
+                # Wait for bucket to be deleted, to avoid flaky tests...
+                try:
+                    self.fs._bucket_driver.bucket.load()
+                except ClientError as exc:
+                    if exc.response['Error']['Code'] == '404':
+                        break
+                else:
+                    time.sleep(0.5)
         except:
             pass
