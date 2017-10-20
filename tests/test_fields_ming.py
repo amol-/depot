@@ -3,7 +3,7 @@ import shutil
 
 import tempfile, os, cgi, base64
 from PIL import Image
-from depot.fields.filters.thumbnails import WithThumbnailFilter
+from depot.fields.filters.thumbnails import WithThumbnailFilter, WithSquareThumbnailFilter
 from depot.fields.ming import UploadedFileProperty
 from depot.manager import DepotManager, get_file
 from .base_ming import setup_database, clear_database, DBSession
@@ -39,7 +39,8 @@ class Document(MappedClass):
     name = FieldProperty(str)
     content = UploadedFileProperty()
     photo = UploadedFileProperty(upload_type=UploadedImageWithThumb)
-    second_photo = UploadedFileProperty(filters=(WithThumbnailFilter((12, 12), 'PNG'),))
+    second_photo = UploadedFileProperty(filters=(WithThumbnailFilter((12, 12), 'PNG'),
+                                                 WithSquareThumbnailFilter((8, 8))))
     targeted_content = UploadedFileProperty(upload_storage='another_alias')
 
 
@@ -318,7 +319,9 @@ class TestMingThumbnailFilter(object):
         assert d.second_photo.filename == field.filename
         assert d.second_photo.url == '/depot/%s' % d.second_photo.path
         assert d.second_photo.thumb_12x12_url == '/depot/%s' % d.second_photo.thumb_12x12_path
+        assert d.second_photo.square_thumb_8x8_url == '/depot/%s' % d.second_photo.square_thumb_8x8_path  # noqa: E501
         assert d.second_photo.url != d.second_photo.thumb_12x12_url
+        assert d.second_photo.url != d.second_photo.square_thumb_8x8_url
 
     def test_thumbnail(self):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
@@ -353,6 +356,7 @@ class TestMingThumbnailFilter(object):
         # Now check that depot does the right thing when public urls are available
         assert d.second_photo.url == 'PUBLIC_URL'
         assert d.second_photo.thumb_12x12_url.startswith('/depot/default/')
+        assert d.second_photo.square_thumb_8x8_url.startswith('/depot/default/')
 
     def test_rollback(self):
         raise SkipTest("Currently Ming Doesn't provide a way to handle discarded documents")
