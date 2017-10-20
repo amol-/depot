@@ -9,14 +9,14 @@ from depot.fields.ming import DepotExtension
 mainsession = Session()
 DBSession = ThreadLocalODMSession(mainsession, extensions=(DepotExtension, ))
 
-database_setup=False
+database_setup = False
 datastore = None
 
 
 def setup_database():
     global datastore, database_setup
     if not database_setup:
-        datastore = create_datastore(os.environ.get('MONGOURL', 'mim:///'))
+        datastore = create_datastore(os.environ.get('MONGOURL', 'mim:///depottest'))
         mainsession.bind = datastore
         ming.odm.Mapper.compile_all()
 
@@ -32,4 +32,3 @@ def clear_database():
     except TypeError:
         # On MongoDB drop database
         datastore.conn.drop_database(datastore.db)
-

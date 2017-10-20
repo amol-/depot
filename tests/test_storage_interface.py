@@ -258,7 +258,8 @@ class TestGridFSFileStorage(BaseStorageTestFixture):
             raise SkipTest('MongoDB not running')
 
     def teardown(self):
-        self.fs._db.drop_collection('testfs')
+        self.fs._db.drop_collection('testfs.files')
+        self.fs._db.drop_collection('testfs.chunks')
 
 
 class TestS3FileStorage(BaseStorageTestFixture):
