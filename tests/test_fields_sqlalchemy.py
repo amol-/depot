@@ -14,8 +14,9 @@ from depot.io.utils import FileIntent
 from depot.manager import DepotManager, get_file
 from .utils import create_cgifs
 from depot.fields.specialized.image import UploadedImageWithThumb
-from depot.fields.filters.thumbnails import WithThumbnailFilter
+from depot.fields.filters.thumbnails import WithThumbnailFilter, WithSquareThumbnailFilter
 from depot._compat import u_, bytes_
+
 
 def setup():
     setup_database()
@@ -31,8 +32,6 @@ def teardown():
     shutil.rmtree('./lfs', ignore_errors=True)
 
 
-
-
 class Document(DeclarativeBase):
     __tablename__ = 'docu'
 
@@ -40,7 +39,8 @@ class Document(DeclarativeBase):
     name = Column(Unicode(16), unique=True)
     content = Column('content_col', UploadedFileField)
     photo = Column(UploadedFileField(upload_type=UploadedImageWithThumb))
-    second_photo = Column(UploadedFileField(filters=(WithThumbnailFilter((12, 12), 'PNG'),)))
+    second_photo = Column(UploadedFileField(filters=(WithThumbnailFilter((12, 12), 'PNG'),
+                                                     WithSquareThumbnailFilter((8, 8)))))
     targeted_content = Column(UploadedFileField(upload_storage='another_alias'))
     type = Column(Text, nullable=True)
 
@@ -403,7 +403,9 @@ class TestSQLAThumbnailFilter(SQLATestCase):
         assert d.second_photo.filename == field.filename
         assert d.second_photo.url == '/depot/%s' % d.second_photo.path
         assert d.second_photo.thumb_12x12_url == '/depot/%s' % d.second_photo.thumb_12x12_path
+        assert d.second_photo.square_thumb_8x8_url == '/depot/%s' % d.second_photo.square_thumb_8x8_path  # noqa: E501
         assert d.second_photo.url != d.second_photo.thumb_12x12_url
+        assert d.second_photo.url != d.second_photo.square_thumb_8x8_url
 
     def test_create_fileintent(self):
         field = FileIntent(open(self.fake_file.name, 'rb'), u_('àèìòù.gif'), 'image/gif')
