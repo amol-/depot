@@ -140,12 +140,12 @@ class S3Storage(FileStorage):
         self._s3 = self._conn.resource('s3', **kw)
         bucket = self._s3.Bucket(bucket)
 
-        try:
-            bucket.load()
-        except ClientError as exc:
-            if exc.response['Error']['Code'] != '404':
-                raise
+        # Create bucket if it doesn't exist.
+        buckets = {b['Name'] for b in self._s3.meta.client.list_buckets()['Buckets']}
+        if bucket.name not in buckets:
             bucket.create()
+            bucket.wait_until_exists()
+
         self._bucket_driver = BucketDriver(self._s3, bucket, prefix)
 
     def get(self, file_or_id):

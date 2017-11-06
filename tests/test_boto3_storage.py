@@ -38,16 +38,6 @@ class TestS3FileStorage(object):
         self.cred = (access_key_id, secret_access_key)
         self.fs = S3Storage(access_key_id, secret_access_key,
                             'filedepot-testfs-%s' % self.run_id)
-        while True:
-            # Wait for bucket to exist, to avoid flaky tests...
-            try:
-                self.fs._bucket_driver.bucket.load()
-            except ClientError as exc:
-                if exc.response['Error']['Code'] != '404':
-                    raise
-                time.sleep(0.5)
-            else:
-                break
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
@@ -65,6 +55,11 @@ class TestS3FileStorage(object):
             elif operation_name == 'CreateBucket':
                 created_buckets.append(kwarg['Bucket'])
                 return None
+            elif operation_name == 'HeadBucket':
+                if kwarg['Bucket'] in created_buckets:
+                    return {'ResponseMetadata': {'HTTPStatusCode': 200}}
+                else:
+                    return {}
             else:
                 assert False, 'Unexpected Call'
 
@@ -137,21 +132,19 @@ class TestS3FileStorage(object):
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
 
     def teardown(self):
-        from botocore.exceptions import ClientError
+        buckets = {
+            b['Name'] for b in self.fs._bucket_driver.s3.meta.client.list_buckets()['Buckets']
+        }
+        if self.fs._bucket_driver.bucket.name not in buckets:
+            # Bucket wasn't created, probably due to monkey patching, just skip.
+            return
 
         for obj in self.fs._bucket_driver.bucket.objects.all():
             obj.delete()
 
         try:
             self.fs._bucket_driver.bucket.delete()
-            while True:
-                # Wait for bucket to be deleted, to avoid flaky tests...
-                try:
-                    self.fs._bucket_driver.bucket.load()
-                except ClientError as exc:
-                    if exc.response['Error']['Code'] == '404':
-                        break
-                else:
-                    time.sleep(0.5)
         except:
             pass
+        else:
+            self.fs._bucket_driver.bucket.wait_until_not_exists()
