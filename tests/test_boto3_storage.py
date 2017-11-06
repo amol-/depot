@@ -132,9 +132,9 @@ class TestS3FileStorage(object):
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
 
     def teardown(self):
-        buckets = {
+        buckets = set(
             b['Name'] for b in self.fs._bucket_driver.s3.meta.client.list_buckets()['Buckets']
-        }
+        )
         if self.fs._bucket_driver.bucket.name not in buckets:
             # Bucket wasn't created, probably due to monkey patching, just skip.
             return

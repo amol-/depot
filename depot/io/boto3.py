@@ -141,7 +141,7 @@ class S3Storage(FileStorage):
         bucket = self._s3.Bucket(bucket)
 
         # Create bucket if it doesn't exist.
-        buckets = {b['Name'] for b in self._s3.meta.client.list_buckets()['Buckets']}
+        buckets = set(b['Name'] for b in self._s3.meta.client.list_buckets()['Buckets'])
         if bucket.name not in buckets:
             bucket.create()
             bucket.wait_until_exists()
