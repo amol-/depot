@@ -16,6 +16,7 @@ if not PY2:  # pragma: no cover
     string_type = str
     unicode_text = str
     byte_string = bytes
+    wsgi_string = str
 
     def u_(s):
         return str(s)
@@ -32,6 +33,7 @@ else:  # pragma: no cover
     string_type = basestring
     unicode_text = unicode
     byte_string = str
+    wsgi_string = str
 
     def u_(s):
         return unicode(s, 'utf-8')
