@@ -71,3 +71,29 @@ class UploadedFile(DepotFileInfo):
     @property
     def file(self):
         return self.depot.get(self.file_id)
+
+
+class UploadedId(UploadedFile):
+    """Wrapper for class:`depot.fields.upload.UploadedFile`.
+
+    Allow process already uploaded file by it's id
+    """
+    def process_content(self, content, filename=None, content_type=None):
+        """Implementation of :meth:`.DepotFileInfo.process_content`
+
+        Allow process already uploaded file by it's Depot ID instead of file.
+        :param content: Depot ID
+        """
+
+        file_id = content
+        file_path = '%s/%s' % (self.depot_name, file_id)
+        self.files.append(file_path)
+
+        self['file_id'] = file_id
+        self['path'] = file_path
+
+        saved_file = self.file
+        self['filename'] = saved_file.filename
+        self['content_type'] = saved_file.content_type
+        self['uploaded_at'] = saved_file.last_modified.strftime('%Y-%m-%d %H:%M:%S')
+        self['_public_url'] = saved_file.public_url
