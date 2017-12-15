@@ -62,6 +62,7 @@ class GridFSStorage(FileStorage):
         self._cli = MongoClient(mongouri)
         self._db = self._cli.get_default_database()
         self._gridfs = gridfs.GridFS(self._db, collection=collection)
+        self._gridfs_bucket = gridfs.GridFSBucket(self._db, bucket_name=collection)
 
     def get(self, file_or_id):
         fileid = self.fileid(file_or_id)
@@ -80,6 +81,17 @@ class GridFSStorage(FileStorage):
                                        content_type=content_type,
                                        last_modified=utils.timestamp())
         return str(new_file_id)
+
+    def create_stream(self, filename=None, content_type=None):
+        if not content_type:
+            content_type = utils._FileInfo.DEFAULT_CONTENT_TYPE
+        if not filename:
+            filename = utils._FileInfo.DEFAULT_NAME
+
+        metadata = {'contentType': content_type}
+        stream, new_file_id = self._gridfs_bucket.open_upload_stream(filename, metadata=metadata)
+
+        return stream, str(new_file_id)
 
     def replace(self, file_or_id, content, filename=None, content_type=None):
         fileid = self.fileid(file_or_id)
