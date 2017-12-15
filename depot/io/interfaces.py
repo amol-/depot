@@ -162,6 +162,15 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         return
 
     @abstractmethod
+    def create_stream(self, filename=None, content_type=None):
+        """Create byte-stream like object and returns it and the ID of newly created file.
+
+        Typically stream contain write and close methods.
+        After usage stream must be closed.
+        """
+        return
+
+    @abstractmethod
     def replace(self, file_or_id, content, filename=None, content_type=None):  # pragma: no cover
         """Replaces an existing file, an ``IOError`` is raised if the file didn't already exist.
 
