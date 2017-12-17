@@ -163,7 +163,7 @@ class FileStorage(with_metaclass(ABCMeta, object)):
 
     @abstractmethod
     def create_stream(self, filename=None, content_type=None):
-        """Create byte-stream like object and returns it and the ID of newly created file.
+        """Create byte-stream like object and returns it with attribute ``file_id``.
 
         Typically stream contain write and close methods.
         After usage stream must be closed.

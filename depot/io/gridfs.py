@@ -90,8 +90,9 @@ class GridFSStorage(FileStorage):
 
         metadata = {'contentType': content_type}
         stream, new_file_id = self._gridfs_bucket.open_upload_stream(filename, metadata=metadata)
+        setattr(stream, 'file_id', str(new_file_id))
 
-        return stream, str(new_file_id)
+        return stream
 
     def replace(self, file_or_id, content, filename=None, content_type=None):
         fileid = self.fileid(file_or_id)
