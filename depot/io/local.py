@@ -111,6 +111,30 @@ class LocalFileStorage(FileStorage):
         self.__save_file(new_file_id, content, filename, content_type)
         return new_file_id
 
+    def create_stream(self, filename=None, content_type=None):
+        new_file_id = str(uuid.uuid1())
+        if not content_type:
+            content_type = utils._FileInfo.DEFAULT_CONTENT_TYPE
+        if not filename:
+            filename = utils._FileInfo.DEFAULT_NAME
+
+        local_file_path = self.__local_path(new_file_id)
+        os.makedirs(local_file_path)
+        saved_file_path = _file_path(local_file_path)
+
+        stream = open(saved_file_path, 'wb')
+
+        metadata = {'filename': filename,
+                    'content_type': content_type,
+                    'content_length': os.path.getsize(saved_file_path),
+                    'last_modified': utils.timestamp()}
+        with open(_metadata_path(local_file_path), 'w') as metadatafile:
+            metadatafile.write(json.dumps(metadata))
+
+        setattr(stream, 'file_id', new_file_id)
+
+        return stream
+
     def replace(self, file_or_id, content, filename=None, content_type=None):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
