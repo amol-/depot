@@ -27,10 +27,9 @@ class GridFSStoredFile(StoredFile):
                          'last_modified': None}
 
         try:
-            last_modified = gridout.last_modified
+            last_modified = gridout.upload_date
             if last_modified:
-                metadata_info['last_modified'] = datetime.strptime(last_modified,
-                                                                   '%Y-%m-%d %H:%M:%S')
+                metadata_info['last_modified'] = last_modified
         except:
             pass
 
