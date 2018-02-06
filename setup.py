@@ -11,7 +11,6 @@ except IOError:
 
 TEST_DEPENDENCIES = ['mock',
                      'requests',
-                     'sqlalchemy',
                      'ming',
                      'TurboGears2',
                      'boto3']
@@ -26,9 +25,9 @@ else:
 INSTALL_DEPENDENCIES = ['unidecode']
 if py_version == (2, 6):
     INSTALL_DEPENDENCIES += ['importlib']
-    TEST_DEPENDENCIES += ['ordereddict', 'pillow < 4.0.0', 'WebTest < 2.0.24']
+    TEST_DEPENDENCIES += ['ordereddict', 'pillow < 4.0.0', 'WebTest < 2.0.24', 'sqlalchemy < 1.2']
 else:
-    TEST_DEPENDENCIES += ['pillow', 'WebTest']
+    TEST_DEPENDENCIES += ['pillow', 'WebTest', 'sqlalchemy']
 
 
 setup(name='filedepot',
