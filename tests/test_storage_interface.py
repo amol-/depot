@@ -1,4 +1,6 @@
 import uuid
+
+from flaky import flaky
 from nose.tools import raises
 from nose import SkipTest
 import shutil
@@ -262,6 +264,7 @@ class TestGridFSFileStorage(BaseStorageTestFixture):
         self.fs._db.drop_collection('testfs.chunks')
 
 
+@flaky
 class TestS3FileStorage(BaseStorageTestFixture):
 
     @classmethod
@@ -298,6 +301,7 @@ class TestS3FileStorage(BaseStorageTestFixture):
             pass
 
 
+@flaky
 class TestS3FileStorageWithPrefix(TestS3FileStorage):
 
     @classmethod
@@ -319,6 +323,7 @@ class TestMemoryFileStorage(BaseStorageTestFixture):
         map(self.fs.delete, self.fs.list())
 
 
+@flaky
 class TestBoto3FileStorage(BaseStorageTestFixture):
 
     @classmethod

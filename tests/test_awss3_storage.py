@@ -3,6 +3,7 @@ import uuid
 import time
 import mock
 import requests
+from flaky import flaky
 
 from nose import SkipTest
 
@@ -13,6 +14,7 @@ S3Storage = None
 FILE_CONTENT = b'HELLO WORLD'
 
 
+@flaky
 class TestS3FileStorage(object):
     @classmethod
     def setupClass(self):
