@@ -199,7 +199,7 @@ class DepotMiddleware(object):
 
         public_url = f.public_url
         if public_url is not None:
-            self._301_response(start_response, public_url)
+            return self._301_response(start_response, public_url)
 
         fileapp = FileServeApp(f, self.cache_max_age, self.replace_wsgi_filewrapper)
         return fileapp(environ, start_response)
