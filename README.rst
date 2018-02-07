@@ -53,6 +53,11 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.5.2
+~~~~~
+
+- Fixed an *start_response called a second time without providing exc_info* error with storages supporting plublic urls
+
 0.5.1
 ~~~~~
 
