@@ -160,8 +160,10 @@ class TestWSGIMiddleware(object):
         new_file = app.post('/create_file').json
 
         file_path = DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file)
-        uploaded_file = app.get(file_path)
-        assert uploaded_file.body == FILE_CONTENT, uploaded_file
+        uploaded_file = app.get(file_path, status=301)
+        location = uploaded_file.headers['Location']
+        assert 'https://filedepot-testfs-' in location
+        assert 's3.amazonaws.com' in location
 
     def test_serving_files_with_wsgifilewrapper(self):
         app = self.make_app(replace_wsgi_filewrapper=True)
