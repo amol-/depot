@@ -88,7 +88,8 @@ class GridFSStorage(FileStorage):
             filename = utils._FileInfo.DEFAULT_NAME
 
         metadata = {'contentType': content_type}
-        stream, new_file_id = self._gridfs_bucket.open_upload_stream(filename, metadata=metadata)
+        stream = self._gridfs_bucket.open_upload_stream(filename, metadata=metadata)
+        new_file_id = stream._id
         setattr(stream, 'file_id', str(new_file_id))
 
         return stream
