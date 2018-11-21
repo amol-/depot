@@ -16,6 +16,17 @@ DEPOT - File Storage Made Easy
 DEPOT is a framework for easily storing and serving files in
 web applications on Python2.6+ and Python3.2+.
 
+DEPOT supports storing files in multiple backends, like:
+
+    * Local Disk
+    * In Memory (for tests)
+    * On GridFS
+    * On Amazon S3 (or compatible services)
+
+and integrates with database by providing files
+attached to your **SQLAlchemy** or **Ming/MongoDB** models
+with respect to transactions behaviours (files are rolled back too).
+
 Installing
 ----------
 
