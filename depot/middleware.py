@@ -137,6 +137,9 @@ class DepotMiddleware(object):
     """
     def __init__(self, app, mountpoint='/depot', cache_max_age=3600*24*7,
                  replace_wsgi_filewrapper=False):
+        if not mountpoint.startswith('/'):
+            raise ValueError('DepotMiddleware mountpoint must be an absolute path')
+
         self.app = app
         self.mountpoint = mountpoint
         self.cache_max_age = cache_max_age
@@ -177,7 +180,9 @@ class DepotMiddleware(object):
         req_method = environ['REQUEST_METHOD']
         full_path = environ['PATH_INFO']
 
-        if req_method not in ('GET', 'HEAD') or not full_path.startswith(self.mountpoint):
+        mtpointlen = len(self.mountpoint)
+        if not (req_method in ('GET', 'HEAD') and full_path.startswith(self.mountpoint) and 
+                full_path[mtpointlen:mtpointlen+1] in ('', '/')):
             return self.app(environ, start_response)
 
         path = full_path.split('/')

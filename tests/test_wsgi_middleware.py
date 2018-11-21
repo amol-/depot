@@ -26,6 +26,15 @@ class RootController(TGController):
         return dict(files=self.UPLOADED_FILES)
 
     @expose('json')
+    def depotskipped(self):
+        return dict(ok=True)
+
+    @expose('json')
+    def depot(self):
+        # this should never be called
+        return dict(ok=False)
+
+    @expose('json')
     def create_file(self, lang='en'):
         fname = {'en': 'hello.txt',
                  'ru': u_('Крупный'),
@@ -110,6 +119,18 @@ class TestWSGIMiddleware(object):
 
         files = app.get('/').json
         assert new_file['last'] in files['files'], (new_file, files)
+
+    def test_forwards_to_app_begins_with_endpoint(self):
+        app = self.make_app()
+
+        resp = app.get('/depotskipped').json
+        assert resp['ok'] == True
+
+    def test_404_on_nofile(self):
+        app = self.make_app()
+
+        missing = app.get('/depot', status=404)
+        assert 'Not Found' in missing.status
 
     def test_404_on_missing_file(self):
         app = self.make_app()
