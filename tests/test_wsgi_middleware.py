@@ -64,6 +64,14 @@ class TestWSGIMiddleware(object):
         wsgi_app = DepotManager.make_middleware(self.wsgi_app, **options)
         return TestApp(wsgi_app)
 
+    def test_invalid_mountpoint(self):
+        try:
+            DepotManager.make_middleware(self.wsgi_app, mountpoint='hello')
+        except ValueError as err:
+            assert 'mountpoint must be an absolute path' in str(err)
+        else:
+            assert False, 'Should have raised ValueError'
+
     def test_serving_files(self):
         app = self.make_app()
         new_file = app.post('/create_file').json
