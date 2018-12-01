@@ -267,6 +267,43 @@ class TestSQLAAttachments(SQLATestCase):
 
         assert self.file_exists(old_file)
 
+    def test_relationship_cascade_delete(self):
+        directory = Directory(name='Parent')
+        DBSession.add(directory)
+        directory.documents.append(Document(name=u_('Foo'), content=open(self.fake_file.name, 'rb')))
+        self._session_flush()
+        DBSession.commit()
+        
+        d = DBSession.query(Directory).filter_by(name=u_('Parent')).first()
+        doc = d.documents[0]
+        old_file = doc.content.path
+        assert self.file_exists(old_file)
+
+        DBSession.delete(d)
+        self._session_flush()
+        DBSession.commit()
+
+        assert not self.file_exists(old_file)
+
+    def test_relationship_cascade_delete_rollback(self):
+        directory = Directory(name='Parent')
+        DBSession.add(directory)
+        directory.documents.append(Document(name=u_('Foo'), content=open(self.fake_file.name, 'rb')))
+        self._session_flush()
+        DBSession.commit()
+        
+        d = DBSession.query(Directory).filter_by(name=u_('Parent')).first()
+        doc = d.documents[0]
+        old_file = doc.content.path
+        assert self.file_exists(old_file)
+
+        DBSession.delete(d)
+        self._session_flush()
+        DBSession.rollback()
+
+        assert self.file_exists(old_file)
+
+
 
 class TestSQLAAttachmentsNoFlush(TestSQLAAttachments):
     FLUSH_SESSION = False
