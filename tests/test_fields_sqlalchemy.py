@@ -5,7 +5,8 @@ import tempfile, os, cgi, base64
 from PIL import Image
 from nose.tools import raises
 from sqlalchemy.exc import StatementError
-from sqlalchemy.schema import Column
+from sqlalchemy.orm import relationship
+from sqlalchemy.schema import Column, ForeignKey
 from sqlalchemy.types import Unicode, Integer, Text
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
 from depot.fields.sqlalchemy import UploadedFileField
@@ -43,10 +44,20 @@ class Document(DeclarativeBase):
     second_photo = Column(UploadedFileField(filters=(WithThumbnailFilter((12, 12), 'PNG'),)))
     targeted_content = Column(UploadedFileField(upload_storage='another_alias'))
     type = Column(Text, nullable=True)
+    directory_id = Column(Integer, ForeignKey('dir.uid'))
 
     __mapper_args__ = {
         'polymorphic_on': 'type'
     }
+
+
+class Directory(DeclarativeBase):
+    __tablename__ = 'dir'
+
+    uid = Column(Integer, autoincrement=True, primary_key=True)
+    name = Column(Unicode(16), unique=True)
+
+    documents = relationship(Document, cascade="all, delete-orphan")
 
 
 class Confidential(Document):
@@ -219,6 +230,42 @@ class TestSQLAAttachments(SQLATestCase):
         assert d.targeted_content.file.read() == self.file_content
         assert d.targeted_content.file.filename == os.path.basename(self.fake_file.name)
         assert d.targeted_content.depot_name == 'another'
+
+    def test_relationship(self):
+        directory = Directory(name='Parent')
+        DBSession.add(directory)
+        directory.documents.append(Document(name=u_('Foo'), content=open(self.fake_file.name, 'rb')))
+        self._session_flush()
+        DBSession.commit()
+        
+        d = DBSession.query(Directory).filter_by(name=u_('Parent')).first()
+        doc = d.documents[0]
+        old_file = doc.content.path
+        assert self.file_exists(old_file)
+
+        d.documents.remove(doc)
+        self._session_flush()
+        DBSession.commit()
+
+        assert not self.file_exists(old_file)
+
+    def test_relationship_rollback(self):
+        directory = Directory(name='Parent')
+        DBSession.add(directory)
+        directory.documents.append(Document(name=u_('Foo'), content=open(self.fake_file.name, 'rb')))
+        self._session_flush()
+        DBSession.commit()
+        
+        d = DBSession.query(Directory).filter_by(name=u_('Parent')).first()
+        doc = d.documents[0]
+        old_file = doc.content.path
+        assert self.file_exists(old_file)
+
+        d.documents.remove(doc)
+        self._session_flush()
+        DBSession.rollback()
+
+        assert self.file_exists(old_file)
 
 
 class TestSQLAAttachmentsNoFlush(TestSQLAAttachments):

@@ -154,6 +154,24 @@ class _SQLAMutationTracker(object):
                 session._depot_old.update(deleted_files)
 
     @classmethod
+    def _session_after_flush(cls, session, flush_context):
+        # Tracking deleted object _after_ flush
+        # is the way we can track for objects deleted through
+        # a relationship.remove, because those only get
+        # deleted _after_ the session was flushed. Not before.
+        for state in flush_context.states.keys():
+            if not state.deleted:
+                continue
+            obj = state.obj()
+            class_ = obj.__class__
+            tracked_columns = cls.mapped_entities.get(class_, tuple())
+            for col in tracked_columns:
+                value = getattr(obj, col)
+                if value is not None:
+                    session._depot_old = getattr(session, '_depot_old', set())
+                    session._depot_old.update(value.files)
+
+    @classmethod
     def _session_attached(cls, session, instance):
         session._depot_new = getattr(session, '_depot_new', set())
         session._depot_new.update(getattr(instance, '_depot_new', set()))
@@ -165,6 +183,7 @@ class _SQLAMutationTracker(object):
         event.listen(Session, 'after_commit', cls._session_committed)
         event.listen(Session, 'before_attach', cls._session_attached)
         event.listen(Session, 'before_flush', cls._session_flush)
+        event.listen(Session, 'after_flush_postexec', cls._session_after_flush)
 
 _SQLAMutationTracker.setup()
 
