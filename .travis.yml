@@ -4,7 +4,7 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
-  - "3.6"
+  - &mainstream_python 3.6
   - nightly
 services:
   - mongodb
