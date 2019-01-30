@@ -68,9 +68,9 @@ ChangeLog
 ~~~~~
 
 - Officially support Python 3.7
-- Fix DEPOT wrongly serving requests for any url that starts with the mountpoint. (IE: /depotsomething was wrongly served for /depot mountpoint)
-- In SQLAlchemy properly handle deletion of objects deleted through `Relationship.remove` (IE: `parent.children.remove(X)`)
-- In SQLAlchemy properly handle entities deleted through `cascade='delete-orphan'`
+- Fix DEPOT wrongly serving requests for any url that starts with the mountpoint. (IE: ``/depotsomething`` was wrongly served for ``/depot`` mountpoint)
+- In SQLAlchemy properly handle deletion of objects deleted through ``Relationship.remove`` (IE: ``parent.children.remove(X)``)
+- In SQLAlchemy properly handle entities deleted through ``cascade='delete-orphan'``
 
 0.5.2
 ~~~~~
