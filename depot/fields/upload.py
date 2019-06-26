@@ -13,7 +13,7 @@ class FieldFile(File):
         self.depot.delete(self.name)
 
     @property
-    def create(self, content)
+    def create(self, content):
         return self.depot.create(content, content.name)
 
     @property
