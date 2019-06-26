@@ -4,7 +4,7 @@ from depot.manager import DepotManager
 
 
 class File(object):
-    def __init__(self, fileid):
+    def __init__(self, fileid, depot_name=None):
         if depot_name is None:
             depot_name = DepotManager.get_default()
 
