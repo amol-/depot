@@ -10,7 +10,25 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import get_history
 
 from depot.manager import DepotManager
-from .upload import UploadedFile
+from .upload import UploadedFile, FieldFile
+
+
+class ImageField(types.TypeDecorator):
+    impl = types.VARCHAR
+
+    def __init__(self, file_obj=FieldFile, *args, **kw):
+        super(ImageField, self).__init__(*args, **kw)
+        self._file_obj = file_obj
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            value = self._file_obj.create(value)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            value = self._file_obj.decode(value)
+        return value
 
 
 class UploadedFileField(types.TypeDecorator):

@@ -3,6 +3,28 @@ from depot._compat import with_metaclass
 from depot.manager import DepotManager
 
 
+class File(object):
+    def __init__(self, fileid):
+        if depot_name is None:
+            depot_name = DepotManager.get_default()
+
+        depot_name = DepotManager.resolve_alias(depot_name)
+        if not depot_name:
+            raise ValueError('Storage has not been found in DEPOT')
+
+        self.depot_name = depot_name
+        self.name = fileid
+
+    def __str__(self):
+        return self.name or ''
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, self or "None")
+
+    def __bool__(self):
+        return bool(self.name)
+
+
 class FileFilter(with_metaclass(ABCMeta, object)):
     """Interface that must be implemented by file filters.
 

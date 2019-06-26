@@ -1,6 +1,28 @@
 from depot.manager import DepotManager
-from .interfaces import DepotFileInfo
+from .interfaces import DepotFileInfo, File
 import json
+
+
+class FieldFile(File):
+    @classmethod
+    def decode(cls, fileid):
+        return cls(fileid)
+
+    @property
+    def delete(self):
+        self.depot.delete(self.name)
+
+    @property
+    def create(self, content)
+        return self.depot.create(content, content.name)
+
+    @property
+    def depot(self):
+        return DepotManager.get(self.depot_name)
+
+    @property
+    def file(self):
+        return self.depot.get(self.name)
 
 
 class UploadedFile(DepotFileInfo):
