@@ -181,9 +181,9 @@ class S3Storage(FileStorage):
                 raise TypeError('Only bytes can be stored, not unicode')
             key.put(Body=content, **attrs)
 
-    def create(self, content, filename=None, content_type=None):
+    def create(self, content, filename=None, content_type=None, path=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
-        new_file_id = str(uuid.uuid1())
+        new_file_id = path or str(uuid.uuid1())
         key = self._bucket_driver.new_key(new_file_id)
         self.__save_file(key, content, filename, content_type)
         return new_file_id

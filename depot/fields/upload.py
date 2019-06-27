@@ -13,8 +13,12 @@ class FieldFile(File):
         self.depot.delete(self.name)
 
     @property
-    def create(self, content):
-        return self.depot.create(content, content.name)
+    def create(self, content, upload_to=None):
+        _path = None
+        filename = getattr(content, 'name', None)
+        if filename and upload_to:
+            _path = "%s/%s" % (upload_to, filename)
+        return self.depot.create(content, path=_path)
 
     @property
     def depot(self):
