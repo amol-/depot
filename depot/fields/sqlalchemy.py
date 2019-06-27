@@ -16,14 +16,14 @@ from .upload import UploadedFile, FieldFile
 class ImageField(types.TypeDecorator):
     impl = types.VARCHAR
 
-    def __init__(self, file_obj=FieldFile, upoload_to=None, *args, **kw):
+    def __init__(self, file_obj=FieldFile, upload_to=None, *args, **kw):
         super(ImageField, self).__init__(*args, **kw)
         self._file_obj = file_obj
-        self._upoload_to = upoload_to
+        self._upload_to = upload_to
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            value = self._file_obj.create(value, self._upoload_to)
+            value = self._file_obj.create(value, self._upload_to)
         return value
 
     def process_result_value(self, value, dialect):
