@@ -28,6 +28,10 @@ class FieldFile(File):
     def file(self):
         return self.depot.get(self.name)
 
+    @property
+    def url(self):
+        return self.file.public_url
+
 
 class UploadedFile(DepotFileInfo):
     """Simple :class:`depot.fields.interfaces.DepotFileInfo` implementation that stores files.
