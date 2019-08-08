@@ -115,17 +115,19 @@ class S3Storage(FileStorage):
           AWS S3 Storage
         * ``policy`` which can be used to specify a canned ACL policy of either
           ``private`` or ``public-read``.
+        * ``storage_class`` which can be used to specify a class of storage.
         * ``prefix`` parameter can be used to store all files under 
           specified prefix. Use a prefix like **dirname/** (*see trailing slash*)
           to store in a subdirectory.
     """
 
     def __init__(self, access_key_id, secret_access_key, bucket=None, region_name=None,
-                 policy=None, endpoint_url=None, prefix=''):
+                 policy=None, storage_class=None, endpoint_url=None, prefix=''):
         policy = policy or CANNED_ACL_PUBLIC_READ
         assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
             "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
         self._policy = policy or CANNED_ACL_PUBLIC_READ
+        self._storage_class = storage_class or 'STANDARD'
 
         if bucket is None:
             bucket = 'filedepot-%s' % (access_key_id.lower(),)
@@ -161,6 +163,7 @@ class S3Storage(FileStorage):
     def __save_file(self, key, content, filename, content_type=None):
         attrs = {
             'ACL': self._policy,
+            'StorageClass': self._storage_class,
             'Metadata': {
                 'x-depot-filename': filename,
                 'x-depot-modified': utils.timestamp()

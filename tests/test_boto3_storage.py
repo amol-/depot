@@ -37,8 +37,8 @@ class TestS3FileStorage(object):
 
         self.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(), )
         self.cred = (access_key_id, secret_access_key)
-        self.fs = S3Storage(access_key_id, secret_access_key,
-                            'filedepot-testfs-%s' % self.run_id)
+        self.bucket = 'filedepot-testfs-%s' % self.run_id
+        self.fs = S3Storage(*self.cred, self.bucket)
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
@@ -131,6 +131,13 @@ class TestS3FileStorage(object):
         test_file = self.fs.get(file_id)
         response = requests.get(test_file.public_url)
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
+
+    def test_storage_class(self):
+        fs_ia = S3Storage(*self.cred, self.bucket, storage_class='STANDARD_IA')
+        fid = fs_ia.create(FILE_CONTENT)
+
+        key = self.fs._bucket_driver.get_key(fid)
+        assert key.storage_class == 'STANDARD_IA'
 
     def teardown(self):
         buckets = set(
