@@ -133,7 +133,7 @@ class TestS3FileStorage(object):
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
 
     def test_storage_class(self):
-        fs_ia = S3Storage(*self.cred, self.bucket, storage_class='STANDARD_IA')
+        fs_ia = S3Storage(*self.cred, bucket=self.bucket, storage_class='STANDARD_IA')
         fid = fs_ia.create(FILE_CONTENT)
 
         key = self.fs._bucket_driver.get_key(fid)
