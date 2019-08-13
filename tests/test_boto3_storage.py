@@ -38,7 +38,7 @@ class TestS3FileStorage(object):
         self.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(), )
         self.cred = (access_key_id, secret_access_key)
         self.bucket = 'filedepot-testfs-%s' % self.run_id
-        self.fs = S3Storage(*self.cred, self.bucket)
+        self.fs = S3Storage(*self.cred, bucket=self.bucket)
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
