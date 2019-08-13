@@ -64,6 +64,11 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 ChangeLog
 ---------
 
+0.7.0
+~~~~~
+
+- Support for ``storage_class`` option in ``depot.io.boto3.S3Storage`` backend. Detaults to ``STANDARD``
+
 0.6.0
 ~~~~~
 
@@ -76,6 +81,7 @@ ChangeLog
 ~~~~~
 
 - Fixed an *start_response called a second time without providing exc_info* error with storages supporting plublic urls
+
 
 0.5.1
 ~~~~~
