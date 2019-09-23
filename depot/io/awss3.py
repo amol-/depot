@@ -7,6 +7,7 @@ This is useful for storing files in S3.
 from __future__ import absolute_import
 
 from datetime import datetime
+from io import BufferedRandom
 import uuid
 from boto.s3.connection import S3Connection
 from depot._compat import unicode_text
@@ -145,7 +146,8 @@ class S3Storage(FileStorage):
             except:
                 can_seek_and_tell = False
 
-            if can_seek_and_tell:
+            # excluding BufferedRandom just because boto3 doens't support BufferedRandom input
+            if can_seek_and_tell and not isinstance(content, BufferedRandom):
                 key.set_contents_from_file(content, policy=self._policy,
                                            encrypt_key=self._encrypt_key)
             else:
