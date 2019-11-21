@@ -10,7 +10,7 @@ from datetime import datetime
 import uuid
 import boto3
 from botocore.exceptions import ClientError
-from depot._compat import unicode_text
+from depot._compat import unicode_text, percent_encode, percent_decode
 from depot.utils import make_content_disposition
 
 from .interfaces import FileStorage, StoredFile
@@ -27,7 +27,7 @@ class S3StoredFile(StoredFile):
         self._key = key
         self._body = None
 
-        metadata_info = {'filename': key.metadata.get('x-depot-filename'),
+        metadata_info = {'filename': percent_decode(key.metadata.get('x-depot-filename')),
                          'content_type': key.content_type,
                          'content_length': key.content_length,
                          'last_modified': None}
@@ -165,7 +165,7 @@ class S3Storage(FileStorage):
             'ACL': self._policy,
             'StorageClass': self._storage_class,
             'Metadata': {
-                'x-depot-filename': filename,
+                'x-depot-filename': percent_encode(filename, safe='!#$&+-.^_`|~', encoding='utf-8'),
                 'x-depot-modified': utils.timestamp()
             },
             'ContentType': content_type,
