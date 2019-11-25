@@ -188,7 +188,10 @@ class TestWSGIMiddleware(BaseWSGITests):
 
 
 class TestS3TestWSGIMiddleware(BaseWSGITests):
-    def setup(self):
+    @classmethod
+    def setup_class(cls):
+        super(TestS3TestWSGIMiddleware, cls).setup_class()
+
         try:
             global S3Storage
             from depot.io.awss3 import S3Storage
