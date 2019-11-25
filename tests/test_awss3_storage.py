@@ -17,13 +17,12 @@ FILE_CONTENT = b'HELLO WORLD'
 @flaky
 class TestS3FileStorage(object):
     @classmethod
-    def setupClass(self):
+    def setupClass(cls):
         # Travis runs multiple tests concurrently on fake machines that might
         # collide on pid and hostid, so use an uuid1 which should be fairly random
         # thanks to clock_seq
-        self.run_id = '%s-%s' % (uuid.uuid1().hex, os.getpid())
+        cls.run_id = '%s-%s' % (uuid.uuid1().hex, os.getpid())
 
-    def setup(self):
         try:
             global S3Storage
             from depot.io.awss3 import S3Storage
@@ -36,14 +35,31 @@ class TestS3FileStorage(object):
         if access_key_id is None or secret_access_key is None:
             raise SkipTest('Amazon S3 credentials not available')
 
-        self.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(), )
-        self.cred = (access_key_id, secret_access_key)
+        cls.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(), )
+        cls.cred = (access_key_id, secret_access_key)
 
-        bucket_name = 'filedepot-testfs-%s' % self.run_id
-        self.fs = S3Storage(access_key_id, secret_access_key, bucket_name)
-        while not self.fs._conn.lookup(bucket_name):
+        bucket_name = 'filedepot-testfs-%s' % cls.run_id
+        cls.fs = S3Storage(access_key_id, secret_access_key, bucket_name)
+        while not cls.fs._conn.lookup(bucket_name):
             # Wait for bucket to exist, to avoid flaky tests...
             time.sleep(0.5)
+
+    @classmethod
+    def teardownClass(cls):
+        if not cls.fs._conn.lookup(cls.fs._bucket_driver.bucket.name):
+            return
+        
+        keys = [key.name for key in cls.fs._bucket_driver.bucket]
+        if keys:
+            cls.fs._bucket_driver.bucket.delete_keys(keys)
+
+        try:
+            cls.fs._conn.delete_bucket(cls.fs._bucket_driver.bucket.name)
+            while cls.fs._conn.lookup(cls.fs._bucket_driver.bucket.name):
+                # Wait for bucket to be deleted, to avoid flaky tests...
+                time.sleep(0.5)
+        except:
+            pass
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
@@ -88,19 +104,3 @@ class TestS3FileStorage(object):
         test_file = self.fs.get(file_id)
         response = requests.get(test_file.public_url)
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
-
-    def teardown(self):
-        if not self.fs._conn.lookup(self.fs._bucket_driver.bucket.name):
-            return
-        
-        keys = [key.name for key in self.fs._bucket_driver.bucket]
-        if keys:
-            self.fs._bucket_driver.bucket.delete_keys(keys)
-
-        try:
-            self.fs._conn.delete_bucket(self.fs._bucket_driver.bucket.name)
-            while self.fs._conn.lookup(self.fs._bucket_driver.bucket.name):
-                # Wait for bucket to be deleted, to avoid flaky tests...
-                time.sleep(0.5)
-        except:
-            pass

@@ -22,7 +22,6 @@ class TestS3FileStorage(object):
         # thanks to clock_seq
         self.run_id = '%s-%s' % (uuid.uuid1().hex, os.getpid())
 
-    def setup(self):
         try:
             global S3Storage
             from depot.io.boto3 import S3Storage
@@ -40,6 +39,25 @@ class TestS3FileStorage(object):
         self.cred = (access_key_id, secret_access_key)
         self.bucket = 'filedepot-testfs-%s' % self.run_id
         self.fs = S3Storage(*self.cred, bucket=self.bucket)
+
+    @classmethod
+    def teardownClass(self):
+        buckets = set(
+            b['Name'] for b in self.fs._bucket_driver.s3.meta.client.list_buckets()['Buckets']
+        )
+        if self.fs._bucket_driver.bucket.name not in buckets:
+            # Bucket wasn't created, probably due to monkey patching, just skip.
+            return
+
+        for obj in self.fs._bucket_driver.bucket.objects.all():
+            obj.delete()
+
+        try:
+            self.fs._bucket_driver.bucket.delete()
+        except:
+            pass
+        else:
+            self.fs._bucket_driver.bucket.wait_until_not_exists()
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
@@ -150,21 +168,3 @@ class TestS3FileStorage(object):
         )
 
         assert new_file_id is not None
-
-    def teardown(self):
-        buckets = set(
-            b['Name'] for b in self.fs._bucket_driver.s3.meta.client.list_buckets()['Buckets']
-        )
-        if self.fs._bucket_driver.bucket.name not in buckets:
-            # Bucket wasn't created, probably due to monkey patching, just skip.
-            return
-
-        for obj in self.fs._bucket_driver.bucket.objects.all():
-            obj.delete()
-
-        try:
-            self.fs._bucket_driver.bucket.delete()
-        except:
-            pass
-        else:
-            self.fs._bucket_driver.bucket.wait_until_not_exists()
