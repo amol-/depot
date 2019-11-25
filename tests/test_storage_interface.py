@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import uuid
 
 from flaky import flaky
@@ -92,6 +93,22 @@ class BaseStorageTestFixture(object):
         f = self.fs.get(file_id)
         assert f.content_type == 'application/octet-stream'
         assert temp.name.endswith(f.filename)
+        assert f.read() == FILE_CONTENT
+
+    def test_filewithnonasciiname(self):
+        filename = u'些公.pdf'
+        temp = NamedTemporaryFile()
+        temp.write(FILE_CONTENT)
+        temp.seek(0)
+
+        file_id = self.fs.create(
+            temp,
+            filename=filename,
+            content_type='application/pdf'
+        )
+
+        f = self.fs.get(file_id)
+        assert f.content_type == 'application/pdf'
         assert f.read() == FILE_CONTENT
 
     def test_another_storage(self):
