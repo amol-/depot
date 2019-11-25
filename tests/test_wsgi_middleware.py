@@ -188,9 +188,8 @@ class TestWSGIMiddleware(BaseWSGITests):
 
 
 class TestS3TestWSGIMiddleware(BaseWSGITests):
-    @classmethod
-    def setup_class(cls):
-        super(TestS3TestWSGIMiddleware, cls).setup_class()
+    def setup(self):
+        DepotManager._clear()
 
         try:
             global S3Storage
