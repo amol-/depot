@@ -23,8 +23,10 @@ class S3StoredFile(StoredFile):
     def __init__(self, file_id, key):
         _check_file_id(file_id)
         self._key = key
-
-        metadata_info = {'filename': percent_decode(key.get_metadata('x-depot-filename')),
+        filename = key.metadata.get('x-depot-filename')
+        if filename:
+            filename = percent_decode(filename)
+        metadata_info = {'filename': filename,
                          'content_type': key.content_type,
                          'content_length': key.size,
                          'last_modified': None}
@@ -130,10 +132,12 @@ class S3Storage(FileStorage):
         return S3StoredFile(fileid, key)
 
     def __save_file(self, key, content, filename, content_type=None):
+        if filename:
+            filename = percent_encode(filename, safe='!#$&+-.^_`|~', encoding='utf-8')
         key.set_metadata('content-type', content_type)
         key.set_metadata(
             'x-depot-filename',
-            percent_encode(filename, safe='!#$&+-.^_`|~', encoding='utf-8')
+            filename
         )
         key.set_metadata('x-depot-modified', utils.timestamp())
         key.set_metadata(

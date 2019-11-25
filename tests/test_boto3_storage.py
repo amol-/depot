@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import uuid
 import mock
@@ -33,7 +34,7 @@ class TestS3FileStorage(object):
         access_key_id = env.get('AWS_ACCESS_KEY_ID')
         secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
         if access_key_id is None or secret_access_key is None:
-            raise SkipTest('Amazon S3 credentials not available')
+           raise SkipTest('Amazon S3 credentials not available')
 
         self.default_bucket_name = 'filedepot-%s' % (access_key_id.lower(), )
         self.cred = (access_key_id, secret_access_key)
@@ -138,6 +139,17 @@ class TestS3FileStorage(object):
 
         key = self.fs._bucket_driver.get_key(fid)
         assert key.storage_class == 'STANDARD_IA'
+
+    def test_storage_non_ascii_filenames(self):
+        filename = u'些公.pdf'
+        storage = S3Storage(*self.cred, bucket=self.bucket, storage_class='STANDARD_IA')
+        new_file_id = storage.create(
+            FILE_CONTENT,
+            filename=filename,
+            content_type='application/pdf'
+        )
+
+        assert new_file_id is not None
 
     def teardown(self):
         buckets = set(
