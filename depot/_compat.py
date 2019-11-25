@@ -27,6 +27,9 @@ if not PY2:  # pragma: no cover
     def percent_encode(string, safe, encoding):
         return quote(string, safe, encoding, errors='strict')
 
+    def percent_decode(string):
+        return unquote(string)
+
 else:  # pragma: no cover
     from urllib import quote, unquote
 
@@ -44,6 +47,9 @@ else:  # pragma: no cover
     def percent_encode(string, **kwargs):
         encoding = kwargs.pop('encoding')
         return quote(string.encode(encoding), **kwargs)
+
+    def percent_decode(string):
+        return unquote(string)
 
 
 def with_metaclass(meta, base=object):

@@ -9,7 +9,7 @@ from __future__ import absolute_import
 from datetime import datetime
 import uuid
 from boto.s3.connection import S3Connection
-from depot._compat import unicode_text
+from depot._compat import unicode_text, percent_encode, percent_decode
 from depot.utils import make_content_disposition
 
 from .interfaces import FileStorage, StoredFile
@@ -23,8 +23,10 @@ class S3StoredFile(StoredFile):
     def __init__(self, file_id, key):
         _check_file_id(file_id)
         self._key = key
-
-        metadata_info = {'filename': key.get_metadata('x-depot-filename'),
+        filename = key.metadata.get('x-depot-filename')
+        if filename:
+            filename = percent_decode(filename)
+        metadata_info = {'filename': filename,
                          'content_type': key.content_type,
                          'content_length': key.size,
                          'last_modified': None}
@@ -130,8 +132,13 @@ class S3Storage(FileStorage):
         return S3StoredFile(fileid, key)
 
     def __save_file(self, key, content, filename, content_type=None):
+        if filename:
+            filename = percent_encode(filename, safe='!#$&+-.^_`|~', encoding='utf-8')
         key.set_metadata('content-type', content_type)
-        key.set_metadata('x-depot-filename', filename)
+        key.set_metadata(
+            'x-depot-filename',
+            filename
+        )
         key.set_metadata('x-depot-modified', utils.timestamp())
         key.set_metadata(
             'Content-Disposition',
