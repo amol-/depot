@@ -41,6 +41,9 @@ To start using Depot refer to `Documentation <https://depot.readthedocs.io/en/la
 
 DEPOT was `presented at PyConUK and PyConFR <http://www.slideshare.net/__amol__/pyconfr-2014-depot-story-of-a-filewrite-gone-wrong>`_ in 2014
 
+standalone
+~~~~~~~~~~
+
 Here is a simple example of using depot standalone to store files on MongoDB::
 
     from depot.manager import DepotManager
@@ -60,6 +63,36 @@ Here is a simple example of using depot standalone to store files on MongoDB::
     stored_file = depot.get(fileid)
     print stored_file.filename
     print stored_file.content_type
+
+models
+~~~~~~
+
+Or you can use depot with SQLAlchemy to store attachments::
+
+    from depot.fields.sqlalchemy import UploadedFileField
+    from depot.fields.specialized.image import UploadedImageWithThumb
+
+
+    class Document(Base):
+        __tablename__ = 'document'
+
+        uid = Column(Integer, autoincrement=True, primary_key=True)
+        name = Column(Unicode(16), unique=True)
+        content = Column('content_col', UploadedFileField)  # plain attached file
+
+        # photo field will automatically generate thumbnail
+        photo = Column(UploadedFileField(upload_type=UploadedImageWithThumb))
+
+
+    # Store documents with attached files, the source can be a file or bytes
+    doc = Document(name=u'Foo',
+                content=b'TEXT CONTENT STORED AS FILE',
+                photo=open('/tmp/file.png'))
+    DBSession.add(doc)
+    DBSession.flush()
+
+    # DEPOT is session aware, commit/rollback to keep or delete the stored files.
+    DBSession.commit()
 
 ChangeLog
 ---------
