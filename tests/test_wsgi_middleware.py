@@ -47,22 +47,25 @@ class RootController(TGController):
                     last=self.UPLOADED_FILES[-1])
 
 
-class TestWSGIMiddleware(object):
+class BaseWSGITests(object):
     @classmethod
     def setup_class(cls):
         config = AppConfig(minimal=True, root_controller=RootController())
         cls.wsgi_app = config.make_wsgi_app()
 
+    def make_app(self, **options):
+        wsgi_app = DepotManager.make_middleware(self.wsgi_app, **options)
+        return TestApp(wsgi_app)
+
+
+
+class TestWSGIMiddleware(BaseWSGITests):
     def setup(self):
         DepotManager._clear()
         DepotManager.configure('default', {'depot.storage_path': './lfs'})
 
     def teardown(cls):
         shutil.rmtree('./lfs', ignore_errors=True)
-
-    def make_app(self, **options):
-        wsgi_app = DepotManager.make_middleware(self.wsgi_app, **options)
-        return TestApp(wsgi_app)
 
     def test_invalid_mountpoint(self):
         try:
@@ -160,7 +163,32 @@ class TestWSGIMiddleware(object):
                                   status=400)
         assert 'Bad Request' in unmodified_file.status, unmodified_file
 
-    def test_public_url_gets_redirect(self):
+    def test_serving_files_with_wsgifilewrapper(self):
+        app = self.make_app(replace_wsgi_filewrapper=True)
+        new_file = app.post('/create_file').json
+
+        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
+        assert uploaded_file.body == FILE_CONTENT
+        assert uploaded_file.request.environ['wsgi.file_wrapper'] is _FileIter
+
+    def test_serving_files_content_disposition(self):
+        app = self.make_app()
+        new_file = app.post('/create_file', params={'lang': 'ru'}).json
+
+        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
+        content_disposition = uploaded_file.headers['Content-Disposition']
+        assert content_disposition == "inline;filename=\"Krupnyi\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
+
+        new_file = app.post('/create_file', params={'lang': 'it'}).json
+        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
+        content_disposition = uploaded_file.headers['Content-Disposition']
+        _, asciiname, uniname = content_disposition.split(';')
+        assert asciiname == 'filename="aeiou"', asciiname
+        assert u_(unquote(uniname[17:])) == u_('àèìòù'), unquote(uniname[17:])
+
+
+class TestS3TestWSGIMiddleware(BaseWSGITests):
+    def setup(self):
         try:
             global S3Storage
             from depot.io.awss3 import S3Storage
@@ -185,6 +213,24 @@ class TestWSGIMiddleware(object):
                                          'depot.bucket': bucket_name})
         DepotManager.set_default('awss3')
 
+    def teardown(self):
+        store = DepotManager.get('awss3')
+        if not store._conn.lookup(store._bucket_driver.bucket.name):
+            return
+        
+        keys = [key.name for key in store._bucket_driver.bucket]
+        if keys:
+            store._bucket_driver.bucket.delete_keys(keys)
+
+        try:
+            store._conn.delete_bucket(store._bucket_driver.bucket.name)
+            while store._conn.lookup(store._bucket_driver.bucket.name):
+                # Wait for bucket to be deleted, to avoid flaky tests...
+                time.sleep(0.5)
+        except:
+            pass
+    
+    def test_public_url_gets_redirect(self):
         app = self.make_app()
         new_file = app.post('/create_file').json
 
@@ -193,26 +239,3 @@ class TestWSGIMiddleware(object):
         location = uploaded_file.headers['Location']
         assert 'https://filedepot-testfs-' in location
         assert 's3.amazonaws.com' in location
-
-    def test_serving_files_with_wsgifilewrapper(self):
-        app = self.make_app(replace_wsgi_filewrapper=True)
-        new_file = app.post('/create_file').json
-
-        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
-        assert uploaded_file.body == FILE_CONTENT
-        assert uploaded_file.request.environ['wsgi.file_wrapper'] is _FileIter
-
-    def test_serving_files_content_disposition(self):
-        app = self.make_app()
-        new_file = app.post('/create_file', params={'lang': 'ru'}).json
-
-        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
-        content_disposition = uploaded_file.headers['Content-Disposition']
-        assert content_disposition == "inline;filename=\"Krupnyi\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
-
-        new_file = app.post('/create_file', params={'lang': 'it'}).json
-        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
-        content_disposition = uploaded_file.headers['Content-Disposition']
-        _, asciiname, uniname = content_disposition.split(';')
-        assert asciiname == 'filename="aeiou"', asciiname
-        assert u_(unquote(uniname[17:])) == u_('àèìòù'), unquote(uniname[17:])
