@@ -97,6 +97,11 @@ Or you can use depot with SQLAlchemy to store attachments::
 ChangeLog
 ---------
 
+0.7.1
+~~~~~
+
+- Fix a bug in AWS-S3 support for unicode filenames.
+
 0.7.0
 ~~~~~
 
