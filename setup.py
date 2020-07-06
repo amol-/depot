@@ -23,7 +23,7 @@ else:
     TEST_DEPENDENCIES += ['coverage < 4.0']
 
 
-INSTALL_DEPENDENCIES = ['unidecode']
+INSTALL_DEPENDENCIES = []
 if py_version == (2, 6):
     INSTALL_DEPENDENCIES += ['importlib']
     TEST_DEPENDENCIES += ['ordereddict', 'pillow < 4.0.0', 'WebTest < 2.0.24', 'sqlalchemy < 1.2']
