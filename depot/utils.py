@@ -2,8 +2,9 @@ try:
     from unidecode import unidecode as fix_chars
 except:
     from unicodedata import normalize
+    import urllib.parse
     def fix_chars(str):
-        normalize('NFKC', str).encode('ascii','ignore').decode('ascii')
+        return urllib.parse.quote(normalize('NFKC', str))
 from ._compat import percent_encode
 
 

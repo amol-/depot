@@ -10,6 +10,17 @@ from webtest import TestApp
 from depot._compat import u_, unquote
 
 
+filename_translations = {'en': 'hello.txt',
+         'ru': u_('Krupnyi'),
+         'it': u_('aeiou')}
+try:
+    from unidecode import unidecode as fix_chars
+except:
+    # Use URL Encoding when unidecode (which is GPL) isn't available.
+    filename_translations = {'en': 'hello.txt',
+             'ru': u_('%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9'),
+             'it': u_('%C3%A0%C3%A8%C3%AC%C3%B2%C3%B9')}
+
 FILE_CONTENT = b'HELLO WORLD'
 
 
@@ -177,13 +188,13 @@ class TestWSGIMiddleware(BaseWSGITests):
 
         uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
         content_disposition = uploaded_file.headers['Content-Disposition']
-        assert content_disposition == "inline;filename=\"Krupnyi\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
+        assert content_disposition == "inline;filename=\""+filename_translations['ru']+"\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
 
         new_file = app.post('/create_file', params={'lang': 'it'}).json
         uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
         content_disposition = uploaded_file.headers['Content-Disposition']
         _, asciiname, uniname = content_disposition.split(';')
-        assert asciiname == 'filename="aeiou"', asciiname
+        assert asciiname == 'filename="'+filename_translations['it']+'"', asciiname
         assert u_(unquote(uniname[17:])) == u_('àèìòù'), unquote(uniname[17:])
 
 
@@ -219,7 +230,7 @@ class TestS3TestWSGIMiddleware(BaseWSGITests):
         store = DepotManager.get('awss3')
         if not store._conn.lookup(store._bucket_driver.bucket.name):
             return
-        
+
         keys = [key.name for key in store._bucket_driver.bucket]
         if keys:
             store._bucket_driver.bucket.delete_keys(keys)
@@ -231,7 +242,7 @@ class TestS3TestWSGIMiddleware(BaseWSGITests):
                 time.sleep(0.5)
         except:
             pass
-    
+
     def test_public_url_gets_redirect(self):
         app = self.make_app()
         new_file = app.post('/create_file').json
