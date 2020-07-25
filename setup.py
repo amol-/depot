@@ -22,10 +22,9 @@ if py_version != (3, 2):
 else:
     TEST_DEPENDENCIES += ['coverage < 4.0']
 
-if py_version > (3, 0):
-    INSTALL_DEPENDENCIES = ["anyascii"]
-else:
-    INSTALL_DEPENDENCIES = []
+INSTALL_DEPENDENCIES = []
+if py_version >= (3, 0):
+    INSTALL_DEPENDENCIES += ["anyascii"]
 
 if py_version == (2, 6):
     INSTALL_DEPENDENCIES += ['importlib']
