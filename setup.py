@@ -22,13 +22,17 @@ if py_version != (3, 2):
 else:
     TEST_DEPENDENCIES += ['coverage < 4.0']
 
+if py_version > (3, 0):
+    INSTALL_DEPENDENCIES = ["anyascii"]
+else:
+    INSTALL_DEPENDENCIES = []
 
-INSTALL_DEPENDENCIES = ['unidecode']
 if py_version == (2, 6):
     INSTALL_DEPENDENCIES += ['importlib']
     TEST_DEPENDENCIES += ['ordereddict', 'pillow < 4.0.0', 'WebTest < 2.0.24', 'sqlalchemy < 1.2']
 else:
     TEST_DEPENDENCIES += ['pillow', 'WebTest', 'sqlalchemy']
+
 
 
 setup(name='filedepot',
