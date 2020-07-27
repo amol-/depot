@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os, sys
 
-version = '0.7.1'
+version = '0.8.0'
 
 here = os.path.abspath(os.path.dirname(__file__))
 try:
@@ -47,7 +47,7 @@ setup(name='filedepot',
         ],
       keywords='storage files s3 gridfs mongodb aws sqlalchemy wsgi',
       author='Alessandro Molina',
-      author_email='alessandro.molina@axant.it',
+      author_email='amol@turbogears.org',
       url='https://github.com/amol-/depot',
       license='MIT',
       packages=find_packages(exclude=['ez_setup', 'tests']),

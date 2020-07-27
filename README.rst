@@ -97,6 +97,11 @@ Or you can use depot with SQLAlchemy to store attachments::
 ChangeLog
 ---------
 
+0.8.0
+~~~~~
+
+- Replaced ``unidecode`` dependency with ``anyascii`` to better cope with MIT License.
+
 0.7.1
 ~~~~~
 
