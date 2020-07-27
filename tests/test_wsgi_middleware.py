@@ -7,7 +7,7 @@ import uuid
 from depot.manager import DepotManager
 from tg import expose, TGController, AppConfig
 from webtest import TestApp
-from depot._compat import u_, unquote
+from depot._compat import u_, unquote, PY2
 
 
 FILE_CONTENT = b'HELLO WORLD'
@@ -177,7 +177,12 @@ class TestWSGIMiddleware(BaseWSGITests):
 
         uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
         content_disposition = uploaded_file.headers['Content-Disposition']
-        assert content_disposition == "inline;filename=\"Krupnyi\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
+
+        if PY2:
+            assert content_disposition == "inline;filename=\"unknown\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
+        else:
+            assert content_disposition == "inline;filename=\"Krupnyy\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
+
 
         new_file = app.post('/create_file', params={'lang': 'it'}).json
         uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
