@@ -9,6 +9,9 @@ python:
   - "3.8"
   - "3.9"
   - nightly
+matrix:
+  allow_failures:
+    - python: nightly
 services:
   - mongodb
 
