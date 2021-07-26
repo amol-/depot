@@ -141,6 +141,15 @@ class BaseStorageTestFixture(object):
 
         self.fs.replace(file_id, FILE_CONTENT)
 
+    @raises(IOError)
+    def test_create_set_id(self):
+        file_id = self.fs.create(FILE_CONTENT, 'file.txt')
+        assert self.fs.exists(file_id)
+        self.fs.delete(file_id)
+        assert not self.fs.exists(file_id)
+
+        self.fs.create(FILE_CONTENT, fileid=file_id)
+
     @raises(ValueError)
     def test_replace_invalidid(self):
         self.fs.replace('INVALIDID', FILE_CONTENT)

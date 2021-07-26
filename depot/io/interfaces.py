@@ -152,12 +152,14 @@ class FileStorage(with_metaclass(ABCMeta, object)):
         return
 
     @abstractmethod
-    def create(self, content, filename=None, content_type=None):  # pragma: no cover
+    def create(self, content, filename=None, content_type=None, fileid=None):  # pragma: no cover
         """Saves a new file and returns the ID of the newly created file.
 
         ``content`` parameter can either be ``bytes``, another ``file object``
         or a :class:`cgi.FieldStorage`. When ``filename`` and ``content_type``
         parameters are not provided they are deducted from the content itself.
+        When ``fileid`` is provided it will manually set the file ID used.
+        USE WITH CARE.
         """
         return
 

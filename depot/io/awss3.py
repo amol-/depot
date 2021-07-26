@@ -89,11 +89,11 @@ class S3Storage(FileStorage):
 
     All the files are stored inside a bucket named ``bucket`` on ``host`` which Depot
     connects to using ``access_key_id`` and ``secret_access_key``.
- 
+
     Additional options include:
         * ``host`` which can be used to specify an host different from Amazon
           AWS S3 Storage
-        * ``policy`` which can be used to specify a canned ACL policy of either 
+        * ``policy`` which can be used to specify a canned ACL policy of either
           ``private`` or ``public-read``.
         * ``encrypt_key`` which can be specified to use the server side
           encryption feature.
@@ -164,9 +164,9 @@ class S3Storage(FileStorage):
             key.set_contents_from_string(content, policy=self._policy,
                                          encrypt_key=self._encrypt_key)
 
-    def create(self, content, filename=None, content_type=None):
+    def create(self, content, filename=None, content_type=None, fileid=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
-        new_file_id = str(uuid.uuid1())
+        new_file_id = fileid if fileid is not None else str(uuid.uuid1())
         key = self._bucket_driver.new_key(new_file_id)
         self.__save_file(key, content, filename, content_type)
         return new_file_id

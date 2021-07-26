@@ -105,8 +105,8 @@ class LocalFileStorage(FileStorage):
         with open(_metadata_path(local_file_path), 'w') as metadatafile:
             metadatafile.write(json.dumps(metadata))
 
-    def create(self, content, filename=None, content_type=None):
-        new_file_id = str(uuid.uuid1())
+    def create(self, content, filename=None, content_type=None, fileid=None):
+        new_file_id = fileid if fileid is not None else str(uuid.uuid1())
         content, filename, content_type = self.fileinfo(content, filename, content_type)
         self.__save_file(new_file_id, content, filename, content_type)
         return new_file_id

@@ -111,7 +111,7 @@ class S3Storage(FileStorage):
 
     All the files are stored inside a bucket named ``bucket`` on ``host`` which Depot
     connects to using ``access_key_id`` and ``secret_access_key``.
- 
+
     Additional options include:
         * ``region`` which can be used to specify the AWS region.
         * ``endpoint_url`` which can be used to specify an host different from Amazon
@@ -119,7 +119,7 @@ class S3Storage(FileStorage):
         * ``policy`` which can be used to specify a canned ACL policy of either
           ``private`` or ``public-read``.
         * ``storage_class`` which can be used to specify a class of storage.
-        * ``prefix`` parameter can be used to store all files under 
+        * ``prefix`` parameter can be used to store all files under
           specified prefix. Use a prefix like **dirname/** (*see trailing slash*)
           to store in a subdirectory.
     """
@@ -189,9 +189,9 @@ class S3Storage(FileStorage):
                 raise TypeError('Only bytes can be stored, not unicode')
             key.put(Body=content, **attrs)
 
-    def create(self, content, filename=None, content_type=None):
+    def create(self, content, filename=None, content_type=None, fileid=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
-        new_file_id = str(uuid.uuid1())
+        new_file_id = fileid if fileid is not None else str(uuid.uuid1())
         key = self._bucket_driver.new_key(new_file_id)
         self.__save_file(key, content, filename, content_type)
         return new_file_id

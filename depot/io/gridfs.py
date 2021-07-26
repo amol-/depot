@@ -73,12 +73,18 @@ class GridFSStorage(FileStorage):
 
         return GridFSStoredFile(fileid, gridout)
 
-    def create(self, content, filename=None, content_type=None):
+    def create(self, content, filename=None, content_type=None, fileid=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)
-        new_file_id = self._gridfs.put(content,
-                                       filename=filename,
-                                       content_type=content_type,
-                                       last_modified=utils.timestamp())
+        if fileid is None:
+            new_file_id = self._gridfs.put(content,
+                                           filename=filename,
+                                           content_type=content_type,
+                                           last_modified=utils.timestamp())
+        else:
+            new_file_id = self._gridfs.put(content, _id=fileid,
+                                           filename=filename,
+                                           content_type=content_type,
+                                           last_modified=utils.timestamp())
         return str(new_file_id)
 
     def replace(self, file_or_id, content, filename=None, content_type=None):
