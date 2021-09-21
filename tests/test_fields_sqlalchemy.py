@@ -43,7 +43,7 @@ class Document(DeclarativeBase):
     photo = Column(UploadedFileField(upload_type=UploadedImageWithThumb))
     second_photo = Column(UploadedFileField(filters=(WithThumbnailFilter((12, 12), 'PNG'),)))
     targeted_content = Column(UploadedFileField(upload_storage='another_alias'))
-    type = Column(Text, nullable=True)
+    type = Column(Text, nullable=False, default='standard')
     directory_id = Column(Integer, ForeignKey('dir.uid'))
 
     __mapper_args__ = {
@@ -58,6 +58,10 @@ class Directory(DeclarativeBase):
     name = Column(Unicode(16), unique=True)
 
     documents = relationship(Document, cascade="all, delete-orphan")
+
+
+class StandardDocument(Document):
+    __mapper_args__ = {'polymorphic_identity': 'standard'}
 
 
 class Confidential(Document):
