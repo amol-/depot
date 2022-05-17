@@ -149,6 +149,7 @@ class BaseStorageTestFixture(object):
         assert not self.fs.exists(file_id)
 
         self.fs.create(FILE_CONTENT, fileid=file_id)
+        assert not self.fs.exists(file_id)
 
     @raises(ValueError)
     def test_replace_invalidid(self):
