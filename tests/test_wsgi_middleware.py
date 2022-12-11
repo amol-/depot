@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
+import unittest
 import os
 import shutil
 from depot.middleware import _FileIter
-from nose import SkipTest
 import uuid
 from depot.manager import DepotManager
 from tg import expose, TGController, AppConfig
@@ -47,9 +47,9 @@ class RootController(TGController):
                     last=self.UPLOADED_FILES[-1])
 
 
-class BaseWSGITests(object):
+class BaseWSGITests(unittest.TestCase):
     @classmethod
-    def setup_class(cls):
+    def setUpClass(cls):
         config = AppConfig(minimal=True, root_controller=RootController())
         cls.wsgi_app = config.make_wsgi_app()
 
@@ -60,11 +60,11 @@ class BaseWSGITests(object):
 
 
 class TestWSGIMiddleware(BaseWSGITests):
-    def setup(self):
+    def setUp(self):
         DepotManager._clear()
         DepotManager.configure('default', {'depot.storage_path': './lfs'})
 
-    def teardown(cls):
+    def tearDown(cls):
         shutil.rmtree('./lfs', ignore_errors=True)
 
     def test_invalid_mountpoint(self):
@@ -193,20 +193,20 @@ class TestWSGIMiddleware(BaseWSGITests):
 
 
 class TestS3TestWSGIMiddleware(BaseWSGITests):
-    def setup(self):
+    def setUp(self):
         DepotManager._clear()
 
         try:
             global S3Storage
             from depot.io.awss3 import S3Storage
         except ImportError:
-            raise SkipTest('Boto not installed')
+            self.skipTest('Boto not installed')
 
         env = os.environ
         access_key_id = env.get('AWS_ACCESS_KEY_ID')
         secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
         if access_key_id is None or secret_access_key is None:
-            raise SkipTest('Amazon S3 credentials not available')
+            self.skipTest('Amazon S3 credentials not available')
 
         PID = os.getpid()
         NODE = str(uuid.uuid1()).rsplit('-', 1)[-1]  # Travis runs multiple tests concurrently
@@ -220,7 +220,7 @@ class TestS3TestWSGIMiddleware(BaseWSGITests):
                                          'depot.bucket': bucket_name})
         DepotManager.set_default('awss3')
 
-    def teardown(self):
+    def tearDown(self):
         store = DepotManager.get('awss3')
         if not store._conn.lookup(store._bucket_driver.bucket.name):
             return

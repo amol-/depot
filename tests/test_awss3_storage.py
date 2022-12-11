@@ -1,11 +1,11 @@
 import os
 import uuid
 import time
+import unittest
 import mock
 import requests
 from flaky import flaky
-
-from nose import SkipTest
+from unittest import SkipTest
 
 from depot._compat import PY2, unicode_text
 
@@ -15,9 +15,9 @@ FILE_CONTENT = b'HELLO WORLD'
 
 
 @flaky
-class TestS3FileStorage(object):
+class TestS3FileStorage(unittest.TestCase):
     @classmethod
-    def setupClass(cls):
+    def setUpClass(cls):
         # Travis runs multiple tests concurrently on fake machines that might
         # collide on pid and hostid, so use an uuid1 which should be fairly random
         # thanks to clock_seq
@@ -45,7 +45,7 @@ class TestS3FileStorage(object):
             time.sleep(0.5)
 
     @classmethod
-    def teardownClass(cls):
+    def tearDownClass(cls):
         if not cls.fs._conn.lookup(cls.fs._bucket_driver.bucket.name):
             return
         

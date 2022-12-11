@@ -1,18 +1,19 @@
-from nose import SkipTest
+import unittest
 from depot.io.gridfs import GridFSStorage
 
 FILE_CONTENT = b'HELLO WORLD'
 
 
-class TestGridFSFileStorage(object):
-    def setup(self):
+class TestGridFSFileStorage(unittest.TestCase):
+    def setUp(self):
         try:
             import pymongo.errors
-            self.fs = GridFSStorage('mongodb://localhost/gridfs_example', 'testfs')
+            self.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=0', 'testfs')
+            self.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
         except pymongo.errors.ConnectionFailure:
-            raise SkipTest('MongoDB not running')
+            self.skipTest('MongoDB not running')
 
-    def teardown(self):
+    def tearDown(self):
         self.fs._db.drop_collection('testfs')
 
     def test_fileoutside_depot(self):

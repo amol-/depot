@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import uuid
-
+import unittest
 from flaky import flaky
-from nose.tools import raises
-from nose import SkipTest
 import shutil
 import mock
 import datetime
@@ -31,18 +29,18 @@ class BaseStorageTestFixture(object):
         assert f.last_modified == datetime.datetime(2001, 1, 1, 0, 0, 1), f.last_modified
         assert f.content_type == 'text/plain', f.content_type
 
-    @raises(IOError)
     def test_notexisting(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
         assert self.fs.exists(file_id)
         self.fs.delete(file_id)
         assert not self.fs.exists(file_id)
 
-        self.fs.get(file_id)
+        with self.assertRaises(IOError):
+            self.fs.get(file_id)
 
-    @raises(ValueError)
     def test_invalidid(self):
-        f = self.fs.get('NOTANID')
+        with self.assertRaises(ValueError):
+            f = self.fs.get('NOTANID')
 
     def test_creation_inputs(self):
         temp = NamedTemporaryFile()
@@ -132,18 +130,18 @@ class BaseStorageTestFixture(object):
                                 'content_type=text/plain '
                                 'last_modified=%s>' % (f.file_id, f.last_modified))
 
-    @raises(IOError)
     def test_replace_only_existing(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
         assert self.fs.exists(file_id)
         self.fs.delete(file_id)
         assert not self.fs.exists(file_id)
 
-        self.fs.replace(file_id, FILE_CONTENT)
+        with self.assertRaises(IOError):
+            self.fs.replace(file_id, FILE_CONTENT)
 
-    @raises(ValueError)
     def test_replace_invalidid(self):
-        self.fs.replace('INVALIDID', FILE_CONTENT)
+        with self.assertRaises(ValueError):
+            self.fs.replace('INVALIDID', FILE_CONTENT)
 
     def test_replace_keeps_filename(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
@@ -185,9 +183,9 @@ class BaseStorageTestFixture(object):
         for _id in file_ids:
             assert _id in existing_files, ("{0} not in {1}".format(_id, file_ids))
 
-    @raises(ValueError)
     def test_exists_invalidid(self):
-        self.fs.exists('INVALIDID')
+        with self.assertRaises(ValueError):
+            self.fs.exists('INVALIDID')
 
     def test_delete(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
@@ -204,9 +202,9 @@ class BaseStorageTestFixture(object):
         self.fs.delete(file_id)
         assert not self.fs.exists(file_id)
 
-    @raises(ValueError)
     def test_delete_invalidid(self):
-        self.fs.delete('INVALIDID')
+        with self.assertRaises(ValueError):
+            self.fs.delete('INVALIDID')
 
     def test_stored_files_are_only_readable(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
@@ -215,16 +213,16 @@ class BaseStorageTestFixture(object):
         assert not f.writable()
         assert not f.seekable()
 
-    @raises(TypeError)
     def test_storing_unicode_is_prevented(self):
-        file_id = self.fs.create(FILE_CONTENT.decode('utf-8'), 'file.txt')
+        with self.assertRaises(TypeError):
+            file_id = self.fs.create(FILE_CONTENT.decode('utf-8'), 'file.txt')
 
-    @raises(TypeError)
     def test_replacing_unicode_is_prevented(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
         f = self.fs.get(file_id)
 
-        self.fs.replace(f, FILE_CONTENT.decode('utf-8'))
+        with self.assertRaises(TypeError):
+            self.fs.replace(f, FILE_CONTENT.decode('utf-8'))
 
     def test_closing_file(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
@@ -235,13 +233,13 @@ class BaseStorageTestFixture(object):
             f.read()
         assert f.closed is True
 
-    @raises(ValueError)
     def test_reading_from_closed_file_is_prevented(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
         f = self.fs.get(file_id)
         f.close()
 
-        f.read()
+        with self.assertRaises(ValueError):
+            f.read()
 
     def test_name_is_an_alias_for_filename(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
@@ -254,27 +252,28 @@ class BaseStorageTestFixture(object):
         assert f.name == 'unnamed'
 
 
-class TestLocalFileStorage(BaseStorageTestFixture):
-    def setup(self):
+class TestLocalFileStorage(unittest.TestCase, BaseStorageTestFixture):
+    def setUp(self):
         from depot.io.local import LocalFileStorage
         self.fs = LocalFileStorage('./lfs')
 
-    def teardown(self):
+    def tearDown(self):
         shutil.rmtree('./lfs', ignore_errors=True)
 
 
-class TestGridFSFileStorage(BaseStorageTestFixture):
-    def setup(self):
+class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
+    def setUp(self):
         try:
             from depot.io.gridfs import GridFSStorage
         except ImportError:
-            raise SkipTest('PyMongo not installed')
+            self.skipTest('PyMongo not installed')
 
         import pymongo.errors
         try:
-            self.fs = GridFSStorage('mongodb://localhost/gridfs_example', 'testfs')
+            self.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=0', 'testfs')
+            self.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
         except pymongo.errors.ConnectionFailure:
-            raise SkipTest('MongoDB not running')
+            self.skipTest('MongoDB not running')
 
     def teardown(self):
         self.fs._db.drop_collection('testfs.files')
@@ -282,7 +281,7 @@ class TestGridFSFileStorage(BaseStorageTestFixture):
 
 
 @flaky
-class TestS3FileStorage(BaseStorageTestFixture):
+class TestS3FileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
     def get_storage(cls, access_key_id, secret_access_key, bucket_name):
@@ -290,28 +289,28 @@ class TestS3FileStorage(BaseStorageTestFixture):
         return S3Storage(access_key_id, secret_access_key, bucket_name)
 
     @classmethod
-    def setup_class(cls):
+    def setUpClass(cls):
         try:
             from depot.io.awss3 import S3Storage
         except ImportError:
-            raise SkipTest('Boto not installed')
+            raise unittest.SkipTest('Boto not installed')
 
         env = os.environ
         access_key_id = env.get('AWS_ACCESS_KEY_ID')
         secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
         if access_key_id is None or secret_access_key is None:
-            raise SkipTest('Amazon S3 credentials not available')
+            raise unittest.SkipTest('Amazon S3 credentials not available')
 
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
         cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
 
-    def teardown(self):
+    def tearDown(self):
         keys = [key.name for key in self.fs._bucket_driver.bucket]
         if keys:
             self.fs._bucket_driver.bucket.delete_keys(keys)
 
     @classmethod
-    def teardown_class(cls):
+    def tearDownClass(cls):
         try:
             cls.fs._conn.delete_bucket(cls.fs._bucket_driver.bucket.name)
         except:
@@ -331,17 +330,17 @@ class TestS3FileStorageWithPrefix(TestS3FileStorage):
             prefix='my-prefix/')
 
 
-class TestMemoryFileStorage(BaseStorageTestFixture):
-    def setup(self):
+class TestMemoryFileStorage(unittest.TestCase, BaseStorageTestFixture):
+    def setUp(self):
         from depot.io.memory import MemoryFileStorage
         self.fs = MemoryFileStorage()
 
-    def teardown(self):
+    def tearDown(self):
         map(self.fs.delete, self.fs.list())
 
 
 @flaky
-class TestBoto3FileStorage(BaseStorageTestFixture):
+class TestBoto3FileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
     def get_storage(cls, access_key_id, secret_access_key, bucket_name):
@@ -349,27 +348,27 @@ class TestBoto3FileStorage(BaseStorageTestFixture):
         return S3Storage(access_key_id, secret_access_key, bucket_name)
 
     @classmethod
-    def setup_class(cls):
+    def setUpClass(cls):
         try:
             from depot.io.boto3 import S3Storage
         except ImportError:
-            raise SkipTest('Boto3 not installed')
+            raise unittest.SkipTest('Boto3 not installed')
 
         env = os.environ
         access_key_id = env.get('AWS_ACCESS_KEY_ID')
         secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
         if access_key_id is None or secret_access_key is None:
-            raise SkipTest('Amazon S3 credentials not available')
+            raise unittest.SkipTest('Amazon S3 credentials not available')
 
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
         cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
 
-    def teardown(self):
+    def tearDown(self):
         for obj in self.fs._bucket_driver.bucket.objects.all():
             obj.delete()
 
     @classmethod
-    def teardown_class(cls):
+    def tearDownClass(cls):
         try:
             cls.fs._bucket_driver.bucket.delete()
         except:

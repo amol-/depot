@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from nose.tools import raises
+import unittest
 from depot.manager import DepotManager
 
 
-class TestDepotManager(object):
-    def setup(self):
+class TestDepotManager(unittest.TestCase):
+    def setUp(self):
         DepotManager._clear()
 
     def test_first_configured_is_default(self):
@@ -18,32 +18,28 @@ class TestDepotManager(object):
         DepotManager.set_default('second')
         assert DepotManager.get_default() == 'second'
 
-    @raises(RuntimeError)
     def test_no_configured_is_detected(self):
-        DepotManager.get_default()
+        with self.assertRaises(RuntimeError):
+            DepotManager.get_default()
 
-    @raises(RuntimeError)
     def test_prevent_non_existing_default(self):
-        DepotManager.set_default('does_not_exists')
+        with self.assertRaises(RuntimeError):
+            DepotManager.set_default('does_not_exists')
 
-    @raises(RuntimeError)
     def test_prevent_multiple_middlewares(self):
-        DepotManager.make_middleware(None)
-        DepotManager.make_middleware(None)
+        with self.assertRaises(RuntimeError):
+            DepotManager.make_middleware(None)
+            DepotManager.make_middleware(None)
 
-    @raises(RuntimeError)
     def test_detects_no_middleware(self):
-        DepotManager.get_middleware()
+        with self.assertRaises(RuntimeError):
+            DepotManager.get_middleware()
 
     def test_prevent_configuring_two_storages_with_same_name(self):
         DepotManager.configure('first', {'depot.storage_path': './lfs'})
 
-        try:
+        with self.assertRaises(RuntimeError):
             DepotManager.configure('first', {'depot.storage_path': './lfs2'})
-        except RuntimeError:
-            pass
-        else:
-            assert False, 'Should have raised RunetimeError here'
 
     def test_aliases(self):
         DepotManager.configure('first', {'depot.storage_path': './lfs'})
@@ -57,12 +53,13 @@ class TestDepotManager(object):
         storage = DepotManager.get('used_storage')
         assert storage.storage_path == './lfs2', storage
 
-    @raises(ValueError)
     def test_aliases_not_existing(self):
-        DepotManager.alias('used_storage', 'first')
+        with self.assertRaises(ValueError):
+            DepotManager.alias('used_storage', 'first')
 
-    @raises(ValueError)
     def test_alias_on_existing_storage(self):
         DepotManager.configure('mystorage', {'depot.storage_path': './lfs2'})
-        DepotManager.alias('mystorage', 'mystorage')
+    
+        with self.assertRaises(ValueError):
+            DepotManager.alias('mystorage', 'mystorage')
 
