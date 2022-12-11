@@ -8,7 +8,7 @@ class TestGridFSFileStorage(unittest.TestCase):
     def setUp(self):
         try:
             import pymongo.errors
-            self.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=0', 'testfs')
+            self.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=1', 'testfs')
             self.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
         except pymongo.errors.ConnectionFailure:
             self.skipTest('MongoDB not running')
