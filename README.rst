@@ -97,6 +97,13 @@ Or you can use depot with SQLAlchemy to store attachments::
 ChangeLog
 ---------
 
+0.9.0
+~~~~~
+
+- Support for SQLAlchemy 1.4 and 2.0
+- Support for SQLAlchemy objects deleted with ``.delete(synchronize_session="fetch")``
+- Tests migrated to ``unittest``
+
 0.8.0
 ~~~~~
 
