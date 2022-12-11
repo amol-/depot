@@ -203,6 +203,25 @@ class TestSQLAAttachments(SQLATestCase):
 
         assert not self.file_exists(old_file)
 
+    def test_delete_existing_from_query(self):
+        doc = Document(name=u_('Foo2'))
+        doc.content = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        self._session_flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
+        old_file = d.content.path
+
+        DBSession.query(Document).filter_by(name=u_('Foo2')).delete(synchronize_session="fetch")
+
+        self._session_flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        assert not self.file_exists(old_file)
+
     def test_delete_existing_rollback(self):
         doc = Document(name=u_('Foo3'))
         doc.content = open(self.fake_file.name, 'rb')
