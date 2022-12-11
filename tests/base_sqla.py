@@ -1,5 +1,5 @@
 from sqlalchemy import *
-from sqlalchemy.orm import scoped_session, sessionmaker, relation
+from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
@@ -45,4 +45,4 @@ class ThingWithDate(DeclarativeBase):
     updated_at = Column(DateTime, default=datetime.utcnow)
 
     related_thing_id = Column(Integer, ForeignKey('thing.uid'))
-    related_thing = relation(Thing)
+    related_thing = relationship(Thing)
