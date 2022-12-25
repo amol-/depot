@@ -186,10 +186,9 @@ class DepotMiddleware(object):
             return self.app(environ, start_response)
 
         
-        mountpointlen=len(self.mountpoint.split('/'))
-        path = full_path.split('/')
+        path = full_path.rsplit('/', 2)
         if len(path) and not path[0]:
-            path = path[mountpointlen-1:]
+            path = path[1:]
 
 
         if len(path) < 3:
