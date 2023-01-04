@@ -74,6 +74,13 @@ class TestWSGIMiddleware(BaseWSGITests):
             assert 'mountpoint must be an absolute path' in str(err)
         else:
             assert False, 'Should have raised ValueError'
+    
+    def test_subdirectory_mountpoint(self):
+        wsgi_app = DepotManager.make_middleware(self.wsgi_app, mountpoint='/hello/lfs')
+        app = TestApp(wsgi_app)
+        new_file = app.post('/create_file').json
+        uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
+        assert uploaded_file.body == FILE_CONTENT
 
     def test_serving_files(self):
         app = self.make_app()
