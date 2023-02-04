@@ -32,6 +32,7 @@ class UploadedFileField(types.TypeDecorator):
 
     """
     impl = types.Unicode
+    cache_ok = False
 
     def __init__(self, filters=tuple(), upload_type=UploadedFile, upload_storage=None, *args, **kw):
         super(UploadedFileField, self).__init__(*args, **kw)
