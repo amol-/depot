@@ -2,7 +2,7 @@ from ._compat import percent_encode, unicode_text
 
 try:
     from anyascii import anyascii
-except ImportError:
+except ImportError:  # pragma: no cover
     # Python2 doesn't support anyascii
     import unicodedata
     def anyascii(text):

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 import shutil
-
 import tempfile, os, cgi, base64
-from nose.tools import raises
+import unittest
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
@@ -13,14 +12,14 @@ from depot.fields.interfaces import FileFilter
 
 from depot._compat import u_, bytes_
 
-def setup():
+def setUpModule():
     setup_database()
 
     DepotManager._clear()
     DepotManager.configure('default', {'depot.storage_path': './lfs'})
 
 
-def teardown():
+def tearDownModule():
     shutil.rmtree('./lfs', ignore_errors=True)
 
 
@@ -48,14 +47,19 @@ class SimpleDocument(DeclarativeBase):
     content = Column('content_col', UploadedFileField([DictLikeCheckFilter()]))
 
 
-class TestFieldsInterface(object):
-    def __init__(self):
-        self.file_content = b'this is the file content'
-        self.fake_file = tempfile.NamedTemporaryFile()
-        self.fake_file.write(self.file_content)
-        self.fake_file.flush()
+class TestFieldsInterface(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.file_content = b'this is the file content'
+        cls.fake_file = tempfile.NamedTemporaryFile()
+        cls.fake_file.write(cls.file_content)
+        cls.fake_file.flush()
 
-    def setup(self):
+    @classmethod
+    def tearDownClass(cls):
+        cls.fake_file.close()
+
+    def setUp(self):
         clear_database()
 
     def test_column_is_dictlike(self):
@@ -72,7 +76,6 @@ class TestFieldsInterface(object):
         assert 'deleted_attr' not in doc.content, doc.content
         assert doc.content.missing_attr_trapped == True, doc.content
 
-    @raises(TypeError)
     def test_column_cannot_edit_after_save(self):
         doc = SimpleDocument(name=u_('Foo'))
         doc.content = open(self.fake_file.name, 'rb')
@@ -81,9 +84,9 @@ class TestFieldsInterface(object):
         DBSession.commit()
 
         d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
-        d.content['hello'] = 'Everybody'
+        with self.assertRaises(TypeError):
+            d.content['hello'] = 'Everybody'
 
-    @raises(TypeError)
     def test_column_cannot_delete_after_save(self):
         doc = SimpleDocument(name=u_('Foo'))
         doc.content = open(self.fake_file.name, 'rb')
@@ -92,9 +95,9 @@ class TestFieldsInterface(object):
         DBSession.commit()
 
         d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
-        del d.content['hello']
+        with self.assertRaises(TypeError):
+            del d.content['hello']
 
-    @raises(TypeError)
     def test_column_cannot_edit_attr_after_save(self):
         doc = SimpleDocument(name=u_('Foo'))
         doc.content = open(self.fake_file.name, 'rb')
@@ -103,9 +106,9 @@ class TestFieldsInterface(object):
         DBSession.commit()
 
         d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
-        d.content.hello = 'Everybody'
+        with self.assertRaises(TypeError):
+            d.content.hello = 'Everybody'
 
-    @raises(TypeError)
     def test_column_cannot_delete_attr_after_save(self):
         doc = SimpleDocument(name=u_('Foo'))
         doc.content = open(self.fake_file.name, 'rb')
@@ -114,13 +117,14 @@ class TestFieldsInterface(object):
         DBSession.commit()
 
         d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
-        del d.content.hello
+        with self.assertRaises(TypeError):
+            del d.content.hello
 
-    @raises(ValueError)
     def test_storage_does_not_exists(self):
         doc = SimpleDocument(name=u_('Foo'))
-        doc.content = UploadedFile(open(self.fake_file.name, 'rb'),
-                                   'missing_storage')
+        with self.assertRaises(ValueError):
+            doc.content = UploadedFile(open(self.fake_file.name, 'rb'),
+                                    'missing_storage')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()

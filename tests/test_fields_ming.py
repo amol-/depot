@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import shutil
-
+import unittest
 import tempfile, os, cgi, base64
 from PIL import Image
 from depot.fields.filters.thumbnails import WithThumbnailFilter
@@ -13,10 +13,9 @@ from ming import schema as s, Field
 from .utils import create_cgifs
 from depot.fields.specialized.image import UploadedImageWithThumb
 from depot._compat import u_
-from nose import SkipTest
 
 
-def setup():
+def setUpModule():
     setup_database()
 
     DepotManager._clear()
@@ -26,7 +25,7 @@ def setup():
     DepotManager.make_middleware(None)
 
 
-def teardown():
+def tearDownModule():
     shutil.rmtree('./lfs', ignore_errors=True)
 
 
@@ -43,15 +42,17 @@ class Document(MappedClass):
     targeted_content = UploadedFileProperty(upload_storage='another_alias')
 
 
-class TestMingAttachments(object):
-    def __init__(self):
+class TestMingAttachments(unittest.TestCase):
+    def setUp(self):
         self.file_content = b'this is the file content'
         self.fake_file = tempfile.NamedTemporaryFile()
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
-
-    def setup(self):
+        self.fake_file.seek(0)
         clear_database()
+
+    def tearDown(self):
+        self.fake_file.close()
 
     def test_accessing_class_property(self):
         # This is to check for regression in a bug in property descriptor
@@ -115,7 +116,7 @@ class TestMingAttachments(object):
         DBSession.clear()
         assert get_file(old_file).read() == self.file_content
 
-        raise SkipTest("Currently Ming Doesn't provide a way to handle discarded documents")
+        self.skipTest("Currently Ming Doesn't provide a way to handle discarded documents")
         try:
             fold = get_file(new_file)
             assert False, 'Should have raised IOError here'
@@ -157,11 +158,8 @@ class TestMingAttachments(object):
         DBSession.flush()
         DBSession.clear()
 
-        try:
+        with self.assertRaises(IOError):
             fold = get_file(old_file)
-            assert False, 'Should have raised IOError here'
-        except IOError:
-            pass
 
     def test_delete_existing_rollback(self):
         doc = Document(name=u_('Foo3'))
@@ -188,17 +186,18 @@ class TestMingAttachments(object):
         assert d.targeted_content.depot_name == 'another'
 
 
-class TestMingImageAttachments(object):
-    def __init__(self):
+class TestMingImageAttachments(unittest.TestCase):
+    def setUp(self):
         self.file_content = b'''R0lGODlhEQAUAPcAAC4uLjAwMDIyMjMzMjQ0NDU1NDY2Njk2Mzg4ODo6Oj49Ozw8PD4+PkE+OEA/PkhAN0tCNk5JPFFGNV1KMFhNNVFHOFJJPVVLPVhOPXZfKXVcK2ZQNGZXNGtZMnNcNHZeNnldMHJfOn1hKXVjOH9oO0BAQEJCQkREREVFREZGRklGQ05KQ0hISEpKSkxMTE5OTlZRSlFQT19XSFBQUFJSUlRUVGFUQmFVQ2ZZQGtdQnNiQqJ/HI1uIYBnLIllKoZrK4FqLoVqL4luLIpsLpt7J515JJ50KZhzLYFnMIFlM4ZlMIFkNI1uNoJoOoVrPIlvO49yMolwPpB2O5p4Op98PaB3IKN4JqN8J6h7I6J5LaZ+LLF+ILGGG7+JG72OGLKEI7aHIrOEJL2JI7mMN76YNcGJG8SOG8WLHMONH86eEs+aFsGSG8eQHMySG9uVFduXFdeeE9eaFdScF96YE9yaFOKcEuOdEtWgFNiiEduhE96pEuqlD+qmD+KpD+yoDu6rDuysDvCuDfCvDeuwD/SzC/a2CvGwDfKxDPi5Cfi5Cvq8CeCjEuehEOagEeijEOKoEOStFMOOK8+TLM6YNNChItGgLtylKt6gMNqgON6jPOChLfi/JOSrNeGvN9KhRtykRNWkSOCnQOCpSOawQue1T+a6Su67SOGsUO/AVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAARABQAAAj+AAEIHEiwoMAACBMqXIhQgMOHDwdAfEigYsUCT6KQScNjxwGLBAyINPBhCilUmxIV6uMlw0gEMJeMGWWqFCU8hA4JEgETQYIEDcRw6qRlwgMIGvJwkfAzwYIFXQBB8qHg6VMKFawuYNBBjaIqDhhI+cGgrNmyJXooGrShBJBKcIpwiFCibl0TehDdsWBCiBxLZuIwolMGiwcTJ4gUenThBAokSVRgGFJnzhYQJ1KsyRkkhWfPK87McWPEM4sRhgItCsGitQ5PmtxYUdK6BY4rf/zwYRNmUihRpyQdaUHchQsoX/Y4amTnUqZPoG7YMO7ihfUcYNC0eRMJExMqMKweW59BfkYMEk2ykHAio3x5GvDjy58Pv4b9+/jz2w8IADs='''
         self.file_content = base64.b64decode(self.file_content)
         self.fake_file = tempfile.NamedTemporaryFile()
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
-
-    def setup(self):
-        clear_database()
         self.fake_file.seek(0)
+        clear_database()
+
+    def tearDown(self):
+        self.fake_file.close()
 
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))
@@ -259,7 +258,7 @@ class TestMingImageAttachments(object):
         assert d.photo.thumb_url == 'THUMB_PUBLIC_URL'
 
     def test_rollback(self):
-        raise SkipTest("Currently Ming Doesn't provide a way to handle discarded documents")
+        self.skipTest("Currently Ming Doesn't provide a way to handle discarded documents")
 
         doc = Document(name=u_('Foo3'))
         doc.photo = open(self.fake_file.name, 'rb')
@@ -282,17 +281,18 @@ class TestMingImageAttachments(object):
             pass
 
 
-class TestMingThumbnailFilter(object):
-    def __init__(self):
+class TestMingThumbnailFilter(unittest.TestCase):
+    def setUp(self):
         self.file_content = b'''R0lGODlhEQAUAPcAAC4uLjAwMDIyMjMzMjQ0NDU1NDY2Njk2Mzg4ODo6Oj49Ozw8PD4+PkE+OEA/PkhAN0tCNk5JPFFGNV1KMFhNNVFHOFJJPVVLPVhOPXZfKXVcK2ZQNGZXNGtZMnNcNHZeNnldMHJfOn1hKXVjOH9oO0BAQEJCQkREREVFREZGRklGQ05KQ0hISEpKSkxMTE5OTlZRSlFQT19XSFBQUFJSUlRUVGFUQmFVQ2ZZQGtdQnNiQqJ/HI1uIYBnLIllKoZrK4FqLoVqL4luLIpsLpt7J515JJ50KZhzLYFnMIFlM4ZlMIFkNI1uNoJoOoVrPIlvO49yMolwPpB2O5p4Op98PaB3IKN4JqN8J6h7I6J5LaZ+LLF+ILGGG7+JG72OGLKEI7aHIrOEJL2JI7mMN76YNcGJG8SOG8WLHMONH86eEs+aFsGSG8eQHMySG9uVFduXFdeeE9eaFdScF96YE9yaFOKcEuOdEtWgFNiiEduhE96pEuqlD+qmD+KpD+yoDu6rDuysDvCuDfCvDeuwD/SzC/a2CvGwDfKxDPi5Cfi5Cvq8CeCjEuehEOagEeijEOKoEOStFMOOK8+TLM6YNNChItGgLtylKt6gMNqgON6jPOChLfi/JOSrNeGvN9KhRtykRNWkSOCnQOCpSOawQue1T+a6Su67SOGsUO/AVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAARABQAAAj+AAEIHEiwoMAACBMqXIhQgMOHDwdAfEigYsUCT6KQScNjxwGLBAyINPBhCilUmxIV6uMlw0gEMJeMGWWqFCU8hA4JEgETQYIEDcRw6qRlwgMIGvJwkfAzwYIFXQBB8qHg6VMKFawuYNBBjaIqDhhI+cGgrNmyJXooGrShBJBKcIpwiFCibl0TehDdsWBCiBxLZuIwolMGiwcTJ4gUenThBAokSVRgGFJnzhYQJ1KsyRkkhWfPK87McWPEM4sRhgItCsGitQ5PmtxYUdK6BY4rf/zwYRNmUihRpyQdaUHchQsoX/Y4amTnUqZPoG7YMO7ihfUcYNC0eRMJExMqMKweW59BfkYMEk2ykHAio3x5GvDjy58Pv4b9+/jz2w8IADs='''
         self.file_content = base64.b64decode(self.file_content)
         self.fake_file = tempfile.NamedTemporaryFile()
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
-
-    def setup(self):
-        clear_database()
         self.fake_file.seek(0)
+        clear_database()
+
+    def tearDown(self):
+        self.fake_file.close()
 
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))
@@ -355,7 +355,7 @@ class TestMingThumbnailFilter(object):
         assert d.second_photo.thumb_12x12_url.startswith('/depot/default/')
 
     def test_rollback(self):
-        raise SkipTest("Currently Ming Doesn't provide a way to handle discarded documents")
+        self.skipTest("Currently Ming Doesn't provide a way to handle discarded documents")
 
         doc = Document(name=u_('Foo3'))
         doc.second_photo = open(self.fake_file.name, 'rb')

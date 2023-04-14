@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import shutil
-
+import unittest
 import tempfile, os, cgi, base64
 from PIL import Image
-from nose.tools import raises
 from sqlalchemy.exc import StatementError
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Column, ForeignKey
@@ -18,7 +17,7 @@ from depot.fields.specialized.image import UploadedImageWithThumb
 from depot.fields.filters.thumbnails import WithThumbnailFilter
 from depot._compat import u_, bytes_
 
-def setup():
+def setUpModule():
     setup_database()
 
     DepotManager._clear()
@@ -28,10 +27,8 @@ def setup():
     DepotManager.make_middleware(None)
 
 
-def teardown():
+def tearDownModule():
     shutil.rmtree('./lfs', ignore_errors=True)
-
-
 
 
 class Document(DeclarativeBase):
@@ -68,7 +65,7 @@ class Confidential(Document):
     __mapper_args__ = {'polymorphic_identity': 'confidential'}
 
 
-class SQLATestCase(object):
+class SQLATestCase(unittest.TestCase):
     FLUSH_SESSION = True
 
     def _session_flush(self):
@@ -84,14 +81,15 @@ class SQLATestCase(object):
 
 
 class TestSQLAAttachments(SQLATestCase):
-    def __init__(self):
+    def setUp(self):
         self.file_content = b'this is the file content'
         self.fake_file = tempfile.NamedTemporaryFile()
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
-
-    def setup(self):
         clear_database()
+
+    def tearDown(self):
+        self.fake_file.close()
 
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))
@@ -198,6 +196,25 @@ class TestSQLAAttachments(SQLATestCase):
         d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
         old_file = d.content.path
         DBSession.delete(d)
+
+        self._session_flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        assert not self.file_exists(old_file)
+
+    def test_delete_existing_from_query(self):
+        doc = Document(name=u_('Foo2'))
+        doc.content = open(self.fake_file.name, 'rb')
+        DBSession.add(doc)
+        self._session_flush()
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
+        old_file = d.content.path
+
+        DBSession.query(Document).filter_by(name=u_('Foo2')).delete(synchronize_session="fetch")
 
         self._session_flush()
         DBSession.commit()
@@ -314,21 +331,25 @@ class TestSQLAAttachmentsNoFlush(TestSQLAAttachments):
 
 
 class TestSQLAImageAttachments(SQLATestCase):
-    def __init__(self):
+    def setUp(self):
         self.file_content = b'''R0lGODlhEQAUAPcAAC4uLjAwMDIyMjMzMjQ0NDU1NDY2Njk2Mzg4ODo6Oj49Ozw8PD4+PkE+OEA/PkhAN0tCNk5JPFFGNV1KMFhNNVFHOFJJPVVLPVhOPXZfKXVcK2ZQNGZXNGtZMnNcNHZeNnldMHJfOn1hKXVjOH9oO0BAQEJCQkREREVFREZGRklGQ05KQ0hISEpKSkxMTE5OTlZRSlFQT19XSFBQUFJSUlRUVGFUQmFVQ2ZZQGtdQnNiQqJ/HI1uIYBnLIllKoZrK4FqLoVqL4luLIpsLpt7J515JJ50KZhzLYFnMIFlM4ZlMIFkNI1uNoJoOoVrPIlvO49yMolwPpB2O5p4Op98PaB3IKN4JqN8J6h7I6J5LaZ+LLF+ILGGG7+JG72OGLKEI7aHIrOEJL2JI7mMN76YNcGJG8SOG8WLHMONH86eEs+aFsGSG8eQHMySG9uVFduXFdeeE9eaFdScF96YE9yaFOKcEuOdEtWgFNiiEduhE96pEuqlD+qmD+KpD+yoDu6rDuysDvCuDfCvDeuwD/SzC/a2CvGwDfKxDPi5Cfi5Cvq8CeCjEuehEOagEeijEOKoEOStFMOOK8+TLM6YNNChItGgLtylKt6gMNqgON6jPOChLfi/JOSrNeGvN9KhRtykRNWkSOCnQOCpSOawQue1T+a6Su67SOGsUO/AVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAARABQAAAj+AAEIHEiwoMAACBMqXIhQgMOHDwdAfEigYsUCT6KQScNjxwGLBAyINPBhCilUmxIV6uMlw0gEMJeMGWWqFCU8hA4JEgETQYIEDcRw6qRlwgMIGvJwkfAzwYIFXQBB8qHg6VMKFawuYNBBjaIqDhhI+cGgrNmyJXooGrShBJBKcIpwiFCibl0TehDdsWBCiBxLZuIwolMGiwcTJ4gUenThBAokSVRgGFJnzhYQJ1KsyRkkhWfPK87McWPEM4sRhgItCsGitQ5PmtxYUdK6BY4rf/zwYRNmUihRpyQdaUHchQsoX/Y4amTnUqZPoG7YMO7ihfUcYNC0eRMJExMqMKweW59BfkYMEk2ykHAio3x5GvDjy58Pv4b9+/jz2w8IADs='''
         self.file_content = base64.b64decode(self.file_content)
         self.fake_file = tempfile.NamedTemporaryFile()
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
+        self.fake_file.seek(0)
 
         self.bigimage = tempfile.NamedTemporaryFile()
         blackimage = Image.frombytes('L', (1280, 1280), b"\x00" * 1280 * 1280)
         blackimage.save(self.bigimage, 'PNG')
         self.bigimage.flush()
+        self.bigimage.seek(0)
 
-    def setup(self):
         clear_database()
-        self.fake_file.seek(0)
+
+    def tearDown(self):
+        self.fake_file.close()
+        self.bigimage.close()
 
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))
@@ -443,16 +464,17 @@ class TestSQLAImageAttachmentsNoFlush(TestSQLAImageAttachments):
 
 
 class TestSQLAThumbnailFilter(SQLATestCase):
-    def __init__(self):
+    def setUp(self):
         self.file_content = b'''R0lGODlhEQAUAPcAAC4uLjAwMDIyMjMzMjQ0NDU1NDY2Njk2Mzg4ODo6Oj49Ozw8PD4+PkE+OEA/PkhAN0tCNk5JPFFGNV1KMFhNNVFHOFJJPVVLPVhOPXZfKXVcK2ZQNGZXNGtZMnNcNHZeNnldMHJfOn1hKXVjOH9oO0BAQEJCQkREREVFREZGRklGQ05KQ0hISEpKSkxMTE5OTlZRSlFQT19XSFBQUFJSUlRUVGFUQmFVQ2ZZQGtdQnNiQqJ/HI1uIYBnLIllKoZrK4FqLoVqL4luLIpsLpt7J515JJ50KZhzLYFnMIFlM4ZlMIFkNI1uNoJoOoVrPIlvO49yMolwPpB2O5p4Op98PaB3IKN4JqN8J6h7I6J5LaZ+LLF+ILGGG7+JG72OGLKEI7aHIrOEJL2JI7mMN76YNcGJG8SOG8WLHMONH86eEs+aFsGSG8eQHMySG9uVFduXFdeeE9eaFdScF96YE9yaFOKcEuOdEtWgFNiiEduhE96pEuqlD+qmD+KpD+yoDu6rDuysDvCuDfCvDeuwD/SzC/a2CvGwDfKxDPi5Cfi5Cvq8CeCjEuehEOagEeijEOKoEOStFMOOK8+TLM6YNNChItGgLtylKt6gMNqgON6jPOChLfi/JOSrNeGvN9KhRtykRNWkSOCnQOCpSOawQue1T+a6Su67SOGsUO/AVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAARABQAAAj+AAEIHEiwoMAACBMqXIhQgMOHDwdAfEigYsUCT6KQScNjxwGLBAyINPBhCilUmxIV6uMlw0gEMJeMGWWqFCU8hA4JEgETQYIEDcRw6qRlwgMIGvJwkfAzwYIFXQBB8qHg6VMKFawuYNBBjaIqDhhI+cGgrNmyJXooGrShBJBKcIpwiFCibl0TehDdsWBCiBxLZuIwolMGiwcTJ4gUenThBAokSVRgGFJnzhYQJ1KsyRkkhWfPK87McWPEM4sRhgItCsGitQ5PmtxYUdK6BY4rf/zwYRNmUihRpyQdaUHchQsoX/Y4amTnUqZPoG7YMO7ihfUcYNC0eRMJExMqMKweW59BfkYMEk2ykHAio3x5GvDjy58Pv4b9+/jz2w8IADs='''
         self.file_content = base64.b64decode(self.file_content)
         self.fake_file = tempfile.NamedTemporaryFile()
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
-
-    def setup(self):
-        clear_database()
         self.fake_file.seek(0)
+        clear_database()
+
+    def tearDown(self):
+        self.fake_file.close()
 
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))

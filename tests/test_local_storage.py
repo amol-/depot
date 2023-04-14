@@ -1,15 +1,16 @@
-from depot.io.local import LocalFileStorage
 import shutil
 import os
+import unittest
+from depot.io.local import LocalFileStorage
 
 FILE_CONTENT = b'HELLO WORLD'
 
 
-class TestLocalFileStorage(object):
-    def setup(self):
+class TestLocalFileStorage(unittest.TestCase):
+    def setUp(self):
         self.fs = LocalFileStorage('./lfs')
 
-    def teardown(self):
+    def tearDown(self):
         shutil.rmtree('./lfs', ignore_errors=True)
 
     def test_creation(self):
