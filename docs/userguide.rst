@@ -157,7 +157,7 @@ Serving Files on HTTP
 ------------------------------
 
 In case of storages that directly support serving files on HTTP
-(like :class:`depot.io.awss3.S3Storage` and :class:`depot.io.boto3.S3Storage`) the
+(like :class:`depot.io.awss3.S3Storage` , :class:`depot.io.boto3.S3Storage` and :class:`depot.io.gcs.GCSStorage`) the
 stored file itself can be retrieved at the url provided by :class:`.StoredFile.public_url`.
 In case the ``public_url`` is ``None`` it means that the storage doesn't provide direct HTTP access.
 

@@ -14,6 +14,7 @@ TEST_DEPENDENCIES = ['mock',
                      'ming',
                      'TurboGears2',
                      'boto3',
+                     'google-cloud-storage',
                      'flaky']
 
 py_version = sys.version_info[:2]

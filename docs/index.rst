@@ -50,7 +50,7 @@ Installing DEPOT can be done from PyPi itself by installing the ``filedepot`` di
 
 Keep in mind that DEPOT itself has no dependencies, if you want to use GridFS storage,
 S3 or any other storage that requires third party libraries, your own application is
-required to install the dependency. In this specific case ``pymongo`` and ``boto``
+required to install the dependency. In this specific case ``pymongo`` , ``google-cloud-storage``` and ``boto``
 (or ``boto3``) are respectively needed for GridFS and S3 support.
 
 .. _depot_standalone:

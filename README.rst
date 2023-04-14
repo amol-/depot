@@ -97,6 +97,11 @@ Or you can use depot with SQLAlchemy to store attachments::
 ChangeLog
 ---------
 
+0.10.0
+~~~~~
+
+- Added support for Google Cloud Storage
+
 0.9.0
 ~~~~~
 
