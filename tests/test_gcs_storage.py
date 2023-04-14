@@ -17,7 +17,6 @@ class TestGCSStorage(object):
     @classmethod
     def setupClass(self):
         self.run_id = '%s-%s' % (uuid.uuid1().hex, os.getpid())
-        self._prefix = 'test-'
 
         try:
             global GCSStorage
@@ -40,11 +39,11 @@ class TestGCSStorage(object):
         if project_id is None:
             raise SkipTest('Google Cloud Storage project id not available')
 
-        self.fs = GCSStorage(project_id=self._project_id,credentials=google_application_credentials, bucket=self._bucket, prefix=self._prefix)
+        self.fs = GCSStorage(project_id=self._project_id,credentials=google_application_credentials, bucket=self._bucket)
 
     @classmethod
     def teardownClass(self):
-        for blob in self.fs.bucket.list_blobs(prefix=self._prefix):
+        for blob in self.fs.bucket.list_blobs():
             blob.delete()
 
     def test_fileoutside_depot(self):

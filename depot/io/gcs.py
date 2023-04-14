@@ -21,7 +21,7 @@ class GCSStoredFile(StoredFile):
         metadata = blob.metadata or {}
         filename = metadata.get('x-depot-filename')
         content_type = metadata.get('x-depot-content-type')
-        #content_encoding = metadata.get('x-depot-content-encoding')
+
         last_modified = blob.updated
         content_length = blob.size
 
@@ -49,7 +49,7 @@ class GCSStoredFile(StoredFile):
 
 
 class GCSStorage(FileStorage):
-    def __init__(self, project_id, credentials=None, bucket=None, policy=None, storage_class=None,prefix=None):
+    def __init__(self, project_id, credentials=None, bucket=None, policy=None, storage_class=None):
         if credentials:
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials
         policy = policy or CANNED_ACL_PUBLIC_READ
@@ -62,16 +62,11 @@ class GCSStorage(FileStorage):
         except NotFound:
             self.bucket = self.client.create_bucket(bucket)
 
-        #self.bucket = self.client.bucket(bucket_name)
-        self.prefix = prefix
         self._policy = policy or CANNED_ACL_PUBLIC_READ
         self._storage_class = storage_class or 'STANDARD'
 
         if policy == CANNED_ACL_PUBLIC_READ:
-            self.set_bucket_public_iam(self.bucket)        
-        
-        #self._policy = policy or CANNED_ACL_PUBLIC_READ
-        #self._storage_class = storage_class or 'STANDARD'
+            self.set_bucket_public_iam(self.bucket)
 
     def get(self, file_or_id):
         file_id = self.fileid(file_or_id)
@@ -86,14 +81,6 @@ class GCSStorage(FileStorage):
             {"role": "roles/storage.objectViewer", "members": members}
         )
         bucket.set_iam_policy(policy)
-    
-    def set_bucket_object_iam(self,bucket,members: List[str] = ["allUsers"]):
-        policy = bucket.get_iam_policy(requested_policy_version=3)
-        policy.bindings.append(
-            {"role": "roles/storage.objectViewer", "members": members}
-        )
-        bucket.set_iam_policy(policy)
-        
         
     def __save_file(self,file_id, content, filename, content_type=None):
         if filename:
@@ -109,6 +96,7 @@ class GCSStorage(FileStorage):
             'x-depot-filename': filename,
             'x-depot-content-type': content_type
         }
+        
         blob.upload_from_file(content, content_type=content_type)
         
         if self._policy == CANNED_ACL_PUBLIC_READ:
@@ -134,7 +122,10 @@ class GCSStorage(FileStorage):
     def delete(self, file_or_id):
         file_id = self.fileid(file_or_id)
         blob = self.bucket.blob(file_id)
-        blob.delete()
+        generation_match_precondition = None
+        blob.reload()
+        generation_match_precondition = blob.generation
+        blob.delete(if_generation_match=generation_match_precondition)
 
     def exists(self, file_or_id):
         file_id = self.fileid(file_or_id)
