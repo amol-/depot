@@ -390,7 +390,7 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
             raise unittest.SkipTest('Google Cloud Storage not installed')
 
         env = os.environ
-        if not env.get('GOOGLE_APPLICATION_CREDENTIALS') and not env.get("STORAGE_EMULATOR_HOST"):
+        if not env.get('GOOGLE_APPLICATION_CREDENTIALS'):
             raise unittest.SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')
 
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())

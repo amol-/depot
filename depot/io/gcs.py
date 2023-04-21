@@ -53,29 +53,16 @@ class GCSStoredFile(StoredFile):
 class GCSStorage(FileStorage):
     def __init__(self, project_id=None, credentials=None, bucket=None, policy=None, storage_class=None):
         
-        # added support for local emulator
-        if os.getenv("STORAGE_EMULATOR_HOST"):
-            client_options = {}
-            client_options["api_endpoint"] = os.getenv("STORAGE_EMULATOR_HOST")
-            # Create custom credentials using the access and secret keys
-            credentials = Credentials.from_authorized_user_info(info={
-                'client_id': 'your_client_id',
-                'client_secret': 'your_client_secret',
-                'refresh_token': 'your_refresh_token',
-                'type': 'authorized_user',
-            })
-            self.client = storage.Client(credentials=credentials,client_options=client_options)
-        else:
-            if not credentials:
-                if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-                    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
-                credentials = service_account.Credentials.from_service_account_file(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
-            if not project_id:
-                project_id = credentials.project_id 
-            policy = policy or CANNED_ACL_PUBLIC_READ
-            assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
-                "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
-            self.client = storage.Client(project=project_id, credentials=credentials)
+        if not credentials:
+            if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
+            credentials = service_account.Credentials.from_service_account_file(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
+        if not project_id:
+            project_id = credentials.project_id 
+        policy = policy or CANNED_ACL_PUBLIC_READ
+        assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
+            "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
+        self.client = storage.Client(project=project_id, credentials=credentials)
 
         
         # check if bucket exists

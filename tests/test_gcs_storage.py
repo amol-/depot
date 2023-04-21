@@ -28,20 +28,11 @@ class TestGCSStorage(object):
         
         cls._bucket = 'filedepot-testfs-%s' % cls.run_id
         env = os.environ
-        if os.getenv("STORAGE_EMULATOR_HOST"):
-            credentials = Credentials.from_authorized_user_info(info={
-                'client_id': 'your_client_id',
-                'client_secret': 'your_client_secret',
-                'refresh_token': 'your_refresh_token',
-                'type': 'authorized_user',
-            })
-            cls.fs = GCSStorage(credentials=credentials,bucket=cls._bucket)
-        else:
-            if not env.get('GOOGLE_APPLICATION_CREDENTIALS'):
-                raise SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')
-            cls._gcs_credentials  = service_account.Credentials.from_service_account_file(env.get('GOOGLE_APPLICATION_CREDENTIALS'))
-            cls._project_id = cls._gcs_credentials .project_id
-            cls.fs = GCSStorage(project_id=cls._project_id,credentials=cls._gcs_credentials , bucket=cls._bucket)
+        if not env.get('GOOGLE_APPLICATION_CREDENTIALS'):
+            raise SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')
+        cls._gcs_credentials  = service_account.Credentials.from_service_account_file(env.get('GOOGLE_APPLICATION_CREDENTIALS'))
+        cls._project_id = cls._gcs_credentials .project_id
+        cls.fs = GCSStorage(project_id=cls._project_id,credentials=cls._gcs_credentials , bucket=cls._bucket)
 
     @classmethod
     def tearDownClass(cls):
