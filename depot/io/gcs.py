@@ -6,6 +6,7 @@ from depot.io.interfaces import FileStorage, StoredFile
 from depot._compat import unicode_text, percent_encode, percent_decode
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 import datetime
 import os
 
@@ -56,7 +57,14 @@ class GCSStorage(FileStorage):
         if os.getenv("STORAGE_EMULATOR_HOST"):
             client_options = {}
             client_options["api_endpoint"] = os.getenv("STORAGE_EMULATOR_HOST")
-            self.client = storage.Client(client_options=client_options)
+            # Create custom credentials using the access and secret keys
+            credentials = Credentials.from_authorized_user_info(info={
+                'client_id': 'your_client_id',
+                'client_secret': 'your_client_secret',
+                'refresh_token': 'your_refresh_token',
+                'type': 'authorized_user',
+            })
+            self.client = storage.Client(credentials=credentials,client_options=client_options)
         else:
             if not credentials:
                 if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):

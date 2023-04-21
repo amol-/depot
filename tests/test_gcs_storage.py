@@ -6,6 +6,7 @@ from flaky import flaky
 from unittest import SkipTest
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
 
 from depot._compat import PY2, unicode_text
 from depot.io.gcs import GCSStorage
@@ -28,7 +29,13 @@ class TestGCSStorage(object):
         cls._bucket = 'filedepot-testfs-%s' % cls.run_id
         env = os.environ
         if os.getenv("STORAGE_EMULATOR_HOST"):
-            cls.fs = GCSStorage(bucket=cls._bucket)
+            credentials = Credentials.from_authorized_user_info(info={
+                'client_id': 'your_client_id',
+                'client_secret': 'your_client_secret',
+                'refresh_token': 'your_refresh_token',
+                'type': 'authorized_user',
+            })
+            cls.fs = GCSStorage(credentials=credentials,bucket=cls._bucket)
         else:
             if not env.get('GOOGLE_APPLICATION_CREDENTIALS'):
                 raise SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')

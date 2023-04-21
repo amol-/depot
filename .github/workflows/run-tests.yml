@@ -21,31 +21,34 @@ jobs:
           python -m pip install --upgrade pip
           pip install -U --upgrade-strategy=eager --pre -e .[testing]
           pip install coverage
-      - name: Install gcloud SDK
+      - name: Set up Minio
         run: |
-          export CLOUDSDK_INSTALL_DIR="${HOME}/google-cloud-sdk"
-          export PATH="${CLOUDSDK_INSTALL_DIR}/bin:${PATH}"
-          curl https://sdk.cloud.google.com | bash
-          gcloud components install beta storage-emulator
+          wget https://dl.min.io/server/minio/release/linux-amd64/minio
+          chmod +x minio
+          sudo mv minio /usr/local/bin
+
+          wget https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x mc
+          sudo mv mc /usr/local/bin
+
+          export MINIO_ACCESS_KEY="minio_access_key"
+          export MINIO_SECRET_KEY="minio_secret_key"
+          minio server /data &
+          sleep 10  # Give Minio some time to start
+
+          mc alias set minio http://127.0.0.1:9000 "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY"
+          mc mb minio/test-bucket
       - name: Test with unittest
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          #GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         run: |
-          # Start the GCS emulator
-          gcloud beta emulators storage start --host-port "localhost:9090" --consistency="strong" --quiet &
-          
-          # Wait for the emulator to start
-          sleep 5
-
           # Set up environment
-          export STORAGE_EMULATOR_HOST="http://localhost:9090"
+          export STORAGE_EMULATOR_HOST="http://127.0.0.1:9000"
           
           coverage run --source depot -m unittest discover -v
           coverage report
-          # Stop the GCS emulator
-          kill %1
       - name: Publish to coveralls.io
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
