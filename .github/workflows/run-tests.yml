@@ -23,20 +23,21 @@ jobs:
           pip install coverage
       - name: Set up Minio
         run: |
+          export MINIO_ROOT_USER="minioadmin"
+          export MINIO_ROOT_PASSWORD="minioadmin"
           wget https://dl.min.io/server/minio/release/linux-amd64/minio
           chmod +x minio
-          sudo ./minio server /minio
+          sudo ./minio server /mnt/test/export/minio &
 
           wget https://dl.min.io/client/mc/release/linux-amd64/mc
           chmod +x mc
 
-          export MINIO_ROOT_USER="minio"
-          export MINIO_ROOT_PASSWORD="secret"
+          
           sleep 10  # Give Minio some time to start
           ./mc config host add minio http://127.0.0.1:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
 
           #mc alias set minio http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
-          mc mb minio/test-bucket
+          ./mc mb minio/test-bucket
       - name: Test with unittest
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
