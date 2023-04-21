@@ -21,13 +21,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -U --upgrade-strategy=eager --pre -e .[testing]
           pip install coverage
+      - name: Install gcloud SDK
+        run: |
+          export CLOUDSDK_INSTALL_DIR="${HOME}/google-cloud-sdk"
+          export PATH="${CLOUDSDK_INSTALL_DIR}/bin:${PATH}"
+          curl https://sdk.cloud.google.com | bash
+          gcloud components install beta storage-emulator
       - name: Test with unittest
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         run: |
+          # Start the GCS emulator
+          gcloud beta emulators storage start --host-port "localhost:9090" --consistency="strong" --quiet &
+          
+          # Wait for the emulator to start
+          sleep 5
+
+          # Set up environment
+          export STORAGE_EMULATOR_HOST="http://localhost:9090"
+          
           coverage run --source depot -m unittest discover -v
           coverage report
+          # Stop the GCS emulator
+          kill %1
       - name: Publish to coveralls.io
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

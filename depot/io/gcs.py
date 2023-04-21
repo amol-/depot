@@ -5,6 +5,7 @@ from depot.io import utils
 from depot.io.interfaces import FileStorage, StoredFile
 from depot._compat import unicode_text, percent_encode, percent_decode
 from google.cloud.exceptions import NotFound
+from google.oauth2 import service_account
 import datetime
 import os
 
@@ -49,13 +50,26 @@ class GCSStoredFile(StoredFile):
 
 
 class GCSStorage(FileStorage):
-    def __init__(self, project_id, credentials=None, bucket=None, policy=None, storage_class=None):
-        if credentials:
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials
-        policy = policy or CANNED_ACL_PUBLIC_READ
-        assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
-            "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
-        self.client = storage.Client(project=project_id)
+    def __init__(self, project_id=None, credentials=None, bucket=None, policy=None, storage_class=None):
+        
+        # added support for local emulator
+        if os.getenv("STORAGE_EMULATOR_HOST"):
+            client_options = {}
+            client_options["api_endpoint"] = os.getenv("STORAGE_EMULATOR_HOST")
+            self.client = storage.Client(client_options=client_options)
+        else:
+            if not credentials:
+                if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
+                credentials = service_account.Credentials.from_service_account_file(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
+            if not project_id:
+                project_id = credentials.project_id 
+            policy = policy or CANNED_ACL_PUBLIC_READ
+            assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
+                "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
+            self.client = storage.Client(project=project_id, credentials=credentials)
+
+        
         # check if bucket exists
         try:
             self.bucket = self.client.get_bucket(bucket)

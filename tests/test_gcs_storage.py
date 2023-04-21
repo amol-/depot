@@ -3,8 +3,9 @@ import os
 import uuid
 import requests
 from flaky import flaky
-from nose import SkipTest
+from unittest import SkipTest
 from google.cloud.exceptions import NotFound
+from google.oauth2 import service_account
 
 from depot._compat import PY2, unicode_text
 from depot.io.gcs import GCSStorage
@@ -15,36 +16,35 @@ FILE_CONTENT = b'HELLO WORLD'
 @flaky
 class TestGCSStorage(object):
     @classmethod
-    def setupClass(self):
-        self.run_id = '%s-%s' % (uuid.uuid1().hex, os.getpid())
+    def setUpClass(cls):
+        cls.run_id = '%s-%s' % (uuid.uuid1().hex, os.getpid())
 
         try:
             global GCSStorage
             from depot.io.gcs import GCSStorage
         except ImportError:
             raise SkipTest('Google Cloud Storage not installed')
-
-        env = os.environ
-        google_application_credentials = env.get('GOOGLE_APPLICATION_CREDENTIALS')
-        if google_application_credentials is None:
-            raise SkipTest('Google Cloud Storage credentials not available')
-
-        self._bucket = 'filedepot-testfs-%s' % self.run_id
         
-        # get project id from credentials
-        with open(google_application_credentials) as f:
-            import json
-            project_id = json.load(f)['project_id']
-        self._project_id = project_id
-        if project_id is None:
-            raise SkipTest('Google Cloud Storage project id not available')
-
-        self.fs = GCSStorage(project_id=self._project_id,credentials=google_application_credentials, bucket=self._bucket)
+        cls._bucket = 'filedepot-testfs-%s' % cls.run_id
+        env = os.environ
+        if os.getenv("STORAGE_EMULATOR_HOST"):
+            cls.fs = GCSStorage(bucket=cls._bucket)
+        else:
+            if not env.get('GOOGLE_APPLICATION_CREDENTIALS'):
+                raise SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')
+            cls._gcs_credentials  = service_account.Credentials.from_service_account_file(env.get('GOOGLE_APPLICATION_CREDENTIALS'))
+            cls._project_id = cls._gcs_credentials .project_id
+            cls.fs = GCSStorage(project_id=cls._project_id,credentials=cls._gcs_credentials , bucket=cls._bucket)
 
     @classmethod
-    def teardownClass(self):
-        for blob in self.fs.bucket.list_blobs():
+    def tearDownClass(cls):
+        for blob in cls.fs.bucket.list_blobs():
             blob.delete()
+        
+        try:
+            cls.fs.bucket.delete()
+        except NotFound:
+            pass
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
@@ -81,8 +81,8 @@ class TestGCSStorage(object):
 
     def test_storage_non_ascii_filenames(self):
         filename = u'ملف.pdf'
-        storage = GCSStorage(project_id=self._project_id, bucket=self._bucket)
-        new_file_id = storage.create(
+        #storage = GCSStorage(project_id=self._project_id,credentials=self._gcs_credentials, bucket=self._bucket)
+        new_file_id = self.fs.create(
             io.BytesIO(FILE_CONTENT),
             filename=filename,
             content_type='application/pdf'

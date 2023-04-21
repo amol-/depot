@@ -373,3 +373,36 @@ class TestBoto3FileStorage(unittest.TestCase, BaseStorageTestFixture):
             cls.fs._bucket_driver.bucket.delete()
         except:
             pass
+    
+@flaky
+class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
+
+    @classmethod
+    def get_storage(cls,bucket_name,project_id=None,credentials=None):
+        from depot.io.gcs import GCSStorage
+        return GCSStorage(project_id=project_id,credentials=credentials, bucket=bucket_name)
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            from depot.io.gcs import GCSStorage
+        except ImportError:
+            raise unittest.SkipTest('Google Cloud Storage not installed')
+
+        env = os.environ
+        if not env.get('GOOGLE_APPLICATION_CREDENTIALS') and not env.get("STORAGE_EMULATOR_HOST"):
+            raise unittest.SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')
+
+        BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
+        cls.fs = cls.get_storage(bucket_name=BUCKET_NAME)
+
+    def tearDown(self):
+        for blob in self.fs.bucket.list_blobs():
+            blob.delete()
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            cls.fs.bucket.delete()
+        except:
+            pass
