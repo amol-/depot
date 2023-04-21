@@ -25,18 +25,17 @@ jobs:
         run: |
           wget https://dl.min.io/server/minio/release/linux-amd64/minio
           chmod +x minio
-          sudo mv minio /usr/local/bin
+          sudo ./minio server /minio
 
           wget https://dl.min.io/client/mc/release/linux-amd64/mc
           chmod +x mc
-          sudo mv mc /usr/local/bin
 
-          export MINIO_ACCESS_KEY="minio_access_key"
-          export MINIO_SECRET_KEY="minio_secret_key"
-          minio server /data &
+          export MINIO_ROOT_USER="minio"
+          export MINIO_ROOT_PASSWORD="secret"
           sleep 10  # Give Minio some time to start
+          ./mc config host add minio http://127.0.0.1:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
 
-          mc alias set minio http://127.0.0.1:9000 "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY"
+          #mc alias set minio http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
           mc mb minio/test-bucket
       - name: Test with unittest
         env:
