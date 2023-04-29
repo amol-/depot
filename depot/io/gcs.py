@@ -3,13 +3,10 @@ import uuid
 from google.cloud import storage
 from depot.io import utils
 from depot.io.interfaces import FileStorage, StoredFile
-from depot._compat import unicode_text, percent_encode, percent_decode
+from depot._compat import unicode_text, percent_encode
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
-from google.oauth2.credentials import Credentials
-import datetime
 import os
-
 from depot.utils import make_content_disposition
 CANNED_ACL_PUBLIC_READ = 'public-read'
 CANNED_ACL_PRIVATE = 'private'
@@ -51,7 +48,7 @@ class GCSStoredFile(StoredFile):
 
 
 class GCSStorage(FileStorage):
-    def __init__(self, project_id=None, credentials=None, bucket=None, policy=None, storage_class=None):
+    def __init__(self, project_id=None, credentials=None, bucket=None, policy=None, storage_class=None, prefix=''):
         
         if not credentials:
             if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
@@ -73,15 +70,16 @@ class GCSStorage(FileStorage):
 
         self._policy = policy or CANNED_ACL_PUBLIC_READ
         self._storage_class = storage_class or 'STANDARD'
+        self._prefix = prefix
 
         if policy == CANNED_ACL_PUBLIC_READ:
             self.set_bucket_public_iam(self.bucket)
 
     def get(self, file_or_id):
         file_id = self.fileid(file_or_id)
-        blob = self.bucket.blob(file_id)
+        blob = self.bucket.blob(self._prefix+file_id)
         if not blob.exists():
-            raise NotFound('File %s not existing' % file_id)
+            raise NotFound('File %s not existing' % self._prefix+file_id)
         return GCSStoredFile(file_id, blob)
     
     def set_bucket_public_iam(self,bucket,members: List[str] = ["allUsers"]):
@@ -94,7 +92,7 @@ class GCSStorage(FileStorage):
     def __save_file(self,file_id, content, filename, content_type=None):
         if filename:
             filename = percent_encode(filename, safe='!#$&+-.^_`|~', encoding='utf-8')
-        blob = self.bucket.blob(file_id)
+        blob = self.bucket.blob(self._prefix+file_id)
         blob.content_type = content_type
         #blob.content_encoding = 'utf-8'
         #blob.cache_control = 'no-cache'
@@ -130,7 +128,7 @@ class GCSStorage(FileStorage):
 
     def delete(self, file_or_id):
         file_id = self.fileid(file_or_id)
-        blob = self.bucket.blob(file_id)
+        blob = self.bucket.blob(self._prefix+file_id)
         generation_match_precondition = None
         blob.reload()
         generation_match_precondition = blob.generation
@@ -138,7 +136,7 @@ class GCSStorage(FileStorage):
 
     def exists(self, file_or_id):
         file_id = self.fileid(file_or_id)
-        blob = self.bucket.blob(file_id)
+        blob = self.bucket.blob(self._prefix+file_id)
         return blob.exists()
 
     def list(self):
