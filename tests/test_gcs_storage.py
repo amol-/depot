@@ -1,5 +1,7 @@
 import io
+import json
 import os
+import unittest
 import uuid
 import requests
 from flaky import flaky
@@ -8,13 +10,13 @@ from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
 
 from depot._compat import PY2, unicode_text
-from depot.io.gcs import GCSStorage
 
+GCSStorage = None
 FILE_CONTENT = b'HELLO WORLD'
 
 
 @flaky
-class TestGCSStorage(object):
+class TestGCSStorage(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.run_id = '%s-%s' % (uuid.uuid1().hex, os.getpid())
@@ -27,26 +29,34 @@ class TestGCSStorage(object):
             raise SkipTest('Google Cloud Storage not installed')
         
         cls._bucket = 'filedepot-testfs-%s' % cls.run_id
-        env = os.environ
-        if not env.get('GOOGLE_APPLICATION_CREDENTIALS'):
-            raise SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')
-        cls._gcs_credentials  = service_account.Credentials.from_service_account_file(env.get('GOOGLE_APPLICATION_CREDENTIALS'))
-        cls._project_id = cls._gcs_credentials .project_id
+        if not os.environ.get("STORAGE_EMULATOR_HOST"):
+            if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                raise SkipTest("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
+            if os.environ["GOOGLE_APPLICATION_CREDENTIALS"].endswith(".json"):
+                if not os.path.isfile(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]):
+                    raise SkipTest("GOOGLE_APPLICATION_CREDENTIALS environment variable does not point to a file")
+                cls._gcs_credentials = service_account.Credentials.from_service_account_file(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
+            if not os.environ["GOOGLE_APPLICATION_CREDENTIALS"].endswith(".json"):
+                cls._gcs_credentials = service_account.Credentials.from_service_account_info(json.loads(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]))
+            cls._project_id = cls._gcs_credentials.project_id
+        else:
+            cls._gcs_credentials = None
+            cls._project_id = None
         cls.fs = GCSStorage(project_id=cls._project_id,credentials=cls._gcs_credentials,bucket=cls._bucket, prefix=cls._prefix)
 
     @classmethod
     def tearDownClass(cls):
-        for blob in cls.fs.bucket.list_blobs():
+        for blob in cls.fs._bucket_driver.bucket.list_blobs():
             blob.delete()
         
         try:
-            cls.fs.bucket.delete()
+            cls.fs._bucket_driver.bucket.delete()
         except NotFound:
             pass
 
     def test_fileoutside_depot(self):
         fid = str(uuid.uuid1())
-        blob = self.fs.bucket.blob(self._prefix+fid)
+        blob = self.fs._bucket_driver.blob(self._prefix+fid)
         blob.upload_from_string(FILE_CONTENT)
 
         f = self.fs.get(fid)
@@ -57,14 +67,14 @@ class TestGCSStorage(object):
         non_existent_key = str(uuid.uuid1())
         try:
             self.fs.get(non_existent_key)
-        except NotFound:
+        except IOError:
             pass
         else:
             assert False, 'Should have raised NotFound'
 
     def test_public_url(self):
         fid = str(uuid.uuid1())
-        blob = self.fs.bucket.blob(self._prefix+fid)
+        blob = self.fs._bucket_driver.blob(self._prefix+fid)
         blob.upload_from_string(FILE_CONTENT)
 
         f = self.fs.get(fid)

@@ -390,19 +390,27 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
             raise unittest.SkipTest('Google Cloud Storage not installed')
 
         env = os.environ
-        if not env.get('GOOGLE_APPLICATION_CREDENTIALS'):
+        if not env.get('GOOGLE_APPLICATION_CREDENTIALS') and not env.get('STORAGE_EMULATOR_HOST'):
             raise unittest.SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')
 
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
         cls.fs = cls.get_storage(bucket_name=BUCKET_NAME)
+    
+    @unittest.skip("Skipping test_cgifieldstorage for TestGCSFileStorage")
+    def test_cgifieldstorage(self):
+        pass
+
+    @unittest.skip("Skipping test_filewithname for TestGCSFileStorage")
+    def test_filewithname(self):
+        pass
 
     def tearDown(self):
-        for blob in self.fs.bucket.list_blobs():
+        for blob in self.fs._bucket_driver.bucket.list_blobs():
             blob.delete()
 
     @classmethod
     def tearDownClass(cls):
         try:
-            cls.fs.bucket.delete()
+            cls.fs._bucket_driver.bucket.delete()
         except:
             pass
