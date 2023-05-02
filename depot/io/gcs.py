@@ -151,6 +151,7 @@ class GCSStorage(FileStorage):
             'x-depot-filename': filename,
             'x-depot-content-type': content_type
         }
+
         if hasattr(content, 'read'):
             can_seek_and_tell = True
             try:
@@ -159,7 +160,12 @@ class GCSStorage(FileStorage):
             except:
                 can_seek_and_tell = False
             if can_seek_and_tell:
-                blob.upload_from_file(content, content_type=content_type)
+                # check if content has name attribute
+                if hasattr(content, 'name'):
+                    blob.upload_from_filename(content.name, content_type=content_type)
+                else:
+                    blob.upload_from_file(content, content_type=content_type)
+            else:
                 blob.upload_from_string(content.read(), content_type=content_type)
         else:
             if isinstance(content, unicode_text):
@@ -167,7 +173,10 @@ class GCSStorage(FileStorage):
             blob.upload_from_string(content, content_type=content_type)
         
         if self._policy == CANNED_ACL_PUBLIC_READ:
-            blob.make_public()
+            try:
+                blob.make_public()
+            except NotFound:
+                pass
 
     def create(self, content, filename=None, content_type=None):
         content, filename, content_type = self.fileinfo(content, filename, content_type)

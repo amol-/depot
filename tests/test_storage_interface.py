@@ -395,24 +395,7 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
 
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
         cls.fs = cls.get_storage(bucket_name=BUCKET_NAME)
-    
-    # Skip tests that are not supported by GCS emulators
-    @unittest.skip("Skipping test_cgifieldstorage for TestGCSFileStorage")
-    def test_cgifieldstorage(self):
-        pass
 
-    @unittest.skip("Skipping test_filewithname for TestGCSFileStorage")
-    def test_filewithname(self):
-        pass
-
-    @unittest.skip("Skipping test_filewithnonasciiname for TestGCSFileStorage")
-    def test_filewithnonasciiname(self):
-        pass
-
-    @unittest.skip("Skipping test_creation_inputs for TestGCSFileStorage")
-    def test_creation_inputs(self):
-        pass
-    
     def tearDown(self):
         for blob in self.fs._bucket_driver.bucket.list_blobs():
             blob.delete()
@@ -423,3 +406,10 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
             cls.fs._bucket_driver.bucket.delete()
         except:
             pass
+@flaky
+class TestGCSFileStorageWithPrefix(TestGCSFileStorage):
+
+    @classmethod
+    def get_storage(cls,bucket_name,project_id=None,credentials=None):
+        from depot.io.gcs import GCSStorage
+        return GCSStorage(project_id=project_id,credentials=credentials, bucket=bucket_name, prefix='my-prefix/')
