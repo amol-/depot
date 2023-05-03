@@ -5,12 +5,17 @@ FILE_CONTENT = b'HELLO WORLD'
 
 
 class TestGridFSFileStorage(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         try:
             import pymongo.errors
-            self.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=1', 'testfs')
-            self.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
+            cls.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=1', 'testfs')
+            cls.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
         except pymongo.errors.ConnectionFailure:
+            cls.fs = None
+    
+    def setUp(self):
+        if self.fs is None:
             self.skipTest('MongoDB not running')
 
     def tearDown(self):
