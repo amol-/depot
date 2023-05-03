@@ -4,8 +4,8 @@
 DEPOT - File Storage Made Easy
 ==============================
 
-.. image:: https://travis-ci.org/amol-/depot.png?branch=master 
-    :target: https://travis-ci.org/amol-/depot 
+.. image:: https://github.com/amol-/depot/actions/workflows/run-tests.yml/badge.svg
+    :target: https://github.com/amol-/depot/actions/workflows/run-tests.yml
 
 .. image:: https://coveralls.io/repos/amol-/depot/badge.png?branch=master
     :target: https://coveralls.io/r/amol-/depot?branch=master 
