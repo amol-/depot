@@ -5,7 +5,6 @@ import json
 import requests
 from flaky import flaky
 import unittest
-from unittest import SkipTest
 from google.cloud.exceptions import NotFound
 
 from depot._compat import PY2, unicode_text
@@ -25,13 +24,13 @@ class TestGCSStorage(unittest.TestCase):
             global GCSStorage
             from depot.io.gcs import GCSStorage
         except ImportError:
-            raise SkipTest('Google Cloud Storage not installed')
+            raise unittest.SkipTest('Google Cloud Storage not installed')
         
         cls._bucket = 'filedepot-testfs-%s' % cls.run_id
         env = os.environ
         google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
         if not google_credentials:
-            raise SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
+            raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
         google_credentials = json.loads(google_credentials)
         cls.fs = GCSStorage(project_id=google_credentials["project_id"], 
                             credentials=google_credentials, 

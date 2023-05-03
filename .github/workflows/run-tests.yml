@@ -25,7 +25,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          #GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          GOOGLE_SERVICE_CREDENTIALS: ${{ secrets.GOOGLE_SERVICE_CREDENTIALS }}
         run: |
           coverage run --source depot -m unittest discover -v
           coverage report

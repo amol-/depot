@@ -399,7 +399,7 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
         env = os.environ
         google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
         if not google_credentials:
-            raise SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
+            raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
         google_credentials = json.loads(google_credentials)
 
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
