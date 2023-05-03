@@ -18,11 +18,11 @@ web applications on Python2.6+ and Python3.2+.
 
 DEPOT supports storing files in multiple backends, like:
 
-    * Local Disk
-    * In Memory (for tests)
-    * On GridFS
-    * On Amazon S3 (or compatible services)
-    * On Google Cloud Storage
+* Local Disk
+* In Memory (for tests)
+* On GridFS
+* On Amazon S3 (or compatible services)
+* On Google Cloud Storage
 
 and integrates with database by providing files
 attached to your **SQLAlchemy** or **Ming/MongoDB** models
