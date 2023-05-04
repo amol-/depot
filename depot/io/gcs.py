@@ -3,6 +3,7 @@ import io
 import json
 from typing import List
 import uuid
+from datetime import datetime
 from google.cloud import storage
 from depot.io import utils
 from depot.io.interfaces import FileStorage, StoredFile
@@ -17,40 +18,39 @@ CANNED_ACL_PRIVATE = 'private'
 class GCSStoredFile(StoredFile):
     def __init__(self, file_id, blob):
         _check_file_id(file_id)
-        self._blob = blob
+
+        self.blob = blob
+        self._fileid = file_id
+
         self._closed = False
         metadata = blob.metadata or {}
         
-        filename = metadata['x-depot-filename'] if 'x-depot-filename' in metadata else None
-        if filename:
-            filename = percent_decode(filename)
-        #content_type = blob.content_type #metadata['x-depot-content-type']
-        metadata_info = {'filename': filename,
-                         'content_type': blob.content_type,
-                         'content_length': blob.size,
-                         'last_modified': None}
+        filename = metadata.get('x-depot-filename')
+        content_type = metadata.get('x-depot-content-type')
+        content_length = blob.size
 
+        last_modified = None
         try:
-            last_modified = metadata['x-depot-modified']
+            last_modified = metadata.get('x-depot-modified')
             if last_modified:
-                metadata_info['last_modified'] = datetime.strptime(last_modified,'%Y-%m-%d %H:%M:%S')
+                last_modified = datetime.strptime(last_modified, '%Y-%m-%d %H:%M:%S')
         except:
             pass
-        
-        super(GCSStoredFile, self).__init__(file_id=file_id, **metadata_info)
+
+        super(GCSStoredFile, self).__init__(file_id, filename, content_type, last_modified, content_length)
+        self._pos = 0
 
     def read(self):
         if self.closed:
             raise ValueError("I/O operation on closed file")
+
+        if self._pos == 0:
+            # If we are starting a new read, we need to get the latest generation of the blob
+            self.blob = storage.Blob(self.blob.name, self.blob.bucket)
         
-        if self._blob is not None:
-            try:
-                data = self._blob.download_as_bytes()
-                return data
-            except NotFound:
-                return None
-        else:
-            return None
+        data = self.blob.download_as_bytes(start=self._pos, end=self._pos + n - 1 if n != -1 else None)
+        self._pos += len(data)
+        return data
 
     def close(self, *args, **kwargs):
         self._closed = True
@@ -85,29 +85,26 @@ class BucketDriver(object):
 
 class GCSStorage(FileStorage):
     def __init__(self, project_id=None, credentials=None, bucket=None, policy=None, storage_class=None, prefix=''):
+
+        if not credentials:
+            if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
+            credentials = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
         
-        if  os.environ.get("STORAGE_EMULATOR_HOST"):
-            client_options = {'api_endpoint': os.environ.get("STORAGE_EMULATOR_HOST")}
-            self.client = storage.Client(client_options=client_options)
-            self._policy = CANNED_ACL_PRIVATE
+        if isinstance(credentials, dict):
+            credentials = service_account.Credentials.from_service_account_info(credentials)
+        elif isinstance(credentials, str):
+            credentials = service_account.Credentials.from_service_account_file(credentials)
         else:
-            if not credentials:
-                if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-                    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
-                if os.environ["GOOGLE_APPLICATION_CREDENTIALS"].endswith(".json"):
-                    if not os.path.isfile(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]):
-                        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable does not point to a file")
-                    credentials = service_account.Credentials.from_service_account_file(os.environ["GOOGLE_APPLICATION_CREDENTIALS"])
-                if not os.environ["GOOGLE_APPLICATION_CREDENTIALS"].endswith(".json"):
-                    credentials = service_account.Credentials.from_service_account_info(json.loads(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]))
-            
-            if not project_id:
-                project_id = credentials.project_id 
-            policy = policy or CANNED_ACL_PUBLIC_READ
-            assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
-                "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
-            self._policy = policy or CANNED_ACL_PUBLIC_READ
-            self.client = storage.Client(project=project_id, credentials=credentials)
+            credentials = credentials
+        
+        if not project_id:
+            project_id = credentials.project_id
+
+        policy = policy or CANNED_ACL_PUBLIC_READ
+        assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
+            "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
+        self.client = storage.Client(project=project_id, credentials=credentials)
 
         
         # check if bucket exists
@@ -126,12 +123,16 @@ class GCSStorage(FileStorage):
     def get(self, file_or_id):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
-        blob = self._bucket_driver.get_blob(file_id)
-        if blob is None or not blob.exists():
+
+        blob = self.bucket.blob(self._prefix+file_id)
+        if not blob.exists():
+            # TODO: Can we get rid of this extra exists check?
             raise IOError('File %s not existing' % file_id)
+
+        blob.reload()
         return GCSStoredFile(file_id, blob)
     
-    def set_bucket_public_iam(self,bucket,members: List[str] = ["allUsers"]):
+    def set_bucket_public_iam(self, bucket, members=("allUsers", )):
         policy = bucket.get_iam_policy(requested_policy_version=3)
         policy.bindings.append(
             {"role": "roles/storage.objectViewer", "members": members}
@@ -145,7 +146,7 @@ class GCSStorage(FileStorage):
         #blob.content_encoding = 'utf-8'
         #blob.cache_control = 'no-cache'
         blob.content_disposition = make_content_disposition('inline', filename)
-        
+
         blob.metadata = {
             'x-depot-modified': utils.timestamp(),
             'x-depot-filename': filename,
@@ -153,20 +154,13 @@ class GCSStorage(FileStorage):
         }
 
         if hasattr(content, 'read'):
-            can_seek_and_tell = True
             try:
                 pos = content.tell()
                 content.seek(pos)
+                blob.upload_from_file(content, content_type=content_type)
             except:
-                can_seek_and_tell = False
-            if can_seek_and_tell:
-                # check if content has name attribute
-                if hasattr(content, 'name'):
-                    blob.upload_from_filename(content.name, content_type=content_type)
-                else:
-                    blob.upload_from_file(content, content_type=content_type)
-            else:
-                blob.upload_from_string(content.read(), content_type=content_type)
+                content = content.read()
+                blob.upload_from_string(content, content_type=content_type)
         else:
             if isinstance(content, unicode_text):
                 raise TypeError('Only bytes can be stored, not unicode')
@@ -188,32 +182,35 @@ class GCSStorage(FileStorage):
     def replace(self, file_or_id, content, filename=None, content_type=None):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
-
-        content, filename, content_type = self.fileinfo(content, filename, content_type, lambda: self.get(file_id))
-        blob = self._bucket_driver.blob(file_id)
-
-        self.__save_file(blob, content, filename, content_type)
-        return file_id
+        
+        existing_file = self.get(file_id)
+        content, filename, content_type = self.fileinfo(content, filename, content_type, existing_file)
+        self.__save_file(file_id, content, filename, content_type)
 
     def delete(self, file_or_id):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
-        blob = self._bucket_driver.blob(file_id)
-        if blob.exists():
-            generation_match_precondition = None
+
+        blob = self.bucket.blob(self._prefix+file_id)
+        generation_match_precondition = None
+        try:
             blob.reload()
             generation_match_precondition = blob.generation
             blob.delete(if_generation_match=generation_match_precondition)
+        except NotFound:
+            pass
 
     def exists(self, file_or_id):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
-        blob = self._bucket_driver.get_blob(file_id)
-        return blob is not None
+
+        blob = self.bucket.blob(self._prefix+file_id)
+        return blob.exists()
 
     def list(self):
-        return self._bucket_driver.list_blob_names()
- 
+        return [blob.name for blob in self.bucket.list_blobs()]
+
+
 def _check_file_id(file_id):
     # Check that the given file id is valid, this also
     # prevents unsafe paths.

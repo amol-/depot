@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import uuid
 import unittest
+import json
 from flaky import flaky
 import shutil
 import mock
@@ -119,7 +120,7 @@ class BaseStorageTestFixture(object):
         f2 = self.fs.get(file_id)
         assert f2.filename == f.filename
         assert f2.content_type == f.content_type
-        assert f2.filename == 'file.txt'
+        assert f2.filename == 'file.txt', (f.filename, f2.filename)
         assert f2.content_type == 'text/plain'
 
     def test_repr(self):
@@ -151,7 +152,7 @@ class BaseStorageTestFixture(object):
         f2 = self.fs.get(f.file_id)
 
         assert f2.file_id == f.file_id
-        assert f.filename == f2.filename, (f.filename, f2.filename)
+        assert f.filename == f2.filename
         assert f.read() == b'NEW CONTENT'
         assert f2.content_type == 'text/plain'
 
@@ -262,17 +263,22 @@ class TestLocalFileStorage(unittest.TestCase, BaseStorageTestFixture):
 
 
 class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         try:
             from depot.io.gridfs import GridFSStorage
         except ImportError:
-            self.skipTest('PyMongo not installed')
+            cls.skipTest('PyMongo not installed')
 
         import pymongo.errors
         try:
-            self.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=1', 'testfs')
-            self.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
+            cls.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=1', 'testfs')
+            cls.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
         except pymongo.errors.ConnectionFailure:
+            cls.fs = None
+
+    def setUp(self):
+        if self.fs is None:
             self.skipTest('MongoDB not running')
 
     def teardown(self):
@@ -373,14 +379,15 @@ class TestBoto3FileStorage(unittest.TestCase, BaseStorageTestFixture):
             cls.fs._bucket_driver.bucket.delete()
         except:
             pass
-    
+
+
 @flaky
 class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
-    def get_storage(cls,bucket_name,project_id=None,credentials=None):
+    def get_storage(cls, bucket_name, project_id, credentials):
         from depot.io.gcs import GCSStorage
-        return GCSStorage(project_id=project_id,credentials=credentials, bucket=bucket_name)
+        return GCSStorage(project_id=project_id, credentials=credentials, bucket=bucket_name)
 
     @classmethod
     def setUpClass(cls):
@@ -390,11 +397,16 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
             raise unittest.SkipTest('Google Cloud Storage not installed')
 
         env = os.environ
-        if not env.get('GOOGLE_APPLICATION_CREDENTIALS') and not env.get('STORAGE_EMULATOR_HOST'):
-            raise unittest.SkipTest('GOOGLE_APPLICATION_CREDENTIALS environment variable not set')
+
+        google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
+        if not google_credentials:
+            raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
+        google_credentials = json.loads(google_credentials)
 
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
-        cls.fs = cls.get_storage(bucket_name=BUCKET_NAME)
+        cls.fs = cls.get_storage(bucket_name=BUCKET_NAME, 
+                                 project_id=google_credentials['project_id'], 
+                                 credentials=google_credentials)
 
     def tearDown(self):
         for blob in self.fs._bucket_driver.bucket.list_blobs():
