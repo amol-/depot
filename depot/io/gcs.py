@@ -25,22 +25,26 @@ class GCSStoredFile(StoredFile):
         self._closed = False
         metadata = blob.metadata or {}
         
-        filename = metadata.get('x-depot-filename')
-        content_type = metadata.get('x-depot-content-type')
-        content_length = blob.size
+        filename = metadata['x-depot-filename'] if 'x-depot-filename' in metadata else None
+        if filename:
+            filename = percent_decode(filename)
+        metadata_info = {'filename': filename,
+                         'content_type': blob.content_type,
+                         'content_length': blob.size,
+                         'last_modified': None}
 
         last_modified = None
         try:
-            last_modified = metadata.get('x-depot-modified')
+            last_modified = metadata['x-depot-modified']
             if last_modified:
-                last_modified = datetime.strptime(last_modified, '%Y-%m-%d %H:%M:%S')
+                metadata_info['last_modified'] = datetime.strptime(last_modified,'%Y-%m-%d %H:%M:%S')
         except:
             pass
 
-        super(GCSStoredFile, self).__init__(file_id, filename, content_type, last_modified, content_length)
+        super(GCSStoredFile, self).__init__(file_id=file_id, **metadata_info)
         self._pos = 0
 
-    def read(self):
+    def read(self, n=-1):
         if self.closed:
             raise ValueError("I/O operation on closed file")
 
@@ -61,7 +65,7 @@ class GCSStoredFile(StoredFile):
 
     @property
     def public_url(self):
-        return self._blob.public_url
+        return self.blob.public_url
 
 class BucketDriver(object):
 
@@ -86,24 +90,30 @@ class BucketDriver(object):
 class GCSStorage(FileStorage):
     def __init__(self, project_id=None, credentials=None, bucket=None, policy=None, storage_class=None, prefix=''):
 
-        if not credentials:
-            if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-                raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
-            credentials = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
-        
-        if isinstance(credentials, dict):
-            credentials = service_account.Credentials.from_service_account_info(credentials)
-        elif isinstance(credentials, str):
-            credentials = service_account.Credentials.from_service_account_file(credentials)
+        if  os.environ.get("STORAGE_EMULATOR_HOST"):
+            client_options = {'api_endpoint': os.environ.get("STORAGE_EMULATOR_HOST")}
+            self.client = storage.Client(client_options=client_options)
+            policy = CANNED_ACL_PRIVATE
         else:
-            credentials = credentials
-        
-        if not project_id:
-            project_id = credentials.project_id
+            if not credentials:
+                if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+                    raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
+                credentials = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+            
+            print(type(credentials))
+            if isinstance(credentials, dict):
+                credentials = service_account.Credentials.from_service_account_info(credentials)
+            elif isinstance(credentials, str):
+                credentials = service_account.Credentials.from_service_account_file(credentials)
+            else:
+                credentials = credentials
+            
+            if not project_id:
+                project_id = credentials.project_id
 
-        policy = policy or CANNED_ACL_PUBLIC_READ
-        assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
-            "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
+            policy = policy or CANNED_ACL_PUBLIC_READ
+            assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
+                "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
         self.client = storage.Client(project=project_id, credentials=credentials)
 
         
@@ -115,6 +125,7 @@ class GCSStorage(FileStorage):
 
         self._storage_class = storage_class or 'STANDARD'
         self._prefix = prefix
+        self._policy = policy 
 
         if policy == CANNED_ACL_PUBLIC_READ:
             self.set_bucket_public_iam(bucket)
@@ -124,7 +135,7 @@ class GCSStorage(FileStorage):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
 
-        blob = self.bucket.blob(self._prefix+file_id)
+        blob = self._bucket_driver.blob(file_id)
         if not blob.exists():
             # TODO: Can we get rid of this extra exists check?
             raise IOError('File %s not existing' % file_id)
@@ -132,7 +143,7 @@ class GCSStorage(FileStorage):
         blob.reload()
         return GCSStoredFile(file_id, blob)
     
-    def set_bucket_public_iam(self, bucket, members=("allUsers", )):
+    def set_bucket_public_iam(self,bucket,members: List[str] = ["allUsers"]):
         policy = bucket.get_iam_policy(requested_policy_version=3)
         policy.bindings.append(
             {"role": "roles/storage.objectViewer", "members": members}
@@ -157,7 +168,11 @@ class GCSStorage(FileStorage):
             try:
                 pos = content.tell()
                 content.seek(pos)
-                blob.upload_from_file(content, content_type=content_type)
+                # check if content has name attribute
+                if hasattr(content, 'name'):
+                    blob.upload_from_filename(content.name, content_type=content_type)
+                else:
+                    blob.upload_from_file(content, content_type=content_type)
             except:
                 content = content.read()
                 blob.upload_from_string(content, content_type=content_type)
@@ -182,16 +197,20 @@ class GCSStorage(FileStorage):
     def replace(self, file_or_id, content, filename=None, content_type=None):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
-        
+
         existing_file = self.get(file_id)
         content, filename, content_type = self.fileinfo(content, filename, content_type, existing_file)
-        self.__save_file(file_id, content, filename, content_type)
+        
+        blob = self._bucket_driver.blob(file_id)
+
+        self.__save_file(blob, content, filename, content_type)
+        return file_id
 
     def delete(self, file_or_id):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
 
-        blob = self.bucket.blob(self._prefix+file_id)
+        blob = self._bucket_driver.blob(file_id)
         generation_match_precondition = None
         try:
             blob.reload()
@@ -204,13 +223,12 @@ class GCSStorage(FileStorage):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
 
-        blob = self.bucket.blob(self._prefix+file_id)
+        blob = self._bucket_driver.blob(file_id)
         return blob.exists()
 
     def list(self):
-        return [blob.name for blob in self.bucket.list_blobs()]
-
-
+        return self._bucket_driver.list_blob_names()
+ 
 def _check_file_id(file_id):
     # Check that the given file id is valid, this also
     # prevents unsafe paths.

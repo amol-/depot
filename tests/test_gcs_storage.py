@@ -31,10 +31,15 @@ class TestGCSStorage(unittest.TestCase):
         cls._bucket = 'filedepot-testfs-%s' % cls.run_id
 
         env = os.environ
-        google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
-        if not google_credentials:
-            raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
-        google_credentials = json.loads(google_credentials)
+        if os.environ.get("STORAGE_EMULATOR_HOST"): # if using an emulator to test
+            cls._gcs_credentials = None
+            cls._project_id = None
+        else:
+            google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
+            if not google_credentials:
+                raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
+            google_credentials = json.loads(google_credentials.replace("'", '"'))
+            print(type(google_credentials))
         cls.fs = GCSStorage(project_id=google_credentials["project_id"], 
                             credentials=google_credentials, 
                             bucket=cls._bucket, 

@@ -268,7 +268,7 @@ class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
         try:
             from depot.io.gridfs import GridFSStorage
         except ImportError:
-            cls.skipTest('PyMongo not installed')
+            raise unittest.SkipTest('PyMongo not installed')
 
         import pymongo.errors
         try:
@@ -395,18 +395,23 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
             from depot.io.gcs import GCSStorage
         except ImportError:
             raise unittest.SkipTest('Google Cloud Storage not installed')
-
-        env = os.environ
-
-        google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
-        if not google_credentials:
-            raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
-        google_credentials = json.loads(google_credentials)
-
+        
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
+        env = os.environ
+        if os.environ.get("STORAGE_EMULATOR_HOST"): # if using an emulator to test
+            credentials = None
+            project_id = None
+        else:
+            google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
+            if not google_credentials:
+                raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
+            google_credentials = json.loads(google_credentials.replace("'", '"'))
+            credentials = google_credentials
+            project_id = google_credentials['project_id']
+        
         cls.fs = cls.get_storage(bucket_name=BUCKET_NAME, 
-                                 project_id=google_credentials['project_id'], 
-                                 credentials=google_credentials)
+                                 project_id=project_id, 
+                                 credentials=credentials)
 
     def tearDown(self):
         for blob in self.fs._bucket_driver.bucket.list_blobs():
