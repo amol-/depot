@@ -148,8 +148,18 @@ class S3Storage(FileStorage):
         # Create bucket if it doesn't exist.
         buckets = set(b['Name'] for b in self._s3.meta.client.list_buckets()['Buckets'])
         if bucket.name not in buckets:
-            bucket.create()
+            bucket.create(ObjectOwnership="BucketOwnerPreferred")
             bucket.wait_until_exists()
+            if self._policy == CANNED_ACL_PUBLIC_READ:
+                self._conn.client('s3').put_public_access_block(
+                    Bucket=bucket.name,
+                    PublicAccessBlockConfiguration={
+                        'BlockPublicAcls': False,
+                        'IgnorePublicAcls': False,
+                        'BlockPublicPolicy': True,
+                        'RestrictPublicBuckets': True
+                    }
+                )
 
         self._bucket_driver = BucketDriver(self._s3, bucket, prefix)
 

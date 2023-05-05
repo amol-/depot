@@ -110,14 +110,21 @@ class S3Storage(FileStorage):
         self._policy = policy or CANNED_ACL_PUBLIC_READ
         self._encrypt_key = encrypt_key
 
-        if bucket is None:
-            bucket = 'filedepot-%s' % (access_key_id.lower(),)
+        bucket_name = bucket
+        if bucket_name is None:
+            bucket_name = 'filedepot-%s' % (access_key_id.lower(),)
 
         kw = {}
         if host is not None:
             kw['host'] = host
         self._conn = S3Connection(access_key_id, secret_access_key, **kw)
-        bucket = self._conn.lookup(bucket) or self._conn.create_bucket(bucket)
+        bucket = self._conn.lookup(bucket_name)
+        if not bucket: 
+            print("CREATE BUCKET")
+            bucket = self._conn.create_bucket(bucket_name)
+            self._conn.make_request('PUT', bucket_name, 
+                                    query_args="publicAccessBlock", 
+                                    data=b'<PublicAccessBlockConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><BlockPublicAcls>false</BlockPublicAcls><IgnorePublicAcls>false</IgnorePublicAcls><BlockPublicPolicy>true</BlockPublicPolicy><RestrictPublicBuckets>true</RestrictPublicBuckets></PublicAccessBlockConfiguration>')
         self._bucket_driver = BucketDriver(bucket, prefix)
 
 
