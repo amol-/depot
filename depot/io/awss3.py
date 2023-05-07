@@ -7,7 +7,10 @@ This is useful for storing files in S3.
 from __future__ import absolute_import
 
 from datetime import datetime
+import warnings
 import uuid
+from configparser import DuplicateSectionError
+import boto
 from boto.s3.connection import S3Connection
 from depot._compat import unicode_text, percent_encode, percent_decode
 from depot.utils import make_content_disposition
@@ -104,22 +107,31 @@ class S3Storage(FileStorage):
 
     def __init__(self, access_key_id, secret_access_key, bucket=None, host=None,
                  policy=None, encrypt_key=False, prefix=''):
+        warnings.warn("awss3.S3Storage is deprecated in favor of boto3.S3Storage", DeprecationWarning)
         policy = policy or CANNED_ACL_PUBLIC_READ
         assert policy in [CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE], (
             "Key policy must be %s or %s" % (CANNED_ACL_PUBLIC_READ, CANNED_ACL_PRIVATE))
         self._policy = policy or CANNED_ACL_PUBLIC_READ
         self._encrypt_key = encrypt_key
 
-        if bucket is None:
-            bucket = 'filedepot-%s' % (access_key_id.lower(),)
+        bucket_name = bucket
+        if bucket_name is None:
+            bucket_name = 'filedepot-%s' % (access_key_id.lower(),)
 
-        kw = {}
+        kw = {'host': 's3.amazonaws.com'}
         if host is not None:
             kw['host'] = host
-        self._conn = S3Connection(access_key_id, secret_access_key, **kw)
-        bucket = self._conn.lookup(bucket) or self._conn.create_bucket(bucket)
-        self._bucket_driver = BucketDriver(bucket, prefix)
 
+        _enable_sigv4()  # This seems to be required for publicAccessBlock to succeed.
+        self._conn = S3Connection(access_key_id, secret_access_key, **kw)
+        bucket = self._conn.lookup(bucket_name)
+        if not bucket: 
+            bucket = self._conn.create_bucket(bucket_name, headers={"x-amz-object-ownership": "BucketOwnerPreferred"})
+            r = self._conn.make_request('PUT', bucket_name, 
+                                        query_args="publicAccessBlock", 
+                                        headers={"Content-Type": "application/xml"},
+                                        data=b'<PublicAccessBlockConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><BlockPublicAcls>false</BlockPublicAcls><IgnorePublicAcls>false</IgnorePublicAcls><BlockPublicPolicy>true</BlockPublicPolicy><RestrictPublicBuckets>true</RestrictPublicBuckets></PublicAccessBlockConfiguration>')
+        self._bucket_driver = BucketDriver(bucket, prefix)
 
     def get(self, file_or_id):
         fileid = self.fileid(file_or_id)
@@ -208,3 +220,16 @@ def _check_file_id(file_id):
         uuid.UUID('{%s}' % file_id)
     except:
         raise ValueError('Invalid file id %s' % file_id)
+
+
+def _enable_sigv4():
+    if _enable_sigv4.DIDRUN:
+        return
+    
+    try:
+        boto.config.add_section('s3')
+    except DuplicateSectionError:
+        pass
+    boto.config.set('s3', 'use-sigv4', 'True')
+    _enable_sigv4.DIDRUN = True
+_enable_sigv4.DIDRUN = False

@@ -84,8 +84,9 @@ class TestS3FileStorage(unittest.TestCase):
             else:
                 assert False, 'Unexpected Call'
 
+        from depot.io.boto3 import CANNED_ACL_PRIVATE
         with mock.patch('botocore.client.BaseClient._make_api_call', new=mock_make_api_call):
-            S3Storage(*self.cred)
+            S3Storage(*self.cred, policy=CANNED_ACL_PRIVATE)
         assert created_buckets == [self.default_bucket_name]
 
     def test_bucket_failure(self):
@@ -104,7 +105,7 @@ class TestS3FileStorage(unittest.TestCase):
             assert False, 'Should have reraised ClientError'
 
     def test_client_receives_extra_args(self):
-        with mock.patch('boto3.session.Session.resource') as mockresource:
+        with mock.patch('boto3.session.Session.client'), mock.patch('boto3.session.Session.resource') as mockresource:
             S3Storage(*self.cred, endpoint_url='http://somehwere.it', region_name='worlwide')
         mockresource.assert_called_once_with('s3', endpoint_url='http://somehwere.it',
                                              region_name='worlwide')
