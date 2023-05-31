@@ -137,6 +137,26 @@ class BaseStorageTestFixture(object):
         finally:
             self.delete_storage(other_storage)
 
+    def test_backup(self):
+        file_ids = set()
+        for i in range(10):
+            file_ids.add(
+                self.fs.create(FILE_CONTENT, filename='file-%s.txt' %i,
+                               content_type='text/plain')
+            )
+
+        other_storage = self.get_storage("otherbucket-%s" % uuid.uuid1().hex)
+        existing_files = self.fs.list()
+        try:
+            for f_id in existing_files:
+                f = self.fs.get(f_id)
+                other_storage.replace(f, f)
+
+            assert set(other_storage.list()) == file_ids
+        finally:
+            self.delete_storage(other_storage)
+
+
     def test_repr(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
         f = self.fs.get(file_id)

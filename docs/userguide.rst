@@ -244,3 +244,28 @@ Then when switching your avatars to GridFS you might switch your configuration t
     While you can keep using the ``avatar`` name for the storage when saving files, it's
     important that the ``local_avatars`` storage continues to be configured as all the
     previously uploaded avatars will continue to be served from there.
+
+Performing Backups between Storages
+-----------------------------------
+
+When in need to perform a backup between two storages, the best practice is to
+rely on the backend specific tools. Those are usually faster than trying to copy
+each file one by one in python.
+
+In case you have the need to perform backups through the DEPOT apis themselves,
+you can configure a second :class:`FileStorage` where you can copy all the files
+using the second storage :meth:`FileStorage.replace` method::
+
+    DepotManager.configure('local_avatars', {
+        'depot.storage_path': '/var/www/lfs'
+    })
+    DepotManager.configure('backup_avatars', {
+        'depot.storage_path': '/var/www/lfs_backup'
+    })
+
+    storage = DepotManager.get('local_avatars')
+    backup = DepotManager.get('backup_avatars')
+
+    for fileid in storage.list():
+        f = storage.get(fileid)
+        backup.replace(f, f)
