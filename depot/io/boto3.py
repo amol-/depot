@@ -221,6 +221,9 @@ class S3Storage(FileStorage):
                                                         lambda: self.get(fileid))
 
         key = self._bucket_driver.get_key(fileid)
+        if key is None:
+            key = self._bucket_driver.new_key(fileid)
+
         self.__save_file(key, content, filename, content_type)
         return fileid
 

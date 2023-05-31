@@ -132,6 +132,8 @@ class BaseStorageTestFixture(object):
             other_storage.replace(f, f)
 
             assert other_storage.exists(f.file_id)
+            assert other_storage.get(f.file_id).read() == FILE_CONTENT
+            assert other_storage.get(f.file_id).filename == f.filename
         finally:
             other_storage.delete(f.file_id)
 
