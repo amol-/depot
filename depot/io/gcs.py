@@ -163,8 +163,8 @@ class GCSStorage(FileStorage):
         if not isinstance(file_or_id, StoredFile) and not self.exists(file_id):
             raise IOError('File %s not existing' % file_or_id)
 
-        existing_file = self.get(file_id)
-        content, filename, content_type = self.fileinfo(content, filename, content_type, existing_file)
+        content, filename, content_type = self.fileinfo(content, filename, content_type,
+                                                        lambda: self.get(file_id))
         self.__save_file(file_id, content, filename, content_type)
 
     def delete(self, file_or_id):
