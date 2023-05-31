@@ -187,10 +187,21 @@ class S3Storage(FileStorage):
         fileid = self.fileid(file_or_id)
         _check_file_id(fileid)
 
+        if isinstance(file_or_id, StoredFile) and file_or_id is content:
+            # This is a backup, no need to check if file exists.
+            pass
+        elif not self.exists(fileid):
+            # Check file existed and we are not using replace
+            # as a way to force a specific file id on creation.
+            raise IOError('File %s not existing' % fileid)
+
         content, filename, content_type = self.fileinfo(content, filename, content_type,
                                                         lambda: self.get(fileid))
 
         key = self._bucket_driver.get_key(fileid)
+        if key is None:
+            key = self._bucket_driver.new_key(fileid)
+
         self.__save_file(key, content, filename, content_type)
         return fileid
 

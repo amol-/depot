@@ -61,6 +61,7 @@ class GridFSStorage(FileStorage):
     def __init__(self, mongouri, collection='filedepot'):
         self._cli = MongoClient(mongouri)
         self._db = self._cli.get_default_database()
+        self._collection = collection
         self._gridfs = gridfs.GridFS(self._db, collection=collection)
 
     def get(self, file_or_id):
@@ -84,6 +85,14 @@ class GridFSStorage(FileStorage):
     def replace(self, file_or_id, content, filename=None, content_type=None):
         fileid = self.fileid(file_or_id)
         fileid = _check_file_id(fileid)
+
+        if isinstance(file_or_id, StoredFile) and file_or_id is content:
+            # This is a backup, no need to check if file exists.
+            pass
+        elif not self.exists(fileid):
+            # Check file existed and we are not using replace
+            # as a way to force a specific file id on creation.
+            raise IOError('File %s not existing' % file_id)
 
         content, filename, content_type = self.fileinfo(content, filename, content_type,
                                                         lambda: self.get(fileid))

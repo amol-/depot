@@ -13,13 +13,13 @@ Modern web applications need to rely on a huge amount of
 stored images, generated files and other data which is usually
 best to keep outside of your database. DEPOT provides a
 simple and effective interface for storing your files on
-a storage backend at your choice (**Local**, **S3**, **GridFS**)
+a storage backend at your choice (**Local**, **S3**, **GridFS**, **Google Cloud Storage**)
 and easily relate them to your application models (**SQLAlchemy**, **Ming**)
 like you would for plain data.
 
 Depot is a swiss army knife for files that provides:
 
-    - Multiple backends: Store your data on GridFS or S3 with a *single API*
+    - Multiple backends: Store your data on all of them with a *single API*
     - In Memory storage :class:`depot.io.memory.MemoryFileStorage` provided for tests suite.
       Provides faster tests and no need to clean-up fixtures.
     - Meant for *Evolution*: Change the backend anytime you want, old data will continue to work
@@ -49,9 +49,9 @@ Installing DEPOT can be done from PyPi itself by installing the ``filedepot`` di
     $ pip install filedepot
 
 Keep in mind that DEPOT itself has no dependencies, if you want to use GridFS storage,
-S3 or any other storage that requires third party libraries, your own application is
+S3, GCS or any other storage that requires third party libraries, your own application is
 required to install the dependency. In this specific case ``pymongo`` and ``boto``
-(or ``boto3``) are respectively needed for GridFS and S3 support.
+(or ``boto3``) and ``google-cloud-storage`` are respectively needed for GridFS, S3 and GCS support.
 
 .. _depot_standalone:
 
