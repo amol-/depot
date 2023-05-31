@@ -269,3 +269,9 @@ using the second storage :meth:`FileStorage.replace` method::
     for fileid in storage.list():
         f = storage.get(fileid)
         backup.replace(f, f)
+
+.. note::
+
+    This backup method will be very slow compared to native backup tools of the
+    storage in use. As it has to download the file locally to reupload it to the
+    backup storage.
