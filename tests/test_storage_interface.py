@@ -110,7 +110,7 @@ class BaseStorageTestFixture(object):
         assert f.content_type == 'application/pdf'
         assert f.read() == FILE_CONTENT
 
-    def test_another_storage(self):
+    def test_another_copy(self):
         file_id = self.fs.create(FILE_CONTENT, filename='file.txt', content_type='text/plain')
         f = self.fs.get(file_id)
 
@@ -135,7 +135,7 @@ class BaseStorageTestFixture(object):
             assert other_storage.get(f.file_id).read() == FILE_CONTENT
             assert other_storage.get(f.file_id).filename == f.filename
         finally:
-            other_storage.delete(f.file_id)
+            self.delete_storage(other_storage)
 
     def test_repr(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
@@ -273,11 +273,15 @@ class TestLocalFileStorage(unittest.TestCase, BaseStorageTestFixture):
         from depot.io.local import LocalFileStorage
         return LocalFileStorage('./lfs/%s' % bucket_name)
 
+    @classmethod
+    def delete_storage(cls, storage):
+        shutil.rmtree(storage.storage_path, ignore_errors=True)
+
     def setUp(self):
         self.fs = self.get_storage("default_bucket")
 
     def tearDown(self):
-        shutil.rmtree('./lfs', ignore_errors=True)
+        self.delete_storage(self.fs)
 
 
 class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
@@ -290,6 +294,11 @@ class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
             cls.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
         except pymongo.errors.ConnectionFailure:
             return None
+
+    @classmethod
+    def delete_storage(cls, storage):
+        storage._db.drop_collection('%s.files' % storage._collection_name)
+        storage._db.drop_collection('%s.chunks' % storage._collection_name)
 
     @classmethod
     def setUpClass(cls):
@@ -305,8 +314,7 @@ class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
             self.skipTest('MongoDB not running')
 
     def teardown(self):
-        self.fs._db.drop_collection('testfs.files')
-        self.fs._db.drop_collection('testfs.chunks')
+        self.delete_storage(self.fs)
 
 
 @flaky
@@ -323,6 +331,17 @@ class TestS3FileStorage(unittest.TestCase, BaseStorageTestFixture):
             return None
         
         return S3Storage(access_key_id, secret_access_key, bucket_name)
+
+    @classmethod
+    def delete_storage(cls, storage):
+        keys = [key.name for key in storage._bucket_driver.bucket]
+        if keys:
+            storage._bucket_driver.bucket.delete_keys(keys)
+
+        try:
+            storage._conn.delete_bucket(storage._bucket_driver.bucket.name)
+        except:
+            pass
 
     @classmethod
     def setUpClass(cls):
@@ -344,10 +363,7 @@ class TestS3FileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            cls.fs._conn.delete_bucket(cls.fs._bucket_driver.bucket.name)
-        except:
-            pass
+        cls.delete_storage(cls.fs)
 
 
 @flaky
@@ -376,11 +392,15 @@ class TestMemoryFileStorage(unittest.TestCase, BaseStorageTestFixture):
         from depot.io.memory import MemoryFileStorage
         return MemoryFileStorage()
 
+    @classmethod
+    def delete_storage(cls, storage):
+        map(storage.delete, storage.list())
+
     def setUp(self):
         self.fs = self.get_storage(None)
 
     def tearDown(self):
-        map(self.fs.delete, self.fs.list())
+        self.delete_storage(self.fs)
 
 
 @flaky
@@ -397,6 +417,15 @@ class TestBoto3FileStorage(unittest.TestCase, BaseStorageTestFixture):
             return None
 
         return S3Storage(access_key_id, secret_access_key, bucket_name)
+
+    @classmethod
+    def delete_storage(cls, storage):
+        for obj in storage._bucket_driver.bucket.objects.all():
+            obj.delete()
+        try:
+            storage._bucket_driver.bucket.delete()
+        except:
+            pass
 
     @classmethod
     def setUpClass(cls):
@@ -416,10 +445,7 @@ class TestBoto3FileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            cls.fs._bucket_driver.bucket.delete()
-        except:
-            pass
+        cls.delete_storage(cls.fs)
 
 
 @flaky
@@ -440,6 +466,15 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
                           bucket=bucket_name)
 
     @classmethod
+    def delete_storage(cls, storage):
+        for blob in storage.fs.bucket.list_blobs():
+            blob.delete()
+        try:
+            storage.bucket.delete()
+        except:
+            pass
+
+    @classmethod
     def setUpClass(cls):
         try:
             from depot.io.gcs import GCSStorage
@@ -457,7 +492,4 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            cls.fs.bucket.delete()
-        except:
-            pass
+        cls.delete_storage(cls.fs)

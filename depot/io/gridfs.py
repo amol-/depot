@@ -61,6 +61,7 @@ class GridFSStorage(FileStorage):
     def __init__(self, mongouri, collection='filedepot'):
         self._cli = MongoClient(mongouri)
         self._db = self._cli.get_default_database()
+        self._collection = collection
         self._gridfs = gridfs.GridFS(self._db, collection=collection)
 
     def get(self, file_or_id):

@@ -103,7 +103,8 @@ ChangeLog
 
 - Added support for Google Cloud Storage
 - Fixed ACL issues with S3
-- Deprecated boto2 backed, use boto3
+- Deprecated boto2 backend, use boto3
+- Added support for performing backups by copying to another storage
 
 0.9.0
 ~~~~~
