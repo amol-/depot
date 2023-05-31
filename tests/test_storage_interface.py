@@ -212,7 +212,7 @@ class BaseStorageTestFixture(object):
     def test_list(self):
         file_ids = list()
         for i in range(3):
-            file_ids.append(self.fs.create(FILE_CONTENT, 'file{0}.txt'.format(i)))
+            file_ids.append(self.fs.create(FILE_CONTENT, 'file_for_listing-{0}.txt'.format(i)))
 
         existing_files = self.fs.list()
         for _id in file_ids:
@@ -310,15 +310,16 @@ class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
         from depot.io.gridfs import GridFSStorage
         import pymongo.errors
         try:
-            cls.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=1', collection_name)
-            cls.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
+            fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=100', collection_name)
+            fs._gridfs.exists("")  # Any operation to test that mongodb is up.
+            return fs
         except pymongo.errors.ConnectionFailure:
             return None
 
     @classmethod
     def delete_storage(cls, storage):
-        storage._db.drop_collection('%s.files' % storage._collection_name)
-        storage._db.drop_collection('%s.chunks' % storage._collection_name)
+        storage._db.drop_collection('%s.files' % storage._collection)
+        storage._db.drop_collection('%s.chunks' % storage._collection)
 
     @classmethod
     def setUpClass(cls):
@@ -333,7 +334,7 @@ class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
         if self.fs is None:
             self.skipTest('MongoDB not running')
 
-    def teardown(self):
+    def tearDown(self):
         self.delete_storage(self.fs)
 
 
@@ -374,7 +375,6 @@ class TestS3FileStorage(unittest.TestCase, BaseStorageTestFixture):
         cls.fs = cls.get_storage(BUCKET_NAME)
         if cls.fs is None:
             raise unittest.SkipTest('Amazon S3 credentials not available')
-
 
     def tearDown(self):
         keys = [key.name for key in self.fs._bucket_driver.bucket]

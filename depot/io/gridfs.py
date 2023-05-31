@@ -92,7 +92,7 @@ class GridFSStorage(FileStorage):
         elif not self.exists(fileid):
             # Check file existed and we are not using replace
             # as a way to force a specific file id on creation.
-            raise IOError('File %s not existing' % file_id)
+            raise IOError('File %s not existing' % fileid)
 
         content, filename, content_type = self.fileinfo(content, filename, content_type,
                                                         lambda: self.get(fileid))
