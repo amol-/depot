@@ -87,7 +87,9 @@ class MemoryFileStorage(FileStorage):
 
         # First check file existed and we are not using replace
         # as a way to force a specific file id on creation.
-        if fileid not in self.files:
+        # But if it's a StoredFile, we want to allow it to be copied
+        # to another storage while retaining the same file id for backup purposes.
+        if not isinstance(file_or_id, StoredFile) and not self.exists(fileid):
             raise IOError('File %s not existing' % file_or_id)
 
         content, filename, content_type = self.fileinfo(content, filename, content_type,

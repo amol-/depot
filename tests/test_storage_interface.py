@@ -123,6 +123,18 @@ class BaseStorageTestFixture(object):
         assert f2.filename == 'file.txt', (f.filename, f2.filename)
         assert f2.content_type == 'text/plain'
 
+    def test_copy_to_other_storage(self):
+        file_id = self.fs.create(FILE_CONTENT, filename='file.txt', content_type='text/plain')
+        f = self.fs.get(file_id)
+
+        other_storage = self.get_storage("otherbucket")
+        try:
+            other_storage.replace(f, f)
+
+            assert other_storage.exists(f.file_id)
+        finally:
+            other_storage.delete(f.file_id)
+
     def test_repr(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
         f = self.fs.get(file_id)
@@ -254,9 +266,13 @@ class BaseStorageTestFixture(object):
 
 
 class TestLocalFileStorage(unittest.TestCase, BaseStorageTestFixture):
-    def setUp(self):
+    @classmethod
+    def get_storage(cls, bucket_name):
         from depot.io.local import LocalFileStorage
-        self.fs = LocalFileStorage('./lfs')
+        return LocalFileStorage('./lfs/%s' % bucket_name)
+
+    def setUp(self):
+        self.fs = self.get_storage("default_bucket")
 
     def tearDown(self):
         shutil.rmtree('./lfs', ignore_errors=True)
@@ -264,18 +280,23 @@ class TestLocalFileStorage(unittest.TestCase, BaseStorageTestFixture):
 
 class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
     @classmethod
+    def get_storage(cls, collection_name):
+        from depot.io.gridfs import GridFSStorage
+        import pymongo.errors
+        try:
+            cls.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=1', collection_name)
+            cls.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
+        except pymongo.errors.ConnectionFailure:
+            return None
+
+    @classmethod
     def setUpClass(cls):
         try:
             from depot.io.gridfs import GridFSStorage
         except ImportError:
             cls.skipTest('PyMongo not installed')
 
-        import pymongo.errors
-        try:
-            cls.fs = GridFSStorage('mongodb://localhost/gridfs_example?serverSelectionTimeoutMS=1', 'testfs')
-            cls.fs._gridfs.exists("")  # Any operation to test that mongodb is up.
-        except pymongo.errors.ConnectionFailure:
-            cls.fs = None
+        cls.fs = cls.get_storage('testfs')
 
     def setUp(self):
         if self.fs is None:
@@ -290,8 +311,15 @@ class TestGridFSFileStorage(unittest.TestCase, BaseStorageTestFixture):
 class TestS3FileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
-    def get_storage(cls, access_key_id, secret_access_key, bucket_name):
+    def get_storage(cls, bucket_name):
         from depot.io.awss3 import S3Storage
+
+        env = os.environ
+        access_key_id = env.get('AWS_ACCESS_KEY_ID')
+        secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
+        if access_key_id is None or secret_access_key is None:
+            return None
+        
         return S3Storage(access_key_id, secret_access_key, bucket_name)
 
     @classmethod
@@ -301,14 +329,11 @@ class TestS3FileStorage(unittest.TestCase, BaseStorageTestFixture):
         except ImportError:
             raise unittest.SkipTest('Boto not installed')
 
-        env = os.environ
-        access_key_id = env.get('AWS_ACCESS_KEY_ID')
-        secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
-        if access_key_id is None or secret_access_key is None:
+        BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
+        cls.fs = cls.get_storage(BUCKET_NAME)
+        if cls.fs is None:
             raise unittest.SkipTest('Amazon S3 credentials not available')
 
-        BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
-        cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
 
     def tearDown(self):
         keys = [key.name for key in self.fs._bucket_driver.bucket]
@@ -327,8 +352,15 @@ class TestS3FileStorage(unittest.TestCase, BaseStorageTestFixture):
 class TestS3FileStorageWithPrefix(TestS3FileStorage):
 
     @classmethod
-    def get_storage(cls, access_key_id, secret_access_key, bucket_name):
+    def get_storage(cls, bucket_name):
         from depot.io.awss3 import S3Storage
+
+        env = os.environ
+        access_key_id = env.get('AWS_ACCESS_KEY_ID')
+        secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
+        if access_key_id is None or secret_access_key is None:
+            return None
+
         return S3Storage(
             access_key_id,
             secret_access_key,
@@ -337,9 +369,13 @@ class TestS3FileStorageWithPrefix(TestS3FileStorage):
 
 
 class TestMemoryFileStorage(unittest.TestCase, BaseStorageTestFixture):
-    def setUp(self):
+    @classmethod
+    def get_storage(cls, _):
         from depot.io.memory import MemoryFileStorage
-        self.fs = MemoryFileStorage()
+        return MemoryFileStorage()
+
+    def setUp(self):
+        self.fs = self.get_storage(None)
 
     def tearDown(self):
         map(self.fs.delete, self.fs.list())
@@ -349,8 +385,15 @@ class TestMemoryFileStorage(unittest.TestCase, BaseStorageTestFixture):
 class TestBoto3FileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
-    def get_storage(cls, access_key_id, secret_access_key, bucket_name):
+    def get_storage(cls, bucket_name):
         from depot.io.boto3 import S3Storage
+
+        env = os.environ
+        access_key_id = env.get('AWS_ACCESS_KEY_ID')
+        secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
+        if access_key_id is None or secret_access_key is None:
+            return None
+
         return S3Storage(access_key_id, secret_access_key, bucket_name)
 
     @classmethod
@@ -360,14 +403,10 @@ class TestBoto3FileStorage(unittest.TestCase, BaseStorageTestFixture):
         except ImportError:
             raise unittest.SkipTest('Boto3 not installed')
 
-        env = os.environ
-        access_key_id = env.get('AWS_ACCESS_KEY_ID')
-        secret_access_key = env.get('AWS_SECRET_ACCESS_KEY')
-        if access_key_id is None or secret_access_key is None:
-            raise unittest.SkipTest('Amazon S3 credentials not available')
-
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
-        cls.fs = cls.get_storage(access_key_id, secret_access_key, BUCKET_NAME)
+        cls.fs = cls.get_storage(BUCKET_NAME)
+        if not cls.fs:
+            raise unittest.SkipTest('Amazon S3 credentials not available')
 
     def tearDown(self):
         for obj in self.fs._bucket_driver.bucket.objects.all():
@@ -385,9 +424,18 @@ class TestBoto3FileStorage(unittest.TestCase, BaseStorageTestFixture):
 class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
-    def get_storage(cls, bucket_name, project_id, credentials):
+    def get_storage(cls, bucket_name):
         from depot.io.gcs import GCSStorage
-        return GCSStorage(project_id=project_id, credentials=credentials, bucket=bucket_name)
+
+        env = os.environ
+        google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
+        if not google_credentials:
+            return None
+        google_credentials = json.loads(google_credentials)
+
+        return GCSStorage(project_id=google_credentials['project_id'],
+                          credentials=google_credentials, 
+                          bucket=bucket_name)
 
     @classmethod
     def setUpClass(cls):
@@ -396,16 +444,10 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
         except ImportError:
             raise unittest.SkipTest('Google Cloud Storage not installed')
 
-        env = os.environ
-        google_credentials = env.get('GOOGLE_SERVICE_CREDENTIALS')
-        if not google_credentials:
-            raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
-        google_credentials = json.loads(google_credentials)
-
         BUCKET_NAME = 'fdtest-%s-%s' % (uuid.uuid1(), os.getpid())
-        cls.fs = cls.get_storage(bucket_name=BUCKET_NAME, 
-                                 project_id=google_credentials['project_id'], 
-                                 credentials=google_credentials)
+        cls.fs = cls.get_storage(bucket_name=BUCKET_NAME)
+        if cls.fs is None:
+            raise unittest.SkipTest('GOOGLE_SERVICE_CREDENTIALS environment variable not set')
 
     def tearDown(self):
         for blob in self.fs.bucket.list_blobs():

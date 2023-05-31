@@ -156,6 +156,13 @@ class GCSStorage(FileStorage):
         file_id = self.fileid(file_or_id)
         _check_file_id(file_id)
         
+        # First check file existed and we are not using replace
+        # as a way to force a specific file id on creation.
+        # But if it's a StoredFile, we want to allow it to be copied
+        # to another storage while retaining the same file id for backup purposes.
+        if not isinstance(file_or_id, StoredFile) and not self.exists(file_id):
+            raise IOError('File %s not existing' % file_or_id)
+
         existing_file = self.get(file_id)
         content, filename, content_type = self.fileinfo(content, filename, content_type, existing_file)
         self.__save_file(file_id, content, filename, content_type)
