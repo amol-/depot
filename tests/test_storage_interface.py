@@ -467,7 +467,7 @@ class TestGCSFileStorage(unittest.TestCase, BaseStorageTestFixture):
 
     @classmethod
     def delete_storage(cls, storage):
-        for blob in storage.fs.bucket.list_blobs():
+        for blob in storage.bucket.list_blobs():
             blob.delete()
         try:
             storage.bucket.delete()
