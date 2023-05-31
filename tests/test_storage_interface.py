@@ -117,7 +117,7 @@ class BaseStorageTestFixture(object):
         file2_id = self.fs.create(f)
         assert file2_id != f.file_id
 
-        f2 = self.fs.get(file_id)
+        f2 = self.fs.get(file2_id)
         assert f2.filename == f.filename
         assert f2.content_type == f.content_type
         assert f2.filename == 'file.txt', (f.filename, f2.filename)
