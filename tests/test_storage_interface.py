@@ -127,7 +127,7 @@ class BaseStorageTestFixture(object):
         file_id = self.fs.create(FILE_CONTENT, filename='file.txt', content_type='text/plain')
         f = self.fs.get(file_id)
 
-        other_storage = self.get_storage("otherbucket")
+        other_storage = self.get_storage("otherbucket-%s" % uuid.uuid1().hex)
         try:
             other_storage.replace(f, f)
 
