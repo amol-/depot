@@ -99,7 +99,7 @@ ChangeLog
 ---------
 
 0.10.0
-~~~~~
+~~~~~~
 
 - Added support for Google Cloud Storage
 - Fixed ACL issues with S3
