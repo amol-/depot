@@ -1,7 +1,7 @@
 from depot.io import utils
 from depot.manager import DepotManager
 from ..interfaces import FileFilter
-from PIL import Image
+from depot._pillow_compat import Image
 from io import BytesIO
 
 
@@ -34,7 +34,7 @@ class WithThumbnailFilter(FileFilter):
         content = utils.file_from_content(uploaded_file.original_content)
 
         thumbnail = Image.open(content)
-        thumbnail.thumbnail(self.thumbnail_size, Image.BILINEAR)
+        thumbnail.thumbnail(self.thumbnail_size, Image.Resampling.BILINEAR)
         thumbnail = thumbnail.convert('RGBA')
         thumbnail.format = self.thumbnail_format
 

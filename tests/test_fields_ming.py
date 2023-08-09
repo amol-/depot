@@ -2,7 +2,7 @@
 import shutil
 import unittest
 import tempfile, os, cgi, base64
-from PIL import Image
+from depot._pillow_compat import Image
 from depot.fields.filters.thumbnails import WithThumbnailFilter
 from depot.fields.ming import UploadedFileProperty
 from depot.manager import DepotManager, get_file

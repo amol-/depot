@@ -132,7 +132,7 @@ A filter that creates a thumbnail for an image would look like::
             content = utils.file_from_content(uploaded_file.original_content)
 
             thumbnail = Image.open(content)
-            thumbnail.thumbnail(self.thumbnail_size, Image.BILINEAR)
+            thumbnail.thumbnail(self.thumbnail_size, Image.Resampling.BILINEAR)
             thumbnail = thumbnail.convert('RGBA')
             thumbnail.format = self.thumbnail_format
 
@@ -213,7 +213,7 @@ a maximum resolution::
             uploaded_image = Image.open(content)
             if max(uploaded_image.size) >= self.max_size:
                 uploaded_image.thumbnail((self.max_size, self.max_size),
-                                         Image.BILINEAR)
+                                         Image.Resampling.BILINEAR)
                 content = SpooledTemporaryFile(INMEMORY_FILESIZE)
                 uploaded_image.save(content, uploaded_image.format)
 

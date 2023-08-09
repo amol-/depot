@@ -2,7 +2,7 @@
 import shutil
 import unittest
 import tempfile, os, cgi, base64
-from PIL import Image
+from depot._pillow_compat import Image
 from sqlalchemy.exc import StatementError
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Column, ForeignKey

@@ -2,7 +2,7 @@ from depot.io import utils
 from depot.manager import DepotManager
 from ..upload import UploadedFile
 from depot.io.interfaces import FileStorage
-from PIL import Image
+from depot._pillow_compat import Image
 from depot.io.utils import INMEMORY_FILESIZE
 from tempfile import SpooledTemporaryFile
 
@@ -34,7 +34,7 @@ class UploadedImageWithThumb(UploadedFile):
 
         uploaded_image = Image.open(content)
         if max(uploaded_image.size) >= self.max_size:
-            uploaded_image.thumbnail((self.max_size, self.max_size), Image.BILINEAR)
+            uploaded_image.thumbnail((self.max_size, self.max_size), Image.Resampling.BILINEAR)
             content = SpooledTemporaryFile(INMEMORY_FILESIZE)
             uploaded_image.save(content, uploaded_image.format)
 
@@ -42,7 +42,7 @@ class UploadedImageWithThumb(UploadedFile):
         super(UploadedImageWithThumb, self).process_content(content, filename, content_type)
 
         thumbnail = uploaded_image.copy()
-        thumbnail.thumbnail(self.thumbnail_size, Image.ANTIALIAS)
+        thumbnail.thumbnail(self.thumbnail_size, Image.Resampling.LANCZOS)
         thumbnail = thumbnail.convert('RGBA')
         thumbnail.format = self.thumbnail_format
 
