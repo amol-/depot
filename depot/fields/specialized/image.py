@@ -42,7 +42,7 @@ class UploadedImageWithThumb(UploadedFile):
         super(UploadedImageWithThumb, self).process_content(content, filename, content_type)
 
         thumbnail = uploaded_image.copy()
-        thumbnail.thumbnail(self.thumbnail_size, Image.ANTIALIAS)
+        thumbnail.thumbnail(self.thumbnail_size, Image.LANCZOS)
         thumbnail = thumbnail.convert('RGBA')
         thumbnail.format = self.thumbnail_format
 
