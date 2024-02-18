@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import shutil
-import tempfile, os, cgi, base64
+import tempfile, os, base64
 import unittest
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer

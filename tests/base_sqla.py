@@ -1,7 +1,7 @@
+from datetime import datetime
 from sqlalchemy import *
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
+from sqlalchemy.orm import declarative_base
 
 maker = sessionmaker(autoflush=True, autocommit=False)
 DBSession = scoped_session(maker)
