@@ -12,7 +12,6 @@ except IOError:
 TEST_DEPENDENCIES = ['mock',
                      'requests',
                      'ming',
-                     'TurboGears2',
                      'boto3',
                      'google-cloud-storage',
                      'flaky']

@@ -2,10 +2,11 @@
 import unittest
 import os
 import shutil
-from depot.middleware import _FileIter
+import json
 import uuid
+from urllib.parse import parse_qs
+from depot.middleware import _FileIter
 from depot.manager import DepotManager
-from tg import expose, TGController, AppConfig
 from webtest import TestApp
 from depot._compat import u_, unquote, PY2
 
@@ -13,29 +14,25 @@ from depot._compat import u_, unquote, PY2
 FILE_CONTENT = b'HELLO WORLD'
 
 
-class RootController(TGController):
+class RootController:
     UPLOADED_FILES = []
 
-    @expose('json')
     def index(self):
         return dict(files=self.UPLOADED_FILES)
 
-    @expose('json')
     def clear_files(self):
         self.UPLOADED_FILES = []
         return dict(files=self.UPLOADED_FILES)
 
-    @expose('json')
     def depotskipped(self):
         return dict(ok=True)
 
-    @expose('json')
     def depot(self):
         # this should never be called
         return dict(ok=False)
 
-    @expose('json')
-    def create_file(self, lang='en'):
+    def create_file(self, lang=('en',)):
+        lang = lang[0]
         fname = {'en': 'hello.txt',
                  'ru': u_('Крупный'),
                  'it': u_('àèìòù')}.get(lang, 'unknown')
@@ -47,11 +44,31 @@ class RootController(TGController):
                     last=self.UPLOADED_FILES[-1])
 
 
+class WSGIApplication:
+    def __init__(self, controller):
+        self._controller = controller
+
+    def __call__(self, env, start_response):
+        path = env['PATH_INFO'].strip('/') or 'index'
+        try:
+            action = getattr(self._controller, path)
+        except AttributeError:
+            start_response('404 Not Found', [('Content-Type','text/plain')])
+            return [b'Not Found']
+        if env['REQUEST_METHOD'] == 'POST':
+            query_string = env['wsgi.input'].read().decode('utf-8')
+        else:
+            query_string = env['QUERY_STRING']
+        print(env['QUERY_STRING'], parse_qs(query_string))
+        resp = json.dumps(action(**parse_qs(query_string))).encode('utf-8')
+        start_response('200 OK', [('Content-Type','application/json')])
+        return [resp]
+
+
 class BaseWSGITests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        config = AppConfig(minimal=True, root_controller=RootController())
-        cls.wsgi_app = config.make_wsgi_app()
+        cls.wsgi_app = WSGIApplication(RootController())
 
     def make_app(self, **options):
         wsgi_app = DepotManager.make_middleware(self.wsgi_app, **options)
