@@ -173,7 +173,7 @@ class _SQLAMutationTracker(object):
 
     @classmethod
     def setup(cls):
-        event.listen(orm.mapper, 'mapper_configured', cls._mapper_configured)
+        event.listen(orm.Mapper, 'mapper_configured', cls._mapper_configured)
         event.listen(Session, 'after_soft_rollback', cls._session_rollback)
         event.listen(Session, 'after_commit', cls._session_committed)
         event.listen(Session, 'before_attach', cls._session_attached)
