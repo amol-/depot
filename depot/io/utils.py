@@ -1,4 +1,3 @@
-import cgi
 import mimetypes
 import os
 from datetime import datetime
@@ -20,13 +19,13 @@ def file_from_content(content):
     ``bytes`` to an actual file.
     """
     f = content
-    if isinstance(content, cgi.FieldStorage):
-        f = content.file
-    elif isinstance(content, FileIntent):
+    if isinstance(content, FileIntent):
         f = content._fileobj
     elif isinstance(content, byte_string):
         f = SpooledTemporaryFile(INMEMORY_FILESIZE)
         f.write(content)
+    elif _is_fieldstorage_like(content):
+        f = content.file
     f.seek(0)
     return f
 
@@ -90,7 +89,7 @@ class _FileInfo(object):
         return content, filename, content_type
 
     def _get_content_from_file_obj(self, fileobj):
-        if isinstance(fileobj, cgi.FieldStorage):
+        if _is_fieldstorage_like(fileobj):
             return fileobj.file
         return fileobj
 
@@ -105,3 +104,9 @@ class _FileInfo(object):
             return fileobj.content_type
         elif getattr(fileobj, 'type', None) is not None:
             return fileobj.type
+
+
+def _is_fieldstorage_like(obj):
+    # Detect cgi.FieldStorage and multipart modules
+    return (getattr(obj, 'filename', None) is not None and \
+            getattr(obj, 'file', None) not in (None, False))

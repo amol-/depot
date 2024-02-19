@@ -1,5 +1,4 @@
-import cgi
-from depot.io.utils import FileIntent
+from depot.io.utils import FileIntent, _is_fieldstorage_like
 from depot.io.interfaces import FileStorage
 
 __all__ = ('TW2FileIntentValidator', )
@@ -16,7 +15,7 @@ else:
         so that it preserves file details like filename
         and content type when uploaded. This is mostly
         required when working with Sprox that converts
-        the cgi.FieldStorage to a standard BLOB when
+        the cgi.FieldStorage or multipart to a standard BLOB when
         handling uploaded files, causing a loss of all
         file metadata.
         """
@@ -27,7 +26,7 @@ else:
         }
 
         def _convert_to_python(self, value, state=None):
-            if isinstance(value, cgi.FieldStorage):
+            if is_fieldstorage_like(value):
                 if self.required and not getattr(value, 'filename', None):
                     raise tw2.core.ValidationError('required', self)
 
