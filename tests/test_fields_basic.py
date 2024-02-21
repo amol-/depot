@@ -5,12 +5,15 @@ import unittest
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
+from .utils import OpenFiles
 from depot.fields.sqlalchemy import UploadedFileField
 from depot.fields.upload import UploadedFile
 from depot.manager import DepotManager
 from depot.fields.interfaces import FileFilter
 
 from depot._compat import u_, bytes_
+
+of = OpenFiles()
 
 def setUpModule():
     setup_database()
@@ -62,9 +65,12 @@ class TestFieldsInterface(unittest.TestCase):
     def setUp(self):
         clear_database()
 
+    def tearDown(self):
+        of.close_all()
+
     def test_column_is_dictlike(self):
         doc = SimpleDocument(name=u_('Foo'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
@@ -78,7 +84,7 @@ class TestFieldsInterface(unittest.TestCase):
 
     def test_column_cannot_edit_after_save(self):
         doc = SimpleDocument(name=u_('Foo'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
@@ -89,7 +95,7 @@ class TestFieldsInterface(unittest.TestCase):
 
     def test_column_cannot_delete_after_save(self):
         doc = SimpleDocument(name=u_('Foo'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
@@ -100,7 +106,7 @@ class TestFieldsInterface(unittest.TestCase):
 
     def test_column_cannot_edit_attr_after_save(self):
         doc = SimpleDocument(name=u_('Foo'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
@@ -111,7 +117,7 @@ class TestFieldsInterface(unittest.TestCase):
 
     def test_column_cannot_delete_attr_after_save(self):
         doc = SimpleDocument(name=u_('Foo'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
@@ -123,8 +129,8 @@ class TestFieldsInterface(unittest.TestCase):
     def test_storage_does_not_exists(self):
         doc = SimpleDocument(name=u_('Foo'))
         with self.assertRaises(ValueError):
-            doc.content = UploadedFile(open(self.fake_file.name, 'rb'),
-                                    'missing_storage')
+            doc.content = UploadedFile(of.open(self.fake_file.name, 'rb'),
+                                       'missing_storage')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()

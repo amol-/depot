@@ -12,10 +12,12 @@ from depot.fields.sqlalchemy import UploadedFileField
 from depot.fields.upload import UploadedFile
 from depot.io.utils import FileIntent
 from depot.manager import DepotManager, get_file
-from .utils import create_cgifs
+from .utils import create_cgifs, OpenFiles
 from depot.fields.specialized.image import UploadedImageWithThumb
 from depot.fields.filters.thumbnails import WithThumbnailFilter
 from depot._compat import u_, bytes_
+
+of = OpenFiles()
 
 def setUpModule():
     setup_database()
@@ -83,17 +85,17 @@ class SQLATestCase(unittest.TestCase):
 class TestSQLAAttachments(SQLATestCase):
     def setUp(self):
         self.file_content = b'this is the file content'
-        self.fake_file = tempfile.NamedTemporaryFile()
+        self.fake_file = of.add(tempfile.NamedTemporaryFile())
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
         clear_database()
 
     def tearDown(self):
-        self.fake_file.close()
+        of.close_all()
 
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -105,7 +107,7 @@ class TestSQLAAttachments(SQLATestCase):
 
     def test_create_polymorphic_from_file(self):
         doc = Confidential(name=u_('Secret'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -117,7 +119,7 @@ class TestSQLAAttachments(SQLATestCase):
 
     def test_edit_existing(self):
         doc = Document(name=u_('Foo2'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -143,7 +145,7 @@ class TestSQLAAttachments(SQLATestCase):
 
     def test_edit_existing_rollback(self):
         doc = Document(name=u_('Foo3'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -164,6 +166,7 @@ class TestSQLAAttachments(SQLATestCase):
 
     def test_create_fromfield(self):
         field = create_cgifs('image/jpeg', self.fake_file, 'test.jpg')
+        of.add(field.file)
 
         doc = Document(name=u_('Foo'), content=field)
         DBSession.add(doc)
@@ -187,7 +190,7 @@ class TestSQLAAttachments(SQLATestCase):
 
     def test_delete_existing(self):
         doc = Document(name=u_('Foo2'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -205,7 +208,7 @@ class TestSQLAAttachments(SQLATestCase):
 
     def test_delete_existing_from_query(self):
         doc = Document(name=u_('Foo2'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -224,7 +227,7 @@ class TestSQLAAttachments(SQLATestCase):
 
     def test_delete_existing_rollback(self):
         doc = Document(name=u_('Foo3'))
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -242,7 +245,7 @@ class TestSQLAAttachments(SQLATestCase):
 
     def test_create_with_alias(self):
         doc = Document(name=u_('Foo'))
-        doc.targeted_content = open(self.fake_file.name, 'rb')
+        doc.targeted_content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -255,7 +258,7 @@ class TestSQLAAttachments(SQLATestCase):
     def test_relationship(self):
         directory = Directory(name='Parent')
         DBSession.add(directory)
-        directory.documents.append(Document(name=u_('Foo'), content=open(self.fake_file.name, 'rb')))
+        directory.documents.append(Document(name=u_('Foo'), content=of.open(self.fake_file.name, 'rb')))
         self._session_flush()
         DBSession.commit()
         
@@ -273,7 +276,7 @@ class TestSQLAAttachments(SQLATestCase):
     def test_relationship_rollback(self):
         directory = Directory(name='Parent')
         DBSession.add(directory)
-        directory.documents.append(Document(name=u_('Foo'), content=open(self.fake_file.name, 'rb')))
+        directory.documents.append(Document(name=u_('Foo'), content=of.open(self.fake_file.name, 'rb')))
         self._session_flush()
         DBSession.commit()
         
@@ -291,7 +294,7 @@ class TestSQLAAttachments(SQLATestCase):
     def test_relationship_cascade_delete(self):
         directory = Directory(name='Parent')
         DBSession.add(directory)
-        directory.documents.append(Document(name=u_('Foo'), content=open(self.fake_file.name, 'rb')))
+        directory.documents.append(Document(name=u_('Foo'), content=of.open(self.fake_file.name, 'rb')))
         self._session_flush()
         DBSession.commit()
         
@@ -309,7 +312,7 @@ class TestSQLAAttachments(SQLATestCase):
     def test_relationship_cascade_delete_rollback(self):
         directory = Directory(name='Parent')
         DBSession.add(directory)
-        directory.documents.append(Document(name=u_('Foo'), content=open(self.fake_file.name, 'rb')))
+        directory.documents.append(Document(name=u_('Foo'), content=of.open(self.fake_file.name, 'rb')))
         self._session_flush()
         DBSession.commit()
         
@@ -334,12 +337,12 @@ class TestSQLAImageAttachments(SQLATestCase):
     def setUp(self):
         self.file_content = b'''R0lGODlhEQAUAPcAAC4uLjAwMDIyMjMzMjQ0NDU1NDY2Njk2Mzg4ODo6Oj49Ozw8PD4+PkE+OEA/PkhAN0tCNk5JPFFGNV1KMFhNNVFHOFJJPVVLPVhOPXZfKXVcK2ZQNGZXNGtZMnNcNHZeNnldMHJfOn1hKXVjOH9oO0BAQEJCQkREREVFREZGRklGQ05KQ0hISEpKSkxMTE5OTlZRSlFQT19XSFBQUFJSUlRUVGFUQmFVQ2ZZQGtdQnNiQqJ/HI1uIYBnLIllKoZrK4FqLoVqL4luLIpsLpt7J515JJ50KZhzLYFnMIFlM4ZlMIFkNI1uNoJoOoVrPIlvO49yMolwPpB2O5p4Op98PaB3IKN4JqN8J6h7I6J5LaZ+LLF+ILGGG7+JG72OGLKEI7aHIrOEJL2JI7mMN76YNcGJG8SOG8WLHMONH86eEs+aFsGSG8eQHMySG9uVFduXFdeeE9eaFdScF96YE9yaFOKcEuOdEtWgFNiiEduhE96pEuqlD+qmD+KpD+yoDu6rDuysDvCuDfCvDeuwD/SzC/a2CvGwDfKxDPi5Cfi5Cvq8CeCjEuehEOagEeijEOKoEOStFMOOK8+TLM6YNNChItGgLtylKt6gMNqgON6jPOChLfi/JOSrNeGvN9KhRtykRNWkSOCnQOCpSOawQue1T+a6Su67SOGsUO/AVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAARABQAAAj+AAEIHEiwoMAACBMqXIhQgMOHDwdAfEigYsUCT6KQScNjxwGLBAyINPBhCilUmxIV6uMlw0gEMJeMGWWqFCU8hA4JEgETQYIEDcRw6qRlwgMIGvJwkfAzwYIFXQBB8qHg6VMKFawuYNBBjaIqDhhI+cGgrNmyJXooGrShBJBKcIpwiFCibl0TehDdsWBCiBxLZuIwolMGiwcTJ4gUenThBAokSVRgGFJnzhYQJ1KsyRkkhWfPK87McWPEM4sRhgItCsGitQ5PmtxYUdK6BY4rf/zwYRNmUihRpyQdaUHchQsoX/Y4amTnUqZPoG7YMO7ihfUcYNC0eRMJExMqMKweW59BfkYMEk2ykHAio3x5GvDjy58Pv4b9+/jz2w8IADs='''
         self.file_content = base64.b64decode(self.file_content)
-        self.fake_file = tempfile.NamedTemporaryFile()
+        self.fake_file = of.add(tempfile.NamedTemporaryFile())
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
         self.fake_file.seek(0)
 
-        self.bigimage = tempfile.NamedTemporaryFile()
+        self.bigimage = of.add(tempfile.NamedTemporaryFile())
         blackimage = Image.frombytes('L', (1280, 1280), b"\x00" * 1280 * 1280)
         blackimage.save(self.bigimage, 'PNG')
         self.bigimage.flush()
@@ -348,12 +351,11 @@ class TestSQLAImageAttachments(SQLATestCase):
         clear_database()
 
     def tearDown(self):
-        self.fake_file.close()
-        self.bigimage.close()
+        of.close_all()
 
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))
-        doc.photo = open(self.fake_file.name, 'rb')
+        doc.photo = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -364,7 +366,7 @@ class TestSQLAImageAttachments(SQLATestCase):
 
     def test_check_assigned_type(self):
         doc = Document(name=u_('Foo'))
-        doc.photo = UploadedFile(open(self.fake_file.name, 'rb'))
+        doc.photo = UploadedFile(of.open(self.fake_file.name, 'rb'))
         DBSession.add(doc)
 
         try:
@@ -378,7 +380,7 @@ class TestSQLAImageAttachments(SQLATestCase):
     def test_create_fromfield(self):
         field = cgi.FieldStorage()
         field.filename = u_('àèìòù.gif')
-        field.file = open(self.fake_file.name, 'rb')
+        field.file = of.open(self.fake_file.name, 'rb')
 
         doc = Document(name=u_('Foo'), photo=field)
         DBSession.add(doc)
@@ -394,6 +396,7 @@ class TestSQLAImageAttachments(SQLATestCase):
 
     def test_thumbnail(self):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
+        of.add(field.file)
 
         doc = Document(name=u_('Foo'), photo=field)
         DBSession.add(doc)
@@ -409,6 +412,7 @@ class TestSQLAImageAttachments(SQLATestCase):
 
     def test_maximum_size(self):
         field = create_cgifs('image/png', self.bigimage, 'test.png')
+        of.add(field.file)
 
         doc = Document(name=u_('Foo'), photo=field)
         DBSession.add(doc)
@@ -426,8 +430,8 @@ class TestSQLAImageAttachments(SQLATestCase):
 
     def test_public_url(self):
         doc = Document(name=u_('Foo'))
-        doc.photo = open(self.fake_file.name, 'rb')
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.photo = of.open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -445,7 +449,7 @@ class TestSQLAImageAttachments(SQLATestCase):
 
     def test_rollback(self):
         doc = Document(name=u_('Foo3'))
-        doc.photo = open(self.fake_file.name, 'rb')
+        doc.photo = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
 
@@ -467,18 +471,18 @@ class TestSQLAThumbnailFilter(SQLATestCase):
     def setUp(self):
         self.file_content = b'''R0lGODlhEQAUAPcAAC4uLjAwMDIyMjMzMjQ0NDU1NDY2Njk2Mzg4ODo6Oj49Ozw8PD4+PkE+OEA/PkhAN0tCNk5JPFFGNV1KMFhNNVFHOFJJPVVLPVhOPXZfKXVcK2ZQNGZXNGtZMnNcNHZeNnldMHJfOn1hKXVjOH9oO0BAQEJCQkREREVFREZGRklGQ05KQ0hISEpKSkxMTE5OTlZRSlFQT19XSFBQUFJSUlRUVGFUQmFVQ2ZZQGtdQnNiQqJ/HI1uIYBnLIllKoZrK4FqLoVqL4luLIpsLpt7J515JJ50KZhzLYFnMIFlM4ZlMIFkNI1uNoJoOoVrPIlvO49yMolwPpB2O5p4Op98PaB3IKN4JqN8J6h7I6J5LaZ+LLF+ILGGG7+JG72OGLKEI7aHIrOEJL2JI7mMN76YNcGJG8SOG8WLHMONH86eEs+aFsGSG8eQHMySG9uVFduXFdeeE9eaFdScF96YE9yaFOKcEuOdEtWgFNiiEduhE96pEuqlD+qmD+KpD+yoDu6rDuysDvCuDfCvDeuwD/SzC/a2CvGwDfKxDPi5Cfi5Cvq8CeCjEuehEOagEeijEOKoEOStFMOOK8+TLM6YNNChItGgLtylKt6gMNqgON6jPOChLfi/JOSrNeGvN9KhRtykRNWkSOCnQOCpSOawQue1T+a6Su67SOGsUO/AVAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAAARABQAAAj+AAEIHEiwoMAACBMqXIhQgMOHDwdAfEigYsUCT6KQScNjxwGLBAyINPBhCilUmxIV6uMlw0gEMJeMGWWqFCU8hA4JEgETQYIEDcRw6qRlwgMIGvJwkfAzwYIFXQBB8qHg6VMKFawuYNBBjaIqDhhI+cGgrNmyJXooGrShBJBKcIpwiFCibl0TehDdsWBCiBxLZuIwolMGiwcTJ4gUenThBAokSVRgGFJnzhYQJ1KsyRkkhWfPK87McWPEM4sRhgItCsGitQ5PmtxYUdK6BY4rf/zwYRNmUihRpyQdaUHchQsoX/Y4amTnUqZPoG7YMO7ihfUcYNC0eRMJExMqMKweW59BfkYMEk2ykHAio3x5GvDjy58Pv4b9+/jz2w8IADs='''
         self.file_content = base64.b64decode(self.file_content)
-        self.fake_file = tempfile.NamedTemporaryFile()
+        self.fake_file = of.add(tempfile.NamedTemporaryFile())
         self.fake_file.write(self.file_content)
         self.fake_file.flush()
         self.fake_file.seek(0)
         clear_database()
 
     def tearDown(self):
-        self.fake_file.close()
+        of.close_all()
 
     def test_create_fromfile(self):
         doc = Document(name=u_('Foo'))
-        doc.second_photo = open(self.fake_file.name, 'rb')
+        doc.second_photo = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -501,7 +505,7 @@ class TestSQLAThumbnailFilter(SQLATestCase):
     def test_create_fromfield(self):
         field = cgi.FieldStorage()
         field.filename = u_('àèìòù.gif')
-        field.file = open(self.fake_file.name, 'rb')
+        field.file = of.open(self.fake_file.name, 'rb')
 
         doc = Document(name=u_('Foo'), second_photo=field)
         DBSession.add(doc)
@@ -516,7 +520,7 @@ class TestSQLAThumbnailFilter(SQLATestCase):
         assert d.second_photo.url != d.second_photo.thumb_12x12_url
 
     def test_create_fileintent(self):
-        field = FileIntent(open(self.fake_file.name, 'rb'), u_('àèìòù.gif'), 'image/gif')
+        field = FileIntent(of.open(self.fake_file.name, 'rb'), u_('àèìòù.gif'), 'image/gif')
 
         doc = Document(name=u_('Foo'), second_photo=field)
         DBSession.add(doc)
@@ -533,6 +537,7 @@ class TestSQLAThumbnailFilter(SQLATestCase):
 
     def test_thumbnail(self):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
+        of.add(field.file)
 
         doc = Document(name=u_('Foo'), second_photo=field)
         DBSession.add(doc)
@@ -551,8 +556,8 @@ class TestSQLAThumbnailFilter(SQLATestCase):
 
     def test_public_url(self):
         doc = Document(name=u_('Foo'))
-        doc.second_photo = open(self.fake_file.name, 'rb')
-        doc.content = open(self.fake_file.name, 'rb')
+        doc.second_photo = of.open(self.fake_file.name, 'rb')
+        doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
@@ -569,7 +574,7 @@ class TestSQLAThumbnailFilter(SQLATestCase):
 
     def test_rollback(self):
         doc = Document(name=u_('Foo3'))
-        doc.second_photo = open(self.fake_file.name, 'rb')
+        doc.second_photo = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
 

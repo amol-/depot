@@ -15,7 +15,8 @@ class TestLocalFileStorage(unittest.TestCase):
 
     def test_creation(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
-        assert FILE_CONTENT == open(os.path.join('./lfs', file_id, 'file'), 'rb').read()
+        with open(os.path.join('./lfs', file_id, 'file'), 'rb') as f:
+            assert FILE_CONTENT == f.read()
 
     def test_corrupted_metadata(self):
         file_id = self.fs.create(FILE_CONTENT, 'file.txt')
