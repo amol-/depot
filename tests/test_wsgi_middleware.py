@@ -59,7 +59,6 @@ class WSGIApplication:
             query_string = env['wsgi.input'].read().decode('utf-8')
         else:
             query_string = env['QUERY_STRING']
-        print(env['QUERY_STRING'], parse_qs(query_string))
         resp = json.dumps(action(**parse_qs(query_string))).encode('utf-8')
         start_response('200 OK', [('Content-Type','application/json')])
         return [resp]
