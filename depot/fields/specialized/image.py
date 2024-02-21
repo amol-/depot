@@ -29,34 +29,40 @@ class UploadedImageWithThumb(UploadedFile):
 
     def process_content(self, content, filename=None, content_type=None):
         orig_content = content
-        content = utils.file_from_content(content)
+        temporary_content = False
         __, filename, content_type = FileStorage.fileinfo(orig_content)
+        close_content, content = utils.file_from_content(content)
 
-        uploaded_image = Image.open(content)
-        if max(uploaded_image.size) >= self.max_size:
-            uploaded_image.thumbnail((self.max_size, self.max_size), Image.BILINEAR)
-            content = SpooledTemporaryFile(INMEMORY_FILESIZE)
-            uploaded_image.save(content, uploaded_image.format)
+        try:
+            uploaded_image = Image.open(content)
+            if max(uploaded_image.size) >= self.max_size:
+                uploaded_image.thumbnail((self.max_size, self.max_size), Image.BILINEAR)
+                content = SpooledTemporaryFile(INMEMORY_FILESIZE)
+                close_content = True
+                uploaded_image.save(content, uploaded_image.format)
 
-        content.seek(0)
-        super(UploadedImageWithThumb, self).process_content(content, filename, content_type)
+            content.seek(0)
+            super(UploadedImageWithThumb, self).process_content(content, filename, content_type)
+        finally:
+            if close_content:
+                content.close()
 
         thumbnail = uploaded_image.copy()
         thumbnail.thumbnail(self.thumbnail_size, Image.LANCZOS)
         thumbnail = thumbnail.convert('RGBA')
         thumbnail.format = self.thumbnail_format
 
-        output = SpooledTemporaryFile(INMEMORY_FILESIZE)
-        thumbnail.save(output, self.thumbnail_format)
-        output.seek(0)
+        with SpooledTemporaryFile(INMEMORY_FILESIZE) as output:
+            thumbnail.save(output, self.thumbnail_format)
+            output.seek(0)
 
-        thumb_path, thumb_id = self.store_content(output,
-                                                  'thumb.%s' % self.thumbnail_format.lower())
-        self['thumb_id'] = thumb_id
-        self['thumb_path'] = thumb_path
+            thumb_path, thumb_id = self.store_content(output,
+                                                    'thumb.%s' % self.thumbnail_format.lower())
+            self['thumb_id'] = thumb_id
+            self['thumb_path'] = thumb_path
 
-        thumbnail_file = self.thumb_file
-        self['_thumb_public_url'] = thumbnail_file.public_url
+            thumbnail_file = self.thumb_file
+            self['_thumb_public_url'] = thumbnail_file.public_url
 
     @property
     def thumb_file(self):

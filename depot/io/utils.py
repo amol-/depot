@@ -18,16 +18,18 @@ def file_from_content(content):
     Converts ``FileStorage``, ``FileIntent`` and
     ``bytes`` to an actual file.
     """
+    must_close = False
     f = content
     if isinstance(content, FileIntent):
         f = content._fileobj
     elif isinstance(content, byte_string):
+        must_close = True
         f = SpooledTemporaryFile(INMEMORY_FILESIZE)
         f.write(content)
     elif _is_fieldstorage_like(content):
         f = content.file
     f.seek(0)
-    return f
+    return must_close, f
 
 
 class FileIntent(object):

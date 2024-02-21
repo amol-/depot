@@ -31,21 +31,24 @@ class WithThumbnailFilter(FileFilter):
         self.thumbnail_format = format
 
     def on_save(self, uploaded_file):
-        content = utils.file_from_content(uploaded_file.original_content)
+        close_content, content = utils.file_from_content(uploaded_file.original_content)
 
-        thumbnail = Image.open(content)
-        thumbnail.thumbnail(self.thumbnail_size, Image.BILINEAR)
-        thumbnail = thumbnail.convert('RGBA')
-        thumbnail.format = self.thumbnail_format
+        try:
+            thumbnail = Image.open(content)
+            thumbnail.thumbnail(self.thumbnail_size, Image.BILINEAR)
+            thumbnail = thumbnail.convert('RGBA')
+            thumbnail.format = self.thumbnail_format
 
-        output = BytesIO()
-        thumbnail.save(output, self.thumbnail_format)
-        output.seek(0)
+            output = BytesIO()
+            thumbnail.save(output, self.thumbnail_format)
+            output.seek(0)
 
-        thumb_name = 'thumb_%sx%s' % self.thumbnail_size
-        thumb_file_name = '%s.%s' % (thumb_name, self.thumbnail_format.lower())
-        thumb_path, thumb_id = uploaded_file.store_content(output, thumb_file_name)
-        uploaded_file[thumb_name + '_id'] = thumb_id
-        uploaded_file[thumb_name + '_path'] = thumb_path
-        uploaded_file[thumb_name + '_url'] = DepotManager.get_middleware().url_for(thumb_path)
-
+            thumb_name = 'thumb_%sx%s' % self.thumbnail_size
+            thumb_file_name = '%s.%s' % (thumb_name, self.thumbnail_format.lower())
+            thumb_path, thumb_id = uploaded_file.store_content(output, thumb_file_name)
+            uploaded_file[thumb_name + '_id'] = thumb_id
+            uploaded_file[thumb_name + '_path'] = thumb_path
+            uploaded_file[thumb_name + '_url'] = DepotManager.get_middleware().url_for(thumb_path)
+        finally:
+            if close_content:
+                content.close()

@@ -129,7 +129,7 @@ A filter that creates a thumbnail for an image would look like::
             self.thumbnail_format = format
 
         def on_save(self, uploaded_file):
-            content = utils.file_from_content(uploaded_file.original_content)
+            close_content, content = utils.file_from_content(uploaded_file.original_content)
 
             thumbnail = Image.open(content)
             thumbnail.thumbnail(self.thumbnail_size, Image.BILINEAR)
@@ -139,6 +139,9 @@ A filter that creates a thumbnail for an image would look like::
             output = BytesIO()
             thumbnail.save(output, self.thumbnail_format)
             output.seek(0)
+
+            if close_content:
+                content.close()
 
             thumb_file_name = 'thumb.%s' % self.thumbnail_format.lower()
 
@@ -208,7 +211,7 @@ a maximum resolution::
             __, filename, content_type = FileStorage.fileinfo(content)
 
             # Get a file object even if content was bytes
-            content = utils.file_from_content(content)
+            _, content = utils.file_from_content(content)
 
             uploaded_image = Image.open(content)
             if max(uploaded_image.size) >= self.max_size:
