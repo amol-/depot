@@ -98,6 +98,16 @@ Or you can use depot with SQLAlchemy to store attachments::
 ChangeLog
 ---------
 
+0.11.0
+~~~~~~
+
+- Officially support Python 3.12
+- Addressed deprecation of ``Image.ANTIALIAS`` in Pillow, ``Image.LANCZOS`` is used instead
+- TurboGears2 is no longer needed to run tests
+- Depot is now compatible with ``multipart`` module or other replacements of ``cgi.FieldStorage``
+- Fixed an open file leak in ``UploadedImageWithThumb``
+- Fixed an open file leak in ``WithThumbnailFilter``
+
 0.10.0
 ~~~~~~
 
