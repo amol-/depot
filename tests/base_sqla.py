@@ -1,7 +1,7 @@
-from datetime import datetime
 from sqlalchemy import *
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy.orm import declarative_base
+from depot._compat import utcnow_naive
 
 maker = sessionmaker(autoflush=True, autocommit=False)
 DBSession = scoped_session(maker)
@@ -42,7 +42,7 @@ class ThingWithDate(DeclarativeBase):
 
     uid = Column(Integer, autoincrement=True, primary_key=True)
     name = Column(Unicode(16), unique=True)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=utcnow_naive)
 
     related_thing_id = Column(Integer, ForeignKey('thing.uid'))
     related_thing = relationship(Thing)

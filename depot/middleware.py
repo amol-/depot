@@ -2,7 +2,7 @@ from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz
 from time import gmtime, time
 from .manager import DepotManager
-from ._compat import wsgi_string
+from ._compat import wsgi_string, utcfromtimestamp_naive
 from .utils import make_content_disposition
 
 _BLOCK_SIZE = 4096 * 64 # 256K
@@ -47,7 +47,7 @@ class FileServeApp(object):
 
     def parse_date(self, value):
         try:
-            return datetime.utcfromtimestamp(mktime_tz(parsedate_tz(value)))
+            return utcfromtimestamp_naive(mktime_tz(parsedate_tz(value)))
         except (TypeError, OverflowError):
             raise RuntimeError("Received an ill-formed timestamp")
 
