@@ -8,6 +8,7 @@ import os
 import uuid
 import shutil
 import json
+from io import BytesIO
 from datetime import datetime
 
 from .interfaces import FileStorage, StoredFile
@@ -52,16 +53,24 @@ class LocalStoredFile(StoredFile):
 
     def close(self):
         if self._file is None:
-            # This is to guarantee that closing a file
-            # before even reading it behaves correctly
-            self._file = open(self._file_path, 'rb')
-        self._file.close()
+            self._file = _ClosedLocalFile(self._file_path)
+            return
+
+        if not self._file.closed:
+            self._file.close()
 
     @property
     def closed(self):
         if self._file is None:
             return False
         return self._file.closed
+
+
+class _ClosedLocalFile(BytesIO):
+    def __init__(self, file_path):
+        super(_ClosedLocalFile, self).__init__(b'')
+        self.name = file_path
+        self.close()
 
 
 class LocalFileStorage(FileStorage):
