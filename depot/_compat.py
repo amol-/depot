@@ -1,4 +1,5 @@
 import platform, sys
+from datetime import datetime, timedelta, tzinfo
 
 
 if platform.system() == 'Windows':  # pragma: no cover
@@ -55,3 +56,25 @@ else:  # pragma: no cover
 def with_metaclass(meta, base=object):
     """Create a base class with a metaclass."""
     return meta("NewBase", (base,), {})
+
+
+class _UTC(tzinfo):
+    def utcoffset(self, dt):
+        return timedelta(0)
+
+    def tzname(self, dt):
+        return "UTC"
+
+    def dst(self, dt):
+        return timedelta(0)
+
+
+_UTC_TZINFO = _UTC()
+
+
+def utcnow_naive():
+    return datetime.now(_UTC_TZINFO).replace(tzinfo=None)
+
+
+def utcfromtimestamp_naive(ts):
+    return datetime.fromtimestamp(ts, _UTC_TZINFO).replace(tzinfo=None)

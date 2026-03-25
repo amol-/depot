@@ -14,7 +14,7 @@ DEPOT - File Storage Made Easy
    :target: https://pypi.python.org/pypi/filedepot
 
 DEPOT is a framework for easily storing and serving files in
-web applications on Python2.6+ and Python3.2+.
+web applications on Python 3.9+.
 
 DEPOT supports storing files in multiple backends, like:
 

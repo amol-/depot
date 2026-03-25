@@ -1,15 +1,14 @@
 import mimetypes
 import os
-from datetime import datetime
 from tempfile import SpooledTemporaryFile
-from depot._compat import byte_string
+from depot._compat import byte_string, utcnow_naive
 
 
 INMEMORY_FILESIZE = 1024*1024
 
 
 def timestamp():
-    return datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    return utcnow_naive().strftime('%Y-%m-%d %H:%M:%S')
 
 
 def file_from_content(content):

@@ -2,14 +2,16 @@
 import shutil
 import tempfile, os, base64
 import unittest
+import datetime
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
-from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession
+from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession, ThingWithDate
 from .utils import OpenFiles
 from depot.fields.sqlalchemy import UploadedFileField
 from depot.fields.upload import UploadedFile
 from depot.manager import DepotManager
 from depot.fields.interfaces import FileFilter
+from depot.io import utils as io_utils
 
 from depot._compat import u_, bytes_
 
@@ -134,3 +136,16 @@ class TestFieldsInterface(unittest.TestCase):
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
+
+    def test_thing_with_date_default_is_naive(self):
+        doc = ThingWithDate(name=u_('WithDate'))
+        DBSession.add(doc)
+        DBSession.flush()
+        DBSession.commit()
+
+        assert doc.updated_at is not None
+        assert doc.updated_at.tzinfo is None
+
+    def test_timestamp_is_naive_utc_compatible_string(self):
+        value = datetime.datetime.strptime(io_utils.timestamp(), '%Y-%m-%d %H:%M:%S')
+        assert value.tzinfo is None
