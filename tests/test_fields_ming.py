@@ -12,7 +12,6 @@ from ming.odm import FieldProperty
 from ming import schema as s, Field
 from .utils import create_cgifs, OpenFiles
 from depot.fields.specialized.image import UploadedImageWithThumb
-from depot._compat import u_
 
 of = OpenFiles()
 
@@ -80,7 +79,7 @@ class TestMingAttachments(unittest.TestCase):
         assert d.content.file.filename == os.path.basename(self.fake_file.name)
 
     def test_edit_existing(self):
-        doc = Document(name=u_('Foo2'))
+        doc = Document(name='Foo2')
         with open(self.fake_file.name, 'rb') as f:
             doc.content = f
             DBSession.flush()
@@ -104,7 +103,7 @@ class TestMingAttachments(unittest.TestCase):
             pass
 
     def test_edit_existing_rollback(self):
-        doc = Document(name=u_('Foo3'))
+        doc = Document(name='Foo3')
         with open(self.fake_file.name, 'rb') as f:
             doc.content = f
             DBSession.flush()
@@ -131,7 +130,7 @@ class TestMingAttachments(unittest.TestCase):
         field = create_cgifs('image/jpeg', self.fake_file, 'test.jpg')
         of.add(field.file)
 
-        doc = Document(name=u_('Foo'), content=field)
+        doc = Document(name='Foo', content=field)
         DBSession.flush()
         DBSession.clear()
 
@@ -142,7 +141,7 @@ class TestMingAttachments(unittest.TestCase):
         assert d.content.url == '/depot/%s' % d.content.path
 
     def test_create_empty(self):
-        doc = Document(name=u_('Foo'), content=None)
+        doc = Document(name='Foo', content=None)
         DBSession.flush()
         DBSession.clear()
 
@@ -150,7 +149,7 @@ class TestMingAttachments(unittest.TestCase):
         assert d.content is None
 
     def test_delete_existing(self):
-        doc = Document(name=u_('Foo2'))
+        doc = Document(name='Foo2')
         with open(self.fake_file.name, 'rb') as f:
             doc.content = f
             DBSession.flush()
@@ -168,7 +167,7 @@ class TestMingAttachments(unittest.TestCase):
             fold = get_file(old_file)
 
     def test_delete_existing_rollback(self):
-        doc = Document(name=u_('Foo3'))
+        doc = Document(name='Foo3')
         with open(self.fake_file.name, 'rb') as f:
             doc.content = f
             DBSession.flush()
@@ -208,7 +207,7 @@ class TestMingImageAttachments(unittest.TestCase):
         of.close_all()
 
     def test_create_fromfile(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         with open(self.fake_file.name, 'rb') as f:
             doc.photo = f
             DBSession.flush()
@@ -220,10 +219,10 @@ class TestMingImageAttachments(unittest.TestCase):
 
     def test_create_fromfield(self):
         field = cgi.FieldStorage()
-        field.filename = u_('àèìòù.gif')
+        field.filename = 'àèìòù.gif'
         with open(self.fake_file.name, 'rb') as f:
             field.file = f
-            doc = Document(name=u_('Foo'), photo=field)
+            doc = Document(name='Foo', photo=field)
             DBSession.flush()
         DBSession.clear()
 
@@ -238,7 +237,7 @@ class TestMingImageAttachments(unittest.TestCase):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
         of.add(field.file)
 
-        doc = Document(name=u_('Foo'), photo=field)
+        doc = Document(name='Foo', photo=field)
         DBSession.flush()
         DBSession.clear()
 
@@ -250,7 +249,7 @@ class TestMingImageAttachments(unittest.TestCase):
         assert thumb.format.upper() == d.photo.thumbnail_format.upper()
 
     def test_public_url(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.photo = of.open(self.fake_file.name, 'rb')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.flush()
@@ -270,7 +269,7 @@ class TestMingImageAttachments(unittest.TestCase):
     def test_rollback(self):
         self.skipTest("Currently Ming Doesn't provide a way to handle discarded documents")
 
-        doc = Document(name=u_('Foo3'))
+        doc = Document(name='Foo3')
         doc.photo = of.open(self.fake_file.name, 'rb')
 
         uploaded_file = doc.photo.path
@@ -305,7 +304,7 @@ class TestMingThumbnailFilter(unittest.TestCase):
         of.close_all()
 
     def test_create_fromfile(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.second_photo = of.open(self.fake_file.name, 'rb')
         DBSession.flush()
         DBSession.clear()
@@ -316,10 +315,10 @@ class TestMingThumbnailFilter(unittest.TestCase):
 
     def test_create_fromfield(self):
         field = cgi.FieldStorage()
-        field.filename = u_('àèìòù.gif')
+        field.filename = 'àèìòù.gif'
         field.file = of.open(self.fake_file.name, 'rb')
 
-        doc = Document(name=u_('Foo'), second_photo=field)
+        doc = Document(name='Foo', second_photo=field)
         DBSession.flush()
         DBSession.clear()
 
@@ -334,7 +333,7 @@ class TestMingThumbnailFilter(unittest.TestCase):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
         of.add(field.file)
 
-        doc = Document(name=u_('Foo'), second_photo=field)
+        doc = Document(name='Foo', second_photo=field)
         DBSession.flush()
         DBSession.clear()
 
@@ -349,7 +348,7 @@ class TestMingThumbnailFilter(unittest.TestCase):
         assert max(thumb.size) == 12
 
     def test_public_url(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.second_photo = of.open(self.fake_file.name, 'rb')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.flush()
@@ -368,7 +367,7 @@ class TestMingThumbnailFilter(unittest.TestCase):
     def test_rollback(self):
         self.skipTest("Currently Ming Doesn't provide a way to handle discarded documents")
 
-        doc = Document(name=u_('Foo3'))
+        doc = Document(name='Foo3')
         doc.second_photo = of.open(self.fake_file.name, 'rb')
 
         uploaded_file = doc.second_photo.path

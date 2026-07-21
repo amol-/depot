@@ -1,17 +1,18 @@
-from ._compat import percent_encode, unicode_text
+from datetime import datetime, timezone
+from urllib.parse import quote
 
-try:
-    from anyascii import anyascii
-except ImportError:  # pragma: no cover
-    # Python2 doesn't support anyascii
-    import unicodedata
-    def anyascii(text):
-        if not isinstance(text, unicode_text):
-            text = text.decode("utf-8")
-        return unicodedata.normalize("NFKD", text).encode("ascii", "ignore") or "unknown"
+from anyascii import anyascii
+
+
+def utcnow_naive():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def utcfromtimestamp_naive(ts):
+    return datetime.fromtimestamp(ts, timezone.utc).replace(tzinfo=None)
 
 
 def make_content_disposition(disposition, fname):
-    rfc6266_part = "filename*=utf-8''%s" % (percent_encode(fname, safe='!#$&+-.^_`|~', encoding='utf-8'), )
+    rfc6266_part = "filename*=utf-8''%s" % (quote(fname, safe='!#$&+-.^_`|~', encoding='utf-8', errors='strict'), )
     ascii_part = 'filename="%s"' % (anyascii(fname), )
     return ';'.join((disposition, ascii_part, rfc6266_part))

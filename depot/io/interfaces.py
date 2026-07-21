@@ -4,8 +4,7 @@ Each storage backend is required to respect those classes and implement
 the abstractmethods.
 
 """
-from .._compat import with_metaclass
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 from io import IOBase
 from depot.io.utils import FileIntent, _FileInfo
 
@@ -86,7 +85,8 @@ class StoredFile(IOBase):
         """
         return
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def closed(self):  # pragma: no cover
         """Returns if the file has been closed.
 
@@ -114,7 +114,7 @@ class StoredFile(IOBase):
                                                                          self.last_modified)
 
 
-class FileStorage(with_metaclass(ABCMeta, object)):
+class FileStorage(object, metaclass=ABCMeta):
     """Interface for storage providers.
 
     The FileStorage base class declares a standard interface for storing and retrieving files

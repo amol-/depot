@@ -2,8 +2,7 @@ from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz
 from time import gmtime, time
 from .manager import DepotManager
-from ._compat import wsgi_string, utcfromtimestamp_naive
-from .utils import make_content_disposition
+from .utils import make_content_disposition, utcfromtimestamp_naive
 
 _BLOCK_SIZE = 4096 * 64 # 256K
 
@@ -16,13 +15,11 @@ class _FileIter(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         val = self.file.read(self.block_size)
         if not val:
             raise StopIteration
         return val
-
-    __next__ = next # py3
 
     def close(self):
         self.file.close()
@@ -146,7 +143,7 @@ class DepotMiddleware(object):
         self.replace_wsgi_filewrapper = replace_wsgi_filewrapper
 
     def url_for(self, path):
-        return wsgi_string('/'.join((self.mountpoint, path)))
+        return '/'.join((self.mountpoint, path))
 
     def _404_response(self, start_response):
         start_response('404 Not Found', [('Content-Type', 'text/html')])
@@ -164,7 +161,7 @@ class DepotMiddleware(object):
     def _301_response(self, start_response, location):
         # Should also set Cache-Control to keep around the 301
         start_response('301 Moved Permanently', [('Content-Type', 'text/html'),
-                                                 ('Location', wsgi_string(location))])
+                                                 ('Location', location)])
         return [('''\
         <html>
          <head>

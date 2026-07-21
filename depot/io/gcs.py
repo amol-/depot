@@ -4,7 +4,7 @@ from datetime import datetime
 from google.cloud import storage
 from depot.io import utils
 from depot.io.interfaces import FileStorage, StoredFile
-from depot._compat import unicode_text, percent_encode
+from urllib.parse import quote, unquote
 from google.cloud.exceptions import NotFound
 from google.oauth2 import service_account
 import os
@@ -22,6 +22,8 @@ class GCSStoredFile(StoredFile):
 
         metadata = blob.metadata or {}
         filename = metadata.get('x-depot-filename')
+        if filename:
+            filename = unquote(filename)
         content_type = metadata.get('x-depot-content-type')
         content_length = blob.size
 
@@ -117,7 +119,7 @@ class GCSStorage(FileStorage):
         
     def __save_file(self,file_id, content, filename, content_type=None):
         if filename:
-            filename = percent_encode(filename, safe='!#$&+-.^_`|~', encoding='utf-8')
+            filename = quote(filename, safe='!#$&+-.^_`|~', encoding='utf-8', errors='strict')
         blob = self.bucket.blob(self._prefix+file_id)
         blob.content_type = content_type
         #blob.content_encoding = 'utf-8'
@@ -139,7 +141,7 @@ class GCSStorage(FileStorage):
                 content = content.read()
                 blob.upload_from_string(content, content_type=content_type)
         else:
-            if isinstance(content, unicode_text):
+            if isinstance(content, str):
                 raise TypeError('Only bytes can be stored, not unicode')
             blob.upload_from_string(content, content_type=content_type)
         

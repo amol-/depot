@@ -4,15 +4,13 @@ Provides FileStorage implementation for Amazon S3.
 This is useful for storing files in S3.
 
 """
-from __future__ import absolute_import
-
 from datetime import datetime
 import warnings
 import uuid
 from configparser import DuplicateSectionError
 import boto
 from boto.s3.connection import S3Connection
-from depot._compat import unicode_text, percent_encode, percent_decode
+from urllib.parse import quote, unquote
 from depot.utils import make_content_disposition
 
 from .interfaces import FileStorage, StoredFile
@@ -28,7 +26,7 @@ class S3StoredFile(StoredFile):
         self._key = key
         filename = key.metadata.get('x-depot-filename')
         if filename:
-            filename = percent_decode(filename)
+            filename = unquote(filename)
         metadata_info = {'filename': filename,
                          'content_type': key.content_type,
                          'content_length': key.size,
@@ -145,7 +143,7 @@ class S3Storage(FileStorage):
 
     def __save_file(self, key, content, filename, content_type=None):
         if filename:
-            filename = percent_encode(filename, safe='!#$&+-.^_`|~', encoding='utf-8')
+            filename = quote(filename, safe='!#$&+-.^_`|~', encoding='utf-8', errors='strict')
         key.set_metadata('content-type', content_type)
         key.set_metadata(
             'x-depot-filename',
@@ -171,7 +169,7 @@ class S3Storage(FileStorage):
                 key.set_contents_from_string(content.read(), policy=self._policy,
                                              encrypt_key=self._encrypt_key)
         else:
-            if isinstance(content, unicode_text):
+            if isinstance(content, str):
                 raise TypeError('Only bytes can be stored, not unicode')
             key.set_contents_from_string(content, policy=self._policy,
                                          encrypt_key=self._encrypt_key)

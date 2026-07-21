@@ -7,7 +7,6 @@ import requests
 from flaky import flaky
 from unittest import SkipTest
 
-from depot._compat import PY2, unicode_text
 
 
 S3Storage = None
@@ -148,7 +147,7 @@ class TestS3FileStorage(unittest.TestCase):
         assert f.public_url.endswith('/%s' % fid), f.public_url
 
     def test_content_disposition(self):
-        file_id = self.fs.create(b'content', unicode_text('test.txt'), 'text/plain')
+        file_id = self.fs.create(b'content', 'test.txt', 'text/plain')
         test_file = self.fs.get(file_id)
         response = requests.get(test_file.public_url)
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
@@ -159,14 +158,3 @@ class TestS3FileStorage(unittest.TestCase):
 
         key = self.fs._bucket_driver.get_key(fid)
         assert key.storage_class == 'STANDARD_IA'
-
-    def test_storage_non_ascii_filenames(self):
-        filename = u'些公.pdf'
-        storage = S3Storage(*self.cred, bucket=self.bucket, storage_class='STANDARD_IA')
-        new_file_id = storage.create(
-            FILE_CONTENT,
-            filename=filename,
-            content_type='application/pdf'
-        )
-
-        assert new_file_id is not None

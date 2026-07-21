@@ -7,7 +7,6 @@ from flaky import flaky
 import unittest
 from google.cloud.exceptions import NotFound
 
-from depot._compat import PY2, unicode_text
 from depot.io.gcs import GCSStorage
 
 FILE_CONTENT = b'HELLO WORLD'
@@ -64,18 +63,16 @@ class TestGCSStorage(unittest.TestCase):
         assert f.public_url.endswith('/%s' % self._prefix+fid), f.public_url
 
     def test_content_disposition(self):
-        file_id = self.fs.create(io.BytesIO(b'content'), unicode_text('test.txt'), 'text/plain')
+        file_id = self.fs.create(io.BytesIO(b'content'), 'test.txt', 'text/plain')
         test_file = self.fs.get(file_id)
         response = requests.get(test_file.public_url)
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"
 
-    def test_storage_non_ascii_filenames(self):
-        filename = u'ملف.pdf'
-        new_file_id = self.fs.create(
-            io.BytesIO(FILE_CONTENT),
-            filename=filename,
-            content_type='application/pdf'
-        )
+    def test_non_ascii_filename_round_trips(self):
+        filename = 'ملف.pdf'
+        file_id = self.fs.create(io.BytesIO(FILE_CONTENT), filename, 'application/pdf')
 
-        assert new_file_id is not None
-    
+        stored_file = self.fs.get(file_id)
+        assert stored_file.filename == filename
+        assert stored_file.content_type == 'application/pdf'
+        assert stored_file.read() == FILE_CONTENT

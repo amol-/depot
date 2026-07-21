@@ -1,7 +1,8 @@
 from sqlalchemy import *
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship
 from sqlalchemy.orm import declarative_base
-from depot._compat import utcnow_naive
+
+from depot.utils import utcnow_naive
 
 maker = sessionmaker(autoflush=True, autocommit=False)
 DBSession = scoped_session(maker)

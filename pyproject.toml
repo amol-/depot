@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "filedepot"
+version = "0.11.0"
+description = "Toolkit for storing files and attachments in web applications"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+requires-python = ">=3.10"
+keywords = ["storage", "files", "s3", "gridfs", "mongodb", "aws", "sqlalchemy", "wsgi"]
+authors = [{ name = "Alessandro Molina", email = "amol@turbogears.org" }]
+license = "MIT"
+dependencies = ["anyascii"]
+classifiers = [
+    "Environment :: Web Environment",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+
+[project.optional-dependencies]
+testing = [
+    "mock",
+    "requests",
+    "ming",
+    "boto3",
+    "google-cloud-storage",
+    "flaky",
+    "boto",
+    "coverage",
+    "pillow",
+    "WebTest",
+    "sqlalchemy",
+]
+
+[project.urls]
+Homepage = "https://github.com/amol-/depot"
+Repository = "https://github.com/amol-/depot"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+exclude = ["ez_setup", "tests"]

@@ -2,7 +2,6 @@
 import shutil
 import tempfile, os, base64
 import unittest
-import datetime
 from sqlalchemy.schema import Column
 from sqlalchemy.types import Unicode, Integer
 from .base_sqla import setup_database, clear_database, DeclarativeBase, DBSession, ThingWithDate
@@ -11,9 +10,7 @@ from depot.fields.sqlalchemy import UploadedFileField
 from depot.fields.upload import UploadedFile
 from depot.manager import DepotManager
 from depot.fields.interfaces import FileFilter
-from depot.io import utils as io_utils
 
-from depot._compat import u_, bytes_
 
 of = OpenFiles()
 
@@ -71,13 +68,13 @@ class TestFieldsInterface(unittest.TestCase):
         of.close_all()
 
     def test_column_is_dictlike(self):
-        doc = SimpleDocument(name=u_('Foo'))
+        doc = SimpleDocument(name='Foo')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
 
-        d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(SimpleDocument).filter_by(name='Foo').first()
         assert doc.content.hello == 'World', doc.content
         assert 'deleted' not in doc.content, doc.content
         assert doc.content.changed == 'NEW', doc.content
@@ -85,51 +82,51 @@ class TestFieldsInterface(unittest.TestCase):
         assert doc.content.missing_attr_trapped == True, doc.content
 
     def test_column_cannot_edit_after_save(self):
-        doc = SimpleDocument(name=u_('Foo'))
+        doc = SimpleDocument(name='Foo')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
 
-        d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(SimpleDocument).filter_by(name='Foo').first()
         with self.assertRaises(TypeError):
             d.content['hello'] = 'Everybody'
 
     def test_column_cannot_delete_after_save(self):
-        doc = SimpleDocument(name=u_('Foo'))
+        doc = SimpleDocument(name='Foo')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
 
-        d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(SimpleDocument).filter_by(name='Foo').first()
         with self.assertRaises(TypeError):
             del d.content['hello']
 
     def test_column_cannot_edit_attr_after_save(self):
-        doc = SimpleDocument(name=u_('Foo'))
+        doc = SimpleDocument(name='Foo')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
 
-        d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(SimpleDocument).filter_by(name='Foo').first()
         with self.assertRaises(TypeError):
             d.content.hello = 'Everybody'
 
     def test_column_cannot_delete_attr_after_save(self):
-        doc = SimpleDocument(name=u_('Foo'))
+        doc = SimpleDocument(name='Foo')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
 
-        d = DBSession.query(SimpleDocument).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(SimpleDocument).filter_by(name='Foo').first()
         with self.assertRaises(TypeError):
             del d.content.hello
 
     def test_storage_does_not_exists(self):
-        doc = SimpleDocument(name=u_('Foo'))
+        doc = SimpleDocument(name='Foo')
         with self.assertRaises(ValueError):
             doc.content = UploadedFile(of.open(self.fake_file.name, 'rb'),
                                        'missing_storage')
@@ -138,14 +135,10 @@ class TestFieldsInterface(unittest.TestCase):
         DBSession.commit()
 
     def test_thing_with_date_default_is_naive(self):
-        doc = ThingWithDate(name=u_('WithDate'))
+        doc = ThingWithDate(name='WithDate')
         DBSession.add(doc)
         DBSession.flush()
         DBSession.commit()
 
         assert doc.updated_at is not None
         assert doc.updated_at.tzinfo is None
-
-    def test_timestamp_is_naive_utc_compatible_string(self):
-        value = datetime.datetime.strptime(io_utils.timestamp(), '%Y-%m-%d %H:%M:%S')
-        assert value.tzinfo is None

@@ -1,7 +1,8 @@
 import mimetypes
 import os
 from tempfile import SpooledTemporaryFile
-from depot._compat import byte_string, utcnow_naive
+
+from depot.utils import utcnow_naive
 
 
 INMEMORY_FILESIZE = 1024*1024
@@ -21,7 +22,7 @@ def file_from_content(content):
     f = content
     if isinstance(content, FileIntent):
         f = content._fileobj
-    elif isinstance(content, byte_string):
+    elif isinstance(content, bytes):
         must_close = True
         f = SpooledTemporaryFile(INMEMORY_FILESIZE)
         f.write(content)
