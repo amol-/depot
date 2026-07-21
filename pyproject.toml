@@ -10,7 +10,7 @@ readme = { file = "README.rst", content-type = "text/x-rst" }
 requires-python = ">=3.10"
 keywords = ["storage", "files", "s3", "gridfs", "mongodb", "aws", "sqlalchemy", "wsgi"]
 authors = [{ name = "Alessandro Molina", email = "amol@turbogears.org" }]
-license = "MIT"
+license = { text = "MIT" }
 dependencies = ["anyascii"]
 classifiers = [
     "Environment :: Web Environment",
@@ -47,4 +47,4 @@ include-package-data = true
 zip-safe = false
 
 [tool.setuptools.packages.find]
-exclude = ["ez_setup", "tests"]
+include = ["depot*"]
