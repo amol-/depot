@@ -7,7 +7,6 @@ import requests
 from flaky import flaky
 from unittest import SkipTest
 
-from depot._compat import PY2, unicode_text
 
 
 S3Storage = None
@@ -100,7 +99,7 @@ class TestS3FileStorage(unittest.TestCase):
         assert f.public_url.endswith('/%s' % fid), f.public_url
 
     def test_content_disposition(self):
-        file_id = self.fs.create(b'content', unicode_text('test.txt'), 'text/plain')
+        file_id = self.fs.create(b'content', 'test.txt', 'text/plain')
         test_file = self.fs.get(file_id)
         response = requests.get(test_file.public_url)
         assert response.headers['Content-Disposition'] == "inline;filename=\"test.txt\";filename*=utf-8''test.txt"

@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from ming.odm import mapper
 from ming.odm.property import FieldProperty
 from ming.odm.base import session, state, ObjectState

@@ -15,7 +15,6 @@ from depot.manager import DepotManager, get_file
 from .utils import create_cgifs, OpenFiles
 from depot.fields.specialized.image import UploadedImageWithThumb
 from depot.fields.filters.thumbnails import WithThumbnailFilter
-from depot._compat import u_, bytes_
 
 of = OpenFiles()
 
@@ -94,38 +93,38 @@ class TestSQLAAttachments(SQLATestCase):
         of.close_all()
 
     def test_create_fromfile(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.content.file.read() == self.file_content
         assert d.content.file.filename == os.path.basename(self.fake_file.name)
 
     def test_create_polymorphic_from_file(self):
-        doc = Confidential(name=u_('Secret'))
+        doc = Confidential(name='Secret')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Confidential).filter_by(name=u_('Secret')).first()
+        d = DBSession.query(Confidential).filter_by(name='Secret').first()
         assert d.content.file.read() == self.file_content
         assert d.content.file.filename == os.path.basename(self.fake_file.name)
 
     def test_edit_existing(self):
-        doc = Document(name=u_('Foo2'))
+        doc = Document(name='Foo2')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
+        d = DBSession.query(Document).filter_by(name='Foo2').first()
         old_file = d.content.path
 
         d.content = b'HELLO'
@@ -144,14 +143,14 @@ class TestSQLAAttachments(SQLATestCase):
             pass
 
     def test_edit_existing_rollback(self):
-        doc = Document(name=u_('Foo3'))
+        doc = Document(name='Foo3')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo3')).first()
+        d = DBSession.query(Document).filter_by(name='Foo3').first()
         old_file = d.content.path
 
         d.content = b'HELLO'
@@ -168,35 +167,35 @@ class TestSQLAAttachments(SQLATestCase):
         field = create_cgifs('image/jpeg', self.fake_file, 'test.jpg')
         of.add(field.file)
 
-        doc = Document(name=u_('Foo'), content=field)
+        doc = Document(name='Foo', content=field)
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.content.file.read() == self.file_content
         assert d.content.filename == 'test.jpg'
         assert d.content.content_type == 'image/jpeg', d.content.content_type
         assert d.content.url == '/depot/%s' % d.content.path
 
     def test_create_empty(self):
-        doc = Document(name=u_('Foo'), content=None)
+        doc = Document(name='Foo', content=None)
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.content is None
 
     def test_delete_existing(self):
-        doc = Document(name=u_('Foo2'))
+        doc = Document(name='Foo2')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
+        d = DBSession.query(Document).filter_by(name='Foo2').first()
         old_file = d.content.path
         DBSession.delete(d)
 
@@ -207,17 +206,17 @@ class TestSQLAAttachments(SQLATestCase):
         assert not self.file_exists(old_file)
 
     def test_delete_existing_from_query(self):
-        doc = Document(name=u_('Foo2'))
+        doc = Document(name='Foo2')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo2')).first()
+        d = DBSession.query(Document).filter_by(name='Foo2').first()
         old_file = d.content.path
 
-        DBSession.query(Document).filter_by(name=u_('Foo2')).delete(synchronize_session="fetch")
+        DBSession.query(Document).filter_by(name='Foo2').delete(synchronize_session="fetch")
 
         self._session_flush()
         DBSession.commit()
@@ -226,14 +225,14 @@ class TestSQLAAttachments(SQLATestCase):
         assert not self.file_exists(old_file)
 
     def test_delete_existing_rollback(self):
-        doc = Document(name=u_('Foo3'))
+        doc = Document(name='Foo3')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
         DBSession.remove()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo3')).first()
+        d = DBSession.query(Document).filter_by(name='Foo3').first()
         old_file = d.content.path
         DBSession.delete(d)
 
@@ -244,13 +243,13 @@ class TestSQLAAttachments(SQLATestCase):
         assert get_file(old_file).read() == self.file_content
 
     def test_create_with_alias(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.targeted_content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.targeted_content.file.read() == self.file_content
         assert d.targeted_content.file.filename == os.path.basename(self.fake_file.name)
         assert d.targeted_content.depot_name == 'another'
@@ -258,11 +257,11 @@ class TestSQLAAttachments(SQLATestCase):
     def test_relationship(self):
         directory = Directory(name='Parent')
         DBSession.add(directory)
-        directory.documents.append(Document(name=u_('Foo'), content=of.open(self.fake_file.name, 'rb')))
+        directory.documents.append(Document(name='Foo', content=of.open(self.fake_file.name, 'rb')))
         self._session_flush()
         DBSession.commit()
         
-        d = DBSession.query(Directory).filter_by(name=u_('Parent')).first()
+        d = DBSession.query(Directory).filter_by(name='Parent').first()
         doc = d.documents[0]
         old_file = doc.content.path
         assert self.file_exists(old_file)
@@ -276,11 +275,11 @@ class TestSQLAAttachments(SQLATestCase):
     def test_relationship_rollback(self):
         directory = Directory(name='Parent')
         DBSession.add(directory)
-        directory.documents.append(Document(name=u_('Foo'), content=of.open(self.fake_file.name, 'rb')))
+        directory.documents.append(Document(name='Foo', content=of.open(self.fake_file.name, 'rb')))
         self._session_flush()
         DBSession.commit()
         
-        d = DBSession.query(Directory).filter_by(name=u_('Parent')).first()
+        d = DBSession.query(Directory).filter_by(name='Parent').first()
         doc = d.documents[0]
         old_file = doc.content.path
         assert self.file_exists(old_file)
@@ -294,11 +293,11 @@ class TestSQLAAttachments(SQLATestCase):
     def test_relationship_cascade_delete(self):
         directory = Directory(name='Parent')
         DBSession.add(directory)
-        directory.documents.append(Document(name=u_('Foo'), content=of.open(self.fake_file.name, 'rb')))
+        directory.documents.append(Document(name='Foo', content=of.open(self.fake_file.name, 'rb')))
         self._session_flush()
         DBSession.commit()
         
-        d = DBSession.query(Directory).filter_by(name=u_('Parent')).first()
+        d = DBSession.query(Directory).filter_by(name='Parent').first()
         doc = d.documents[0]
         old_file = doc.content.path
         assert self.file_exists(old_file)
@@ -312,11 +311,11 @@ class TestSQLAAttachments(SQLATestCase):
     def test_relationship_cascade_delete_rollback(self):
         directory = Directory(name='Parent')
         DBSession.add(directory)
-        directory.documents.append(Document(name=u_('Foo'), content=of.open(self.fake_file.name, 'rb')))
+        directory.documents.append(Document(name='Foo', content=of.open(self.fake_file.name, 'rb')))
         self._session_flush()
         DBSession.commit()
         
-        d = DBSession.query(Directory).filter_by(name=u_('Parent')).first()
+        d = DBSession.query(Directory).filter_by(name='Parent').first()
         doc = d.documents[0]
         old_file = doc.content.path
         assert self.file_exists(old_file)
@@ -354,18 +353,18 @@ class TestSQLAImageAttachments(SQLATestCase):
         of.close_all()
 
     def test_create_fromfile(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.photo = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.photo.file.read() == self.file_content
         assert d.photo.filename == os.path.basename(self.fake_file.name)
 
     def test_check_assigned_type(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.photo = UploadedFile(of.open(self.fake_file.name, 'rb'))
         DBSession.add(doc)
 
@@ -379,15 +378,15 @@ class TestSQLAImageAttachments(SQLATestCase):
 
     def test_create_fromfield(self):
         field = cgi.FieldStorage()
-        field.filename = u_('àèìòù.gif')
+        field.filename = 'àèìòù.gif'
         field.file = of.open(self.fake_file.name, 'rb')
 
-        doc = Document(name=u_('Foo'), photo=field)
+        doc = Document(name='Foo', photo=field)
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.photo.file.read() == self.file_content
         assert d.photo.filename == field.filename
         assert d.photo.url == '/depot/%s' % d.photo.path
@@ -398,12 +397,12 @@ class TestSQLAImageAttachments(SQLATestCase):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
         of.add(field.file)
 
-        doc = Document(name=u_('Foo'), photo=field)
+        doc = Document(name='Foo', photo=field)
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert os.path.exists(d.photo.thumb_file._file_path)
 
         thumb = Image.open(d.photo.thumb_file._file_path)
@@ -414,12 +413,12 @@ class TestSQLAImageAttachments(SQLATestCase):
         field = create_cgifs('image/png', self.bigimage, 'test.png')
         of.add(field.file)
 
-        doc = Document(name=u_('Foo'), photo=field)
+        doc = Document(name='Foo', photo=field)
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
 
         img = Image.open(d.photo.file._file_path)
         img.verify()
@@ -429,14 +428,14 @@ class TestSQLAImageAttachments(SQLATestCase):
         assert d.photo.content_type == 'image/png'
 
     def test_public_url(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.photo = of.open(self.fake_file.name, 'rb')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
 
         # Hack to force object to have a public url
         d.photo._thaw()
@@ -448,7 +447,7 @@ class TestSQLAImageAttachments(SQLATestCase):
         assert d.photo.thumb_url == 'THUMB_PUBLIC_URL'
 
     def test_rollback(self):
-        doc = Document(name=u_('Foo3'))
+        doc = Document(name='Foo3')
         doc.photo = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
@@ -481,38 +480,38 @@ class TestSQLAThumbnailFilter(SQLATestCase):
         of.close_all()
 
     def test_create_fromfile(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.second_photo = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.second_photo.file.read() == self.file_content
         assert d.second_photo.filename == os.path.basename(self.fake_file.name)
 
     def test_create_from_bytes(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.second_photo = self.file_content
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.second_photo.file.read() == self.file_content
         assert d.second_photo.filename == 'unnamed'
 
     def test_create_fromfield(self):
         field = cgi.FieldStorage()
-        field.filename = u_('àèìòù.gif')
+        field.filename = 'àèìòù.gif'
         field.file = of.open(self.fake_file.name, 'rb')
 
-        doc = Document(name=u_('Foo'), second_photo=field)
+        doc = Document(name='Foo', second_photo=field)
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.second_photo.file.read() == self.file_content
         assert d.second_photo.filename == field.filename
         assert d.second_photo.url == '/depot/%s' % d.second_photo.path
@@ -520,14 +519,14 @@ class TestSQLAThumbnailFilter(SQLATestCase):
         assert d.second_photo.url != d.second_photo.thumb_12x12_url
 
     def test_create_fileintent(self):
-        field = FileIntent(of.open(self.fake_file.name, 'rb'), u_('àèìòù.gif'), 'image/gif')
+        field = FileIntent(of.open(self.fake_file.name, 'rb'), 'àèìòù.gif', 'image/gif')
 
-        doc = Document(name=u_('Foo'), second_photo=field)
+        doc = Document(name='Foo', second_photo=field)
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
         assert d.second_photo.file.read() == self.file_content
         assert d.second_photo.filename == field._filename
         assert d.second_photo.url == '/depot/%s' % d.second_photo.path
@@ -539,12 +538,12 @@ class TestSQLAThumbnailFilter(SQLATestCase):
         field = create_cgifs('image/gif', self.fake_file, 'test.gif')
         of.add(field.file)
 
-        doc = Document(name=u_('Foo'), second_photo=field)
+        doc = Document(name='Foo', second_photo=field)
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
 
         thumbnail_local_path = DepotManager.get_file(d.second_photo.thumb_12x12_path)._file_path
         assert os.path.exists(thumbnail_local_path)
@@ -555,14 +554,14 @@ class TestSQLAThumbnailFilter(SQLATestCase):
         assert max(thumb.size) == 12
 
     def test_public_url(self):
-        doc = Document(name=u_('Foo'))
+        doc = Document(name='Foo')
         doc.second_photo = of.open(self.fake_file.name, 'rb')
         doc.content = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()
         DBSession.commit()
 
-        d = DBSession.query(Document).filter_by(name=u_('Foo')).first()
+        d = DBSession.query(Document).filter_by(name='Foo').first()
 
         # Hack to force object to have a public url
         d.second_photo._thaw()
@@ -573,7 +572,7 @@ class TestSQLAThumbnailFilter(SQLATestCase):
         assert d.second_photo.thumb_12x12_url.startswith('/depot/default/')
 
     def test_rollback(self):
-        doc = Document(name=u_('Foo3'))
+        doc = Document(name='Foo3')
         doc.second_photo = of.open(self.fake_file.name, 'rb')
         DBSession.add(doc)
         self._session_flush()

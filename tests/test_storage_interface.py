@@ -107,6 +107,7 @@ class BaseStorageTestFixture(object):
         )
 
         f = self.fs.get(file_id)
+        assert f.filename == filename
         assert f.content_type == 'application/pdf'
         assert f.read() == FILE_CONTENT
 

@@ -10,7 +10,6 @@ from datetime import datetime
 
 from .interfaces import FileStorage, StoredFile
 from . import utils
-from .._compat import unicode_text
 
 
 class MemoryStoredFile(StoredFile):
@@ -61,7 +60,7 @@ class MemoryFileStorage(FileStorage):
         if hasattr(content, 'read'):
             data = content.read()
         else:
-            if isinstance(content, unicode_text):
+            if isinstance(content, str):
                 raise TypeError('Only bytes can be stored, not unicode')
             data = content
 

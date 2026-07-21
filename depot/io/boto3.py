@@ -4,13 +4,11 @@ Provides FileStorage implementation for Amazon S3 through boto3 library.
 This is useful for storing files in S3.
 
 """
-from __future__ import absolute_import
-
 from datetime import datetime
 import uuid
 import boto3
 from botocore.exceptions import ClientError
-from depot._compat import unicode_text, percent_encode, percent_decode
+from urllib.parse import quote, unquote
 from depot.utils import make_content_disposition
 
 from .interfaces import FileStorage, StoredFile
@@ -28,7 +26,7 @@ class S3StoredFile(StoredFile):
         self._body = None
         filename = key.metadata.get('x-depot-filename')
         if filename:
-            filename = percent_decode(filename)
+            filename = unquote(filename)
 
         metadata_info = {'filename': filename,
                          'content_type': key.content_type,
@@ -175,7 +173,7 @@ class S3Storage(FileStorage):
 
     def __save_file(self, key, content, filename, content_type=None):
         if filename:
-            filename = percent_encode(filename, safe='!#$&+-.^_`|~', encoding='utf-8')
+            filename = quote(filename, safe='!#$&+-.^_`|~', encoding='utf-8', errors='strict')
         attrs = {
             'ACL': self._policy,
             'StorageClass': self._storage_class,
@@ -195,7 +193,7 @@ class S3Storage(FileStorage):
                 content = content.read()
             key.put(Body=content, **attrs)
         else:
-            if isinstance(content, unicode_text):
+            if isinstance(content, str):
                 raise TypeError('Only bytes can be stored, not unicode')
             key.put(Body=content, **attrs)
 

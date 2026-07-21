@@ -1,9 +1,8 @@
 from abc import ABCMeta, abstractmethod
-from depot._compat import with_metaclass
 from depot.manager import DepotManager
 
 
-class FileFilter(with_metaclass(ABCMeta, object)):
+class FileFilter(object, metaclass=ABCMeta):
     """Interface that must be implemented by file filters.
 
     File filters get executed whenever a file is stored on the database
@@ -18,7 +17,7 @@ class FileFilter(with_metaclass(ABCMeta, object)):
         return
 
 
-class DepotFileInfo(with_metaclass(ABCMeta, dict)):
+class DepotFileInfo(dict, metaclass=ABCMeta):
     """Keeps information on a content related to a specific depot.
 
     By itself the DepotFileInfo does nothing, it is required to implement

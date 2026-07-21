@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
+import io
 import unittest
+from datetime import datetime
 import os
 import shutil
+import time as time_module
 import json
 import uuid
-from urllib.parse import parse_qs
-from depot.middleware import _FileIter
+from urllib.parse import parse_qs, unquote
+from depot.middleware import FileServeApp, _FileIter
 from depot.manager import DepotManager
 from webtest import TestApp
-from depot._compat import u_, unquote, PY2
 
 
 FILE_CONTENT = b'HELLO WORLD'
@@ -34,8 +36,8 @@ class RootController:
     def create_file(self, lang=('en',)):
         lang = lang[0]
         fname = {'en': 'hello.txt',
-                 'ru': u_('Крупный'),
-                 'it': u_('àèìòù')}.get(lang, 'unknown')
+                 'ru': 'Крупный',
+                 'it': 'àèìòù'}.get(lang, 'unknown')
 
         self.UPLOADED_FILES += [DepotManager.get().create(FILE_CONTENT,
                                                           filename=fname)]
@@ -194,6 +196,28 @@ class TestWSGIMiddleware(BaseWSGITests):
         assert uploaded_file.body == FILE_CONTENT
         assert uploaded_file.request.environ['wsgi.file_wrapper'] is _FileIter
 
+    def test_wsgi_file_wrapper_is_an_iterator(self):
+        file_iter = _FileIter(io.BytesIO(FILE_CONTENT), 5)
+
+        assert list(file_iter) == [b'HELLO', b' WORL', b'D']
+
+    @unittest.skipUnless(hasattr(time_module, 'tzset'), 'requires time.tzset')
+    def test_parse_date_returns_naive_utc_time(self):
+        previous_timezone = os.environ.get('TZ')
+        try:
+            os.environ['TZ'] = 'UTC+8'
+            time_module.tzset()
+            parsed_date = FileServeApp.parse_date(None, 'Thu, 01 Jan 1970 00:00:00 -0800')
+        finally:
+            if previous_timezone is None:
+                os.environ.pop('TZ', None)
+            else:
+                os.environ['TZ'] = previous_timezone
+            time_module.tzset()
+
+        assert parsed_date == datetime(1970, 1, 1, 8)
+        assert parsed_date.tzinfo is None
+
     def test_serving_files_content_disposition(self):
         app = self.make_app()
         new_file = app.post('/create_file', params={'lang': 'ru'}).json
@@ -201,10 +225,7 @@ class TestWSGIMiddleware(BaseWSGITests):
         uploaded_file = app.get(DepotManager.url_for('%(uploaded_to)s/%(last)s' % new_file))
         content_disposition = uploaded_file.headers['Content-Disposition']
 
-        if PY2:
-            assert content_disposition == "inline;filename=\"unknown\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
-        else:
-            assert content_disposition == "inline;filename=\"Krupnyy\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
+        assert content_disposition == "inline;filename=\"Krupnyy\";filename*=utf-8''%D0%9A%D1%80%D1%83%D0%BF%D0%BD%D1%8B%D0%B9", content_disposition
 
 
         new_file = app.post('/create_file', params={'lang': 'it'}).json
@@ -212,7 +233,7 @@ class TestWSGIMiddleware(BaseWSGITests):
         content_disposition = uploaded_file.headers['Content-Disposition']
         _, asciiname, uniname = content_disposition.split(';')
         assert asciiname == 'filename="aeiou"', asciiname
-        assert u_(unquote(uniname[17:])) == u_('àèìòù'), unquote(uniname[17:])
+        assert unquote(uniname[17:]) == 'àèìòù', unquote(uniname[17:])
 
 
 class TestS3TestWSGIMiddleware(BaseWSGITests):

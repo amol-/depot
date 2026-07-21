@@ -7,7 +7,7 @@ name = "filedepot"
 version = "0.11.0"
 description = "Toolkit for storing files and attachments in web applications"
 readme = { file = "README.rst", content-type = "text/x-rst" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["storage", "files", "s3", "gridfs", "mongodb", "aws", "sqlalchemy", "wsgi"]
 authors = [{ name = "Alessandro Molina", email = "amol@turbogears.org" }]
 license = "MIT"
@@ -16,7 +16,6 @@ classifiers = [
     "Environment :: Web Environment",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
