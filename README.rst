@@ -98,6 +98,14 @@ Or you can use depot with SQLAlchemy to store attachments::
 ChangeLog
 ---------
 
+0.12.0
+~~~~~~
+
+- Fixed a bug on loading back non-ascii filenames on GCS
+- Support for Python 3.9 removed
+- Code modernized and now Python 3 exclusive
+- Preparation for `utcnow` deprecation
+
 0.11.0
 ~~~~~~
 
