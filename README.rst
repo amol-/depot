@@ -62,8 +62,8 @@ Here is a simple example of using depot standalone to store files on MongoDB::
 
     # Get the file back
     stored_file = depot.get(fileid)
-    print stored_file.filename
-    print stored_file.content_type
+    print(stored_file.filename)
+    print(stored_file.content_type)
 
 models
 ~~~~~~
