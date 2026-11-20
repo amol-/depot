@@ -3,7 +3,7 @@ import shutil
 import unittest
 import tempfile, os, cgi, base64
 from PIL import Image
-from sqlalchemy.exc import StatementError
+from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Column, ForeignKey
 from sqlalchemy.types import Unicode, Integer, Text
@@ -325,6 +325,141 @@ class TestSQLAAttachments(SQLATestCase):
         DBSession.rollback()
 
         assert self.file_exists(old_file)
+
+    def test_savepoint_rollback_keeps_previous_files(self):
+        doc = Document(name='Foo')
+        doc.content = b'HELLO'
+        DBSession.add(doc)
+        self._session_flush()
+        before_file = doc.content.path
+
+        savepoint = DBSession.begin_nested()
+        inner = Document(name='Inner')
+        inner.content = b'INNER'
+        DBSession.add(inner)
+        self._session_flush()
+        inner_file = inner.content.path
+        savepoint.rollback()
+
+        assert self.file_exists(before_file)
+        assert not self.file_exists(inner_file)
+
+        DBSession.commit()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name='Foo').first()
+        assert d.content.file.read() == b'HELLO'
+        DBSession.remove()
+
+    def test_savepoint_release_outer_rollback(self):
+        with DBSession.begin_nested():
+            doc = Document(name='Foo')
+            doc.content = b'HELLO'
+            DBSession.add(doc)
+            self._session_flush()
+        inner_file = doc.content.path
+
+        assert self.file_exists(inner_file)
+
+        DBSession.rollback()
+
+        assert not self.file_exists(inner_file)
+
+    def test_savepoint_release_outer_commit(self):
+        doc = Document(name='Foo')
+        doc.content = b'HELLO'
+        DBSession.add(doc)
+        DBSession.commit()
+        old_file = doc.content.path
+
+        with DBSession.begin_nested():
+            doc.content = b'REPLACED'
+            self._session_flush()
+        new_file = doc.content.path
+
+        assert self.file_exists(old_file)
+
+        DBSession.commit()
+
+        assert not self.file_exists(old_file)
+        assert get_file(new_file).read() == b'REPLACED'
+        DBSession.remove()
+
+    def test_savepoint_rollback_restores_replaced_file(self):
+        doc = Document(name='Foo')
+        doc.content = b'HELLO'
+        DBSession.add(doc)
+        DBSession.commit()
+        old_file = doc.content.path
+
+        savepoint = DBSession.begin_nested()
+        doc.content = b'REPLACED'
+        self._session_flush()
+        new_file = doc.content.path
+        savepoint.rollback()
+
+        assert not self.file_exists(new_file)
+
+        DBSession.commit()
+        DBSession.remove()
+
+        assert get_file(old_file).read() == b'HELLO'
+
+    def test_nested_savepoint_rollback(self):
+        doc = Document(name='Foo')
+        doc.content = b'OUTER'
+        DBSession.add(doc)
+        self._session_flush()
+        outer_file = doc.content.path
+
+        with DBSession.begin_nested():
+            middle = Document(name='Middle')
+            middle.content = b'MIDDLE'
+            DBSession.add(middle)
+            self._session_flush()
+            middle_file = middle.content.path
+
+            savepoint = DBSession.begin_nested()
+            inner = Document(name='Inner')
+            inner.content = b'INNER'
+            DBSession.add(inner)
+            self._session_flush()
+            inner_file = inner.content.path
+            savepoint.rollback()
+
+        assert self.file_exists(outer_file)
+        assert self.file_exists(middle_file)
+        assert not self.file_exists(inner_file)
+
+        DBSession.rollback()
+
+        assert not self.file_exists(outer_file)
+        assert not self.file_exists(middle_file)
+
+    def test_savepoint_failed_flush(self):
+        doc = Document(name='Foo')
+        doc.content = b'HELLO'
+        DBSession.add(doc)
+        self._session_flush()
+        before_file = doc.content.path
+
+        try:
+            with DBSession.begin_nested():
+                duplicate = Document(name='Foo')
+                duplicate.content = b'DUPLICATE'
+                DBSession.add(duplicate)
+                DBSession.flush()
+        except IntegrityError:
+            pass
+        duplicate_file = duplicate.content.path
+
+        assert self.file_exists(before_file)
+        assert not self.file_exists(duplicate_file)
+
+        DBSession.commit()
+        DBSession.remove()
+
+        assert get_file(before_file).read() == b'HELLO'
 
 
 

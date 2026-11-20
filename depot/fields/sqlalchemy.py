@@ -106,18 +106,45 @@ class _SQLAMutationTracker(object):
                         event.listen(mapper_property, 'set', cls._field_set, retval=True, propagate=True)
 
     @classmethod
+    def _session_transaction_created(cls, session, transaction):
+        if transaction.nested:
+            # Remember the files tracked when the savepoint began,
+            # rolling it back must only discard the ones stored after.
+            transaction._depot_savepoint = (set(getattr(session, '_depot_new', set())),
+                                            set(getattr(session, '_depot_old', set())))
+
+    @classmethod
     def _session_rollback(cls, session, previous_transaction):
-        if hasattr(session, '_depot_old'):
-            del session._depot_old
-        if hasattr(session, '_depot_new'):
-            for entry in session._depot_new:
-                depot, fileid = entry.split('/', 1)
-                depot = DepotManager.get(depot)
-                depot.delete(fileid)
-            del session._depot_new
+        # A rollback reverts up to the closest savepoint,
+        # or the whole transaction when there is none.
+        rolled_back = previous_transaction
+        while not rolled_back.nested and rolled_back.parent is not None:
+            rolled_back = rolled_back.parent
+
+        if rolled_back.nested:
+            new_files, old_files = rolled_back._depot_savepoint
+            discarded = getattr(session, '_depot_new', set()) - new_files
+            session._depot_new = set(new_files)
+            session._depot_old = set(old_files)
+        else:
+            discarded = getattr(session, '_depot_new', set())
+            if hasattr(session, '_depot_old'):
+                del session._depot_old
+            if hasattr(session, '_depot_new'):
+                del session._depot_new
+
+        for entry in discarded:
+            depot, fileid = entry.split('/', 1)
+            depot = DepotManager.get(depot)
+            depot.delete(fileid)
 
     @classmethod
     def _session_committed(cls, session):
+        if session.in_nested_transaction():
+            # Releasing a savepoint, its files are kept or discarded
+            # together with the enclosing transaction.
+            return
+
         if hasattr(session, '_depot_old'):
             for entry in session._depot_old:
                 depot, fileid = entry.split('/', 1)
@@ -173,6 +200,7 @@ class _SQLAMutationTracker(object):
     @classmethod
     def setup(cls):
         event.listen(orm.Mapper, 'mapper_configured', cls._mapper_configured)
+        event.listen(Session, 'after_transaction_create', cls._session_transaction_created)
         event.listen(Session, 'after_soft_rollback', cls._session_rollback)
         event.listen(Session, 'after_commit', cls._session_committed)
         event.listen(Session, 'before_attach', cls._session_attached)
