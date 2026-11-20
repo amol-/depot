@@ -352,6 +352,11 @@ class TestSQLAAttachments(SQLATestCase):
         DBSession.remove()
 
     def test_savepoint_release_outer_rollback(self):
+        # Write first, so the savepoint runs inside a database transaction
+        # also with drivers that only begin one on the first write.
+        DBSession.add(Document(name='Outer'))
+        self._session_flush()
+
         with DBSession.begin_nested():
             doc = Document(name='Foo')
             doc.content = b'HELLO'
@@ -364,6 +369,47 @@ class TestSQLAAttachments(SQLATestCase):
         DBSession.rollback()
 
         assert not self.file_exists(inner_file)
+        assert DBSession.query(Document).filter_by(name='Foo').count() == 0
+        DBSession.remove()
+
+    def test_savepoint_release_commits_database_transaction(self):
+        # With pysqlite no database transaction is open yet, so the savepoint
+        # is the outermost one and releasing it commits the row.
+        with DBSession.begin_nested():
+            doc = Document(name='Foo')
+            doc.content = b'HELLO'
+            DBSession.add(doc)
+            self._session_flush()
+        inner_file = doc.content.path
+
+        DBSession.rollback()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name='Foo').one()
+        assert d.content.path == inner_file
+        assert d.content.file.read() == b'HELLO'
+        DBSession.remove()
+
+    def test_savepoint_release_commits_replaced_file(self):
+        doc = Document(name='Foo')
+        doc.content = b'HELLO'
+        DBSession.add(doc)
+        DBSession.commit()
+        old_file = doc.content.path
+
+        with DBSession.begin_nested():
+            doc.content = b'REPLACED'
+            self._session_flush()
+        new_file = doc.content.path
+
+        DBSession.rollback()
+        DBSession.remove()
+
+        d = DBSession.query(Document).filter_by(name='Foo').one()
+        assert d.content.path == new_file
+        assert d.content.file.read() == b'REPLACED'
+        assert not self.file_exists(old_file)
+        DBSession.remove()
 
     def test_savepoint_release_outer_commit(self):
         doc = Document(name='Foo')
@@ -371,6 +417,9 @@ class TestSQLAAttachments(SQLATestCase):
         DBSession.add(doc)
         DBSession.commit()
         old_file = doc.content.path
+
+        DBSession.add(Document(name='Outer'))
+        self._session_flush()
 
         with DBSession.begin_nested():
             doc.content = b'REPLACED'

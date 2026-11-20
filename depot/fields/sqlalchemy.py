@@ -139,8 +139,34 @@ class _SQLAMutationTracker(object):
             depot.delete(fileid)
 
     @classmethod
+    def _session_began(cls, session, transaction, connection):
+        # Remember the connections used by the session transaction,
+        # to check whether releasing a savepoint committed them.
+        if not hasattr(session, '_depot_connections'):
+            session._depot_connections = []
+        session._depot_connections.append(connection)
+
+    @classmethod
+    def _session_transaction_ended(cls, session, transaction):
+        if transaction.parent is None and hasattr(session, '_depot_connections'):
+            del session._depot_connections
+
+    @classmethod
+    def _savepoint_committed_database(cls, session):
+        # Some drivers, like the default pysqlite one, only begin a database
+        # transaction on the first write. A savepoint started before that is
+        # the outermost database transaction, and releasing it commits.
+        for connection in getattr(session, '_depot_connections', ()):
+            if connection.closed:
+                continue
+            dbapi_connection = connection.connection.dbapi_connection
+            if getattr(dbapi_connection, 'in_transaction', True) is False:
+                return True
+        return False
+
+    @classmethod
     def _session_committed(cls, session):
-        if session.in_nested_transaction():
+        if session.in_nested_transaction() and not cls._savepoint_committed_database(session):
             # Releasing a savepoint, its files are kept or discarded
             # together with the enclosing transaction.
             return
@@ -201,6 +227,8 @@ class _SQLAMutationTracker(object):
     def setup(cls):
         event.listen(orm.Mapper, 'mapper_configured', cls._mapper_configured)
         event.listen(Session, 'after_transaction_create', cls._session_transaction_created)
+        event.listen(Session, 'after_transaction_end', cls._session_transaction_ended)
+        event.listen(Session, 'after_begin', cls._session_began)
         event.listen(Session, 'after_soft_rollback', cls._session_rollback)
         event.listen(Session, 'after_commit', cls._session_committed)
         event.listen(Session, 'before_attach', cls._session_attached)
